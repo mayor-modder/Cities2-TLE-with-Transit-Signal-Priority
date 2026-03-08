@@ -1,5 +1,6 @@
 using C2VM. TrafficLightsEnhancement. Components;
 using Game.Net;
+using TrafficLightsEnhancement.Logic.Tsp;
 using Unity.Collections;
 using Unity. Entities;
 using Unity.Mathematics;
@@ -10,16 +11,37 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
     {
         public static bool UpdateTrafficLightState(ref TrafficLights trafficLights, ref CustomTrafficLights customTrafficLights, DynamicBuffer<CustomPhaseData> customPhaseDataBuffer)
         {
-            return UpdateTrafficLightState(ref trafficLights, ref customTrafficLights, customPhaseDataBuffer, customPhaseDataBuffer);
+            return UpdateTrafficLightState(ref trafficLights, ref customTrafficLights, customPhaseDataBuffer, customPhaseDataBuffer, false, default, out _);
         }
 
         public static bool UpdateTrafficLightState(ref TrafficLights trafficLights, ref CustomTrafficLights customTrafficLights, DynamicBuffer<CustomPhaseData> customPhaseDataBuffer, DynamicBuffer<CustomPhaseData> settingsPhaseDataBuffer)
         {
+            return UpdateTrafficLightState(ref trafficLights, ref customTrafficLights, customPhaseDataBuffer, settingsPhaseDataBuffer, false, default, out _);
+        }
+
+        public static bool UpdateTrafficLightState(
+            ref TrafficLights trafficLights,
+            ref CustomTrafficLights customTrafficLights,
+            DynamicBuffer<CustomPhaseData> customPhaseDataBuffer,
+            DynamicBuffer<CustomPhaseData> settingsPhaseDataBuffer,
+            bool hasTspRequest,
+            TransitSignalPriorityRequest tspRequest,
+            out TspOverrideSelection tspSelection)
+        {
+            tspSelection = default;
+
             if (trafficLights.m_State == TrafficLightState. None || trafficLights.m_State == TrafficLightState. Extending || trafficLights.m_State == TrafficLightState.Extended)
             {
                 trafficLights.m_State = TrafficLightState.Beginning;
                 trafficLights.m_CurrentSignalGroup = 0;
-                trafficLights.m_NextSignalGroup = GetNextSignalGroup(trafficLights.m_CurrentSignalGroup, settingsPhaseDataBuffer, customTrafficLights, out _);
+                trafficLights.m_NextSignalGroup = GetNextSignalGroup(
+                    trafficLights.m_CurrentSignalGroup,
+                    settingsPhaseDataBuffer,
+                    customTrafficLights,
+                    out _,
+                    out tspSelection,
+                    hasTspRequest,
+                    tspRequest);
                 trafficLights.m_Timer = 0;
                 customTrafficLights.m_Timer = 0;
                 return true;
@@ -94,7 +116,14 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 }
                 
                 customPhaseDataBuffer[currentSignalIndex] = phase;
-                byte nextGroup = GetNextSignalGroup(trafficLights.m_CurrentSignalGroup, settingsPhaseDataBuffer, customTrafficLights, out var linked);
+                byte nextGroup = GetNextSignalGroup(
+                    trafficLights.m_CurrentSignalGroup,
+                    settingsPhaseDataBuffer,
+                    customTrafficLights,
+                    out var linked,
+                    out tspSelection,
+                    hasTspRequest,
+                    tspRequest);
                 if (stepDone && nextGroup != trafficLights.m_CurrentSignalGroup)
                 {
                     trafficLights.m_State = TrafficLightState.Ending;
@@ -298,16 +327,58 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
             }
         }
 
-        public static byte GetNextSignalGroup(byte currentGroup, DynamicBuffer<CustomPhaseData> customPhaseDataBuffer, CustomTrafficLights customTrafficLights, out bool linked)
+        public static byte GetNextSignalGroup(
+            byte currentGroup,
+            DynamicBuffer<CustomPhaseData> customPhaseDataBuffer,
+            CustomTrafficLights customTrafficLights,
+            out bool linked,
+            out TspOverrideSelection tspSelection,
+            bool hasTspRequest = false,
+            TransitSignalPriorityRequest tspRequest = default)
+        {
+            tspSelection = default;
+
+            linked = false;
+            if (customTrafficLights.m_ManualSignalGroup > 0 && customTrafficLights.m_ManualSignalGroup - 1 < customPhaseDataBuffer.Length)
+            {
+                return customTrafficLights.m_ManualSignalGroup;
+            }
+
+            byte nextGroup = GetNextSignalGroupWithoutTsp(currentGroup, customPhaseDataBuffer, customTrafficLights, out linked);
+            if (!hasTspRequest)
+            {
+                return nextGroup;
+            }
+
+            tspSelection = TspOverrideEngine.ApplyRequestOverride(
+                basePhaseIndex: nextGroup > 0 ? nextGroup - 1 : -1,
+                currentPhaseIndex: currentGroup > 0 ? currentGroup - 1 : -1,
+                phaseCount: customPhaseDataBuffer.Length,
+                targetPhaseIndex: tspRequest.m_TargetSignalGroup > 0 ? tspRequest.m_TargetSignalGroup - 1 : -1,
+                new TspRequest(
+                    (TspSource)tspRequest.m_SourceType,
+                    tspRequest.m_Strength,
+                    tspRequest.m_ExtendCurrentPhase));
+
+            if (tspSelection.Applied && tspSelection.SelectedPhaseIndex >= 0)
+            {
+                return (byte)(tspSelection.SelectedPhaseIndex + 1);
+            }
+
+            return nextGroup;
+        }
+
+        private static byte GetNextSignalGroupWithoutTsp(
+            byte currentGroup,
+            DynamicBuffer<CustomPhaseData> customPhaseDataBuffer,
+            CustomTrafficLights customTrafficLights,
+            out bool linked)
         {
             linked = false;
             byte nextGroup = 0;
             int maxPriority = -1;
             float maxWaiting = -1;
-            if (customTrafficLights.m_ManualSignalGroup > 0 && customTrafficLights.m_ManualSignalGroup - 1 < customPhaseDataBuffer.Length)
-            {
-                return customTrafficLights.m_ManualSignalGroup;
-            }
+
             if (customTrafficLights.GetMode() == CustomTrafficLights.TrafficMode.FixedTimed && customPhaseDataBuffer.Length > 0)
             {
                 int currentStep = currentGroup - 1;

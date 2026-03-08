@@ -108,6 +108,7 @@ public partial class UISystem
         CreateTrigger<string>("CallDeleteTrafficGroup", CallDeleteTrafficGroup);
         CreateTrigger<string>("CallSetTrafficGroupName", CallSetTrafficGroupName);
         CreateTrigger<string>("CallSetGreenWaveEnabled", CallSetGreenWaveEnabled);
+        CreateTrigger<string>("CallSetTspPropagationEnabled", CallSetTspPropagationEnabled);
         CreateTrigger<string>("CallSetGreenWaveSpeed", CallSetGreenWaveSpeed);
         CreateTrigger<string>("CallSetGreenWaveOffset", CallSetGreenWaveOffset);
         CreateTrigger<string>("CallCalculateSignalDelays", CallCalculateSignalDelays);
@@ -322,6 +323,9 @@ public partial class UISystem
         if (m_MainPanelState == MainPanelState.Main && m_SelectedEntity != Entity.Null)
         {
             bool isGroupMember = EntityManager.HasComponent<TrafficGroupMember>(m_SelectedEntity);
+            TransitSignalPrioritySettings tspSettings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+                ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+                : new TransitSignalPrioritySettings();
             
             if (!isGroupMember)
             {
@@ -387,6 +391,51 @@ public partial class UISystem
             else
             {
                 menu.items.Add(new UITypes.ItemMessage{message = "EditPhasesFromGroupMenu"});
+            }
+
+            menu.items.Add(default(UITypes.ItemDivider));
+            menu.items.Add(new UITypes.ItemTitle{title = "TransitSignalPriority"});
+            menu.items.Add(new UITypes.ItemCheckbox
+            {
+                type = "checkbox",
+                key = "TspEnabled",
+                value = tspSettings.m_Enabled.ToString(),
+                isChecked = tspSettings.m_Enabled,
+                label = "EnableTransitSignalPriority",
+                engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption"
+            });
+            if (tspSettings.m_Enabled)
+            {
+                menu.items.Add(new UITypes.ItemCheckbox
+                {
+                    type = "checkbox",
+                    key = "TspAllowTrackRequests",
+                    value = tspSettings.m_AllowTrackRequests.ToString(),
+                    isChecked = tspSettings.m_AllowTrackRequests,
+                    label = "AllowTrackTransitRequests",
+                    engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption"
+                });
+                menu.items.Add(new UITypes.ItemCheckbox
+                {
+                    type = "checkbox",
+                    key = "TspAllowPublicCarRequests",
+                    value = tspSettings.m_AllowPublicCarRequests.ToString(),
+                    isChecked = tspSettings.m_AllowPublicCarRequests,
+                    label = "AllowBusLaneRequests",
+                    engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption"
+                });
+                if (isGroupMember)
+                {
+                    menu.items.Add(new UITypes.ItemCheckbox
+                    {
+                        type = "checkbox",
+                        key = "TspAllowGroupPropagation",
+                        value = tspSettings.m_AllowGroupPropagation.ToString(),
+                        isChecked = tspSettings.m_AllowGroupPropagation,
+                        label = "PropagateTransitRequestsToGroup",
+                        engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption"
+                    });
+                }
             }
             menu.items.Add(default(UITypes.ItemDivider));
             if (EntityManager.HasBuffer<C2VM.CommonLibraries.LaneSystem.CustomLaneDirection>(m_SelectedEntity))
@@ -660,6 +709,7 @@ public partial class UISystem
                         greenWaveEnabled = group.m_GreenWaveEnabled,
                         greenWaveSpeed = group.m_GreenWaveSpeed,
                         greenWaveOffset = group.m_GreenWaveOffset,
+                        tspPropagationEnabled = group.m_TspPropagationEnabled,
                         leaderIndex = leaderEntity.Index,
                         leaderVersion = leaderEntity.Version,
                         currentJunctionIndex = m_SelectedEntity.Index,
@@ -810,6 +860,48 @@ public partial class UISystem
     protected void CallMainPanelUpdateOption(string input)
     {
         UITypes.ItemCheckbox option = JsonConvert.DeserializeObject<UITypes.ItemCheckbox>(input);
+        if (option.key == "TspEnabled" || option.key == "TspAllowTrackRequests" ||
+            option.key == "TspAllowPublicCarRequests" || option.key == "TspAllowGroupPropagation")
+        {
+            if (m_SelectedEntity == Entity.Null)
+            {
+                return;
+            }
+
+            var settings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+                ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+                : new TransitSignalPrioritySettings();
+
+            switch (option.key)
+            {
+                case "TspEnabled":
+                    settings.m_Enabled = !settings.m_Enabled;
+                    break;
+                case "TspAllowTrackRequests":
+                    settings.m_AllowTrackRequests = !settings.m_AllowTrackRequests;
+                    break;
+                case "TspAllowPublicCarRequests":
+                    settings.m_AllowPublicCarRequests = !settings.m_AllowPublicCarRequests;
+                    break;
+                case "TspAllowGroupPropagation":
+                    settings.m_AllowGroupPropagation = !settings.m_AllowGroupPropagation;
+                    break;
+            }
+
+            if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+            {
+                EntityManager.SetComponentData(m_SelectedEntity, settings);
+            }
+            else
+            {
+                EntityManager.AddComponentData(m_SelectedEntity, settings);
+            }
+
+            UpdateEntity();
+            m_MainPanelBinding.Update();
+            return;
+        }
+
         foreach (CustomTrafficLights.Patterns pattern in System.Enum.GetValues(typeof(CustomTrafficLights.Patterns)))
         {
             if (((uint) pattern & 0xFFFF0000) != 0)
@@ -1504,6 +1596,48 @@ public partial class UISystem
         {
             var trafficGroupSystem = World.GetOrCreateSystemManaged<TrafficGroupSystem>();
             trafficGroupSystem.SetGreenWaveEnabled(groupEntity, enabled);
+            m_MainPanelBinding.Update();
+        }
+    }
+
+    protected void CallSetTspPropagationEnabled(string input)
+    {
+        var definition = new { groupIndex = 0, groupVersion = 0, enabled = false, key = "", value = "", isChecked = false };
+        var data = JsonConvert.DeserializeAnonymousType(input, definition);
+
+        Entity groupEntity;
+        bool enabled;
+
+        if (data.key == "TspPropagationEnabled")
+        {
+            if (m_SelectedEntity == Entity.Null || !EntityManager.HasComponent<TrafficGroupMember>(m_SelectedEntity))
+            {
+                return;
+            }
+
+            var member = EntityManager.GetComponentData<TrafficGroupMember>(m_SelectedEntity);
+            groupEntity = member.m_GroupEntity;
+
+            if (EntityManager.HasComponent<TrafficGroup>(groupEntity))
+            {
+                var currentGroup = EntityManager.GetComponentData<TrafficGroup>(groupEntity);
+                enabled = !currentGroup.m_TspPropagationEnabled;
+            }
+            else
+            {
+                enabled = false;
+            }
+        }
+        else
+        {
+            groupEntity = new Entity { Index = data.groupIndex, Version = data.groupVersion };
+            enabled = data.enabled;
+        }
+
+        if (groupEntity != Entity.Null)
+        {
+            var trafficGroupSystem = World.GetOrCreateSystemManaged<TrafficGroupSystem>();
+            trafficGroupSystem.SetTspPropagationEnabled(groupEntity, enabled);
             m_MainPanelBinding.Update();
         }
     }

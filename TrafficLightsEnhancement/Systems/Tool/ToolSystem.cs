@@ -113,6 +113,14 @@ public partial class ToolSystem : NetToolSystem
                         
                         
                         EntityManager.RemoveComponent<CustomTrafficLights>(m_RaycastResult);
+                        if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_RaycastResult))
+                        {
+                            EntityManager.RemoveComponent<TransitSignalPrioritySettings>(m_RaycastResult);
+                        }
+                        if (EntityManager.HasComponent<TransitSignalPriorityRequest>(m_RaycastResult))
+                        {
+                            EntityManager.RemoveComponent<TransitSignalPriorityRequest>(m_RaycastResult);
+                        }
                         if (EntityManager.HasBuffer<CustomPhaseData>(m_RaycastResult))
                         {
                             EntityManager.RemoveComponent<CustomPhaseData>(m_RaycastResult);

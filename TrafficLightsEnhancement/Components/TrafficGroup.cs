@@ -10,6 +10,7 @@ public struct TrafficGroup : IComponentData, ISerializable
 {
     public bool m_IsCoordinated;
     public bool m_GreenWaveEnabled;
+    public bool m_TspPropagationEnabled;
     public float m_GreenWaveSpeed;
     public float m_GreenWaveOffset;
     public float m_MaxCoordinationDistance;
@@ -24,9 +25,10 @@ public struct TrafficGroup : IComponentData, ISerializable
     public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
     {
         
-        writer.Write(TLEDataVersion.V1);
+        writer.Write(TLEDataVersion.V2);
         writer.Write(m_IsCoordinated);
         writer.Write(m_GreenWaveEnabled);
+        writer.Write(m_TspPropagationEnabled);
         writer.Write(m_GreenWaveSpeed);
         writer.Write(m_GreenWaveOffset);
         writer.Write(m_MaxCoordinationDistance);
@@ -39,6 +41,7 @@ public struct TrafficGroup : IComponentData, ISerializable
         
         m_IsCoordinated = false;
         m_GreenWaveEnabled = false;
+        m_TspPropagationEnabled = false;
         m_GreenWaveSpeed = 50f;
         m_GreenWaveOffset = 0f;
         m_MaxCoordinationDistance = 500f;
@@ -51,6 +54,10 @@ public struct TrafficGroup : IComponentData, ISerializable
         reader.Read(out int version);
         reader.Read(out m_IsCoordinated);
         reader.Read(out m_GreenWaveEnabled);
+        if (version >= TLEDataVersion.V2)
+        {
+            reader.Read(out m_TspPropagationEnabled);
+        }
         reader.Read(out m_GreenWaveSpeed);
         reader.Read(out m_GreenWaveOffset);
         reader.Read(out m_MaxCoordinationDistance);
@@ -63,6 +70,7 @@ public struct TrafficGroup : IComponentData, ISerializable
     {
         m_IsCoordinated = false;
         m_GreenWaveEnabled = false;
+        m_TspPropagationEnabled = false;
         m_GreenWaveSpeed = 50f;
         m_GreenWaveOffset = 0f;
         m_MaxCoordinationDistance = 500f;
@@ -76,6 +84,7 @@ public struct TrafficGroup : IComponentData, ISerializable
     {
         m_IsCoordinated = isCoordinated;
         m_GreenWaveEnabled = greenWaveEnabled;
+        m_TspPropagationEnabled = false;
         m_GreenWaveSpeed = greenWaveSpeed;
         m_GreenWaveOffset = greenWaveOffset;
         m_MaxCoordinationDistance = maxCoordinationDistance;

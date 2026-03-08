@@ -35,6 +35,7 @@ export const callRemoveJunctionFromGroup = triggers.create<[string]>("CallRemove
 export const callDeleteTrafficGroup = triggers.create<[string]>("CallDeleteTrafficGroup");
 export const callSetTrafficGroupName = triggers.create<[string]>("CallSetTrafficGroupName");
 export const callSetGreenWaveEnabled = triggers.create<[string]>("CallSetGreenWaveEnabled");
+export const callSetTspPropagationEnabled = triggers.create<[string]>("CallSetTspPropagationEnabled");
 export const callSetGreenWaveSpeed = triggers.create<[string]>("CallSetGreenWaveSpeed");
 export const callSetGreenWaveOffset = triggers.create<[string]>("CallSetGreenWaveOffset");
 export const callSetSignalDelay = triggers.create<[string]>("CallSetSignalDelay");

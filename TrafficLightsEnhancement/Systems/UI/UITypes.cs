@@ -430,6 +430,8 @@ public static class UITypes
         public float greenWaveSpeed;
 
         public float greenWaveOffset;
+
+        public bool tspPropagationEnabled;
         
         public int leaderIndex;
         

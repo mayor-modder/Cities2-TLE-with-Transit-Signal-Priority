@@ -21,6 +21,7 @@ import {
 	callSetMainPanelState,
 	callCopyPhasesToJunction,
 	callUpdateMemberPattern,
+	callSetTspPropagationEnabled,
 	edgeInfo
 } from '../../../../../bindings';
 import MainPanelRange from 'mods/components/main-panel/items/range';
@@ -738,9 +739,9 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 									<div className={styles.dimLabel}>Enable Coordination</div>
 								</Row>
 								<Row hoverEffect={true} className={styles.hover} data={{
-								itemType: "checkbox",
-								type: "",
-								isChecked: displayedGroup.greenWaveEnabled,
+									itemType: "checkbox",
+									type: "",
+									isChecked: displayedGroup.greenWaveEnabled,
 								key: "GreenWaveEnabled",
 								value: "0",
 								label: "",
@@ -749,10 +750,18 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 									<Checkbox isChecked={displayedGroup.greenWaveEnabled} />
 									<div className={styles.dimLabel}>Enable Green Wave</div>
 								</Row>
-							    
-							
-
-							
+								<Row hoverEffect={true} className={styles.hover} data={{
+									itemType: "checkbox",
+									type: "",
+									isChecked: displayedGroup.tspPropagationEnabled,
+									key: "TspPropagationEnabled",
+									value: "0",
+									label: "",
+									engineEventName: "C2VM.TrafficLightsEnhancement.TRIGGER:CallSetTspPropagationEnabled"
+								}}>
+									<Checkbox isChecked={displayedGroup.tspPropagationEnabled} />
+									<div className={styles.dimLabel}>Allow Coordinated TSP</div>
+								</Row>
 
 							{displayedGroup.greenWaveEnabled && (
 								<>
@@ -835,6 +844,7 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 							<ItemTitle title="Group ID" secondaryText={`${displayedGroup.groupIndex}:${displayedGroup.groupVersion}`} dim={true} />
 							<ItemTitle title="Coordinated" secondaryText={displayedGroup.isCoordinated ? "Yes" : "No"} dim={true} />
 							<ItemTitle title="Green Wave" secondaryText={displayedGroup.greenWaveEnabled ? "Enabled" : "Disabled"} dim={true} />
+							<ItemTitle title="Coordinated TSP" secondaryText={displayedGroup.tspPropagationEnabled ? "Enabled" : "Disabled"} dim={true} />
 							{displayedGroup.greenWaveEnabled && (
 								<>
 									<ItemTitle title="Speed" secondaryText={`${displayedGroup.greenWaveSpeed} u/s`} dim={true} />

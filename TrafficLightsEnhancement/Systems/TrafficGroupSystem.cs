@@ -52,9 +52,18 @@ public partial class TrafficGroupSystem : GameSystemBase
 			
 			if (!group.m_IsCoordinated)
 			{
+				RemoveGroupTspState(groupEntity);
 				continue;
 			}
 			
+			if (group.m_TspPropagationEnabled)
+			{
+				UpdateGroupTspState(groupEntity);
+			}
+			else
+			{
+				RemoveGroupTspState(groupEntity);
+			}
 			group.m_CycleTimer += 1f;
 			if (group.m_CycleTimer >= group.m_CycleLength)
 			{
@@ -66,6 +75,116 @@ public partial class TrafficGroupSystem : GameSystemBase
 		
 		groups.Dispose();
 		groupComponents.Dispose();
+	}
+
+	private void UpdateGroupTspState(Entity groupEntity)
+	{
+		var members = GetGroupMembers(groupEntity);
+		bool hasCombinedRequest = false;
+		global::TrafficLightsEnhancement.Logic.Tsp.TspRequest combined = default;
+		TransitSignalPriorityRequest bestRequest = default;
+
+		for (int i = 0; i < members.Length; i++)
+		{
+			Entity memberEntity = members[i];
+			if (!EntityManager.HasComponent<TrafficGroupMember>(memberEntity))
+			{
+				continue;
+			}
+
+			var member = EntityManager.GetComponentData<TrafficGroupMember>(memberEntity);
+			if (member.m_IsGroupLeader)
+			{
+				continue;
+			}
+
+			if (!EntityManager.HasComponent<TransitSignalPrioritySettings>(memberEntity) ||
+				!EntityManager.HasComponent<TransitSignalPriorityRequest>(memberEntity))
+			{
+				continue;
+			}
+
+			var settings = EntityManager.GetComponentData<TransitSignalPrioritySettings>(memberEntity);
+			if (!settings.m_Enabled || !settings.m_AllowGroupPropagation)
+			{
+				continue;
+			}
+
+			var request = EntityManager.GetComponentData<TransitSignalPriorityRequest>(memberEntity);
+            if (request.m_TargetSignalGroup == 0 || request.m_Strength <= 0f)
+            {
+                continue;
+            }
+
+			var logicRequest = new global::TrafficLightsEnhancement.Logic.Tsp.TspRequest(
+				(global::TrafficLightsEnhancement.Logic.Tsp.TspSource)request.m_SourceType,
+				request.m_Strength,
+				request.m_ExtendCurrentPhase);
+
+			if (!hasCombinedRequest || logicRequest.Strength > combined.Strength)
+			{
+				combined = logicRequest;
+				hasCombinedRequest = true;
+			}
+
+			if (request.m_Strength > bestRequest.m_Strength)
+			{
+				bestRequest = request;
+			}
+		}
+
+		members.Dispose();
+
+		if (!hasCombinedRequest)
+		{
+			if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
+			{
+				var priorState = EntityManager.GetComponentData<TrafficGroupTspState>(groupEntity);
+				if (priorState.m_ExpiryTimer > 1)
+				{
+					priorState.m_ExpiryTimer = math.min(
+						priorState.m_ExpiryTimer - 1,
+						global::TrafficLightsEnhancement.Logic.Tsp.TspPreemptionPolicy.ReleaseGraceTicks);
+					EntityManager.SetComponentData(groupEntity, priorState);
+					return;
+				}
+			}
+
+			RemoveGroupTspState(groupEntity);
+			return;
+		}
+
+		if (combined.Source == global::TrafficLightsEnhancement.Logic.Tsp.TspSource.None || combined.Strength <= 0f)
+		{
+			RemoveGroupTspState(groupEntity);
+			return;
+		}
+
+		var state = new TrafficGroupTspState
+		{
+			m_TargetSignalGroup = bestRequest.m_TargetSignalGroup,
+			m_SourceType = (byte)combined.Source,
+			m_Strength = combined.Strength,
+			m_ExpiryTimer = math.max(1u, bestRequest.m_ExpiryTimer),
+			m_ExtendCurrentPhase = bestRequest.m_ExtendCurrentPhase,
+		};
+
+		if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
+		{
+			EntityManager.SetComponentData(groupEntity, state);
+		}
+		else
+		{
+			EntityManager.AddComponentData(groupEntity, state);
+		}
+	}
+
+	private void RemoveGroupTspState(Entity groupEntity)
+	{
+		if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
+		{
+			EntityManager.RemoveComponent<TrafficGroupTspState>(groupEntity);
+		}
 	}
 
 	public Entity CreateGroup(string name = null)
@@ -450,6 +569,23 @@ public partial class TrafficGroupSystem : GameSystemBase
 				var leaderLights = EntityManager.GetComponentData<TrafficLights>(leaderEntity);
 				PropagateLeaderPhaseChange(groupEntity, leaderLights.m_CurrentSignalGroup, leaderLights.m_State);
 			}
+		}
+	}
+
+	public void SetTspPropagationEnabled(Entity groupEntity, bool enabled)
+	{
+		if (groupEntity == Entity.Null || !EntityManager.HasComponent<TrafficGroup>(groupEntity))
+		{
+			return;
+		}
+
+		var group = EntityManager.GetComponentData<TrafficGroup>(groupEntity);
+		group.m_TspPropagationEnabled = enabled;
+		EntityManager.SetComponentData(groupEntity, group);
+
+		if (!enabled)
+		{
+			RemoveGroupTspState(groupEntity);
 		}
 	}
 

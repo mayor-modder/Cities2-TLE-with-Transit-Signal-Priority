@@ -271,6 +271,10 @@ public partial class UISystem: ExtendedUISystemBase
             if (!EntityManager.HasComponent<CustomTrafficLights>(m_SelectedEntity))
             {
                 EntityManager.AddComponentData(m_SelectedEntity, m_CustomTrafficLights);
+                if (!EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+                {
+                    EntityManager.AddComponentData(m_SelectedEntity, new TransitSignalPrioritySettings());
+                }
             }
             else
             {
@@ -282,13 +286,35 @@ public partial class UISystem: ExtendedUISystemBase
                 EntityManager.SetComponentData(m_SelectedEntity, m_CustomTrafficLights);
             }
 
+            if (EntityManager.HasComponent<CustomTrafficLights>(m_SelectedEntity) &&
+                !EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+            {
+                EntityManager.AddComponentData(m_SelectedEntity, new TransitSignalPrioritySettings());
+            }
+
             if (!EntityManager.HasComponent<Game.Net.TrafficLights>(m_SelectedEntity))
             {
                 EntityManager.RemoveComponent<CustomTrafficLights>(m_SelectedEntity);
+                if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+                {
+                    EntityManager.RemoveComponent<TransitSignalPrioritySettings>(m_SelectedEntity);
+                }
+                if (EntityManager.HasComponent<TransitSignalPriorityRequest>(m_SelectedEntity))
+                {
+                    EntityManager.RemoveComponent<TransitSignalPriorityRequest>(m_SelectedEntity);
+                }
             }
             else if (m_CustomTrafficLights.GetPatternOnly() == CustomTrafficLights.Patterns.ModDefault)
             {
                 EntityManager.RemoveComponent<CustomTrafficLights>(m_SelectedEntity);
+                if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+                {
+                    EntityManager.RemoveComponent<TransitSignalPrioritySettings>(m_SelectedEntity);
+                }
+                if (EntityManager.HasComponent<TransitSignalPriorityRequest>(m_SelectedEntity))
+                {
+                    EntityManager.RemoveComponent<TransitSignalPriorityRequest>(m_SelectedEntity);
+                }
             }
 
             if (addUpdated)

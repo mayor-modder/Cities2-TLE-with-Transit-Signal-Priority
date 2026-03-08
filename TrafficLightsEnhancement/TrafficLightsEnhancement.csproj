@@ -104,6 +104,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CommonLibraries\LaneSystem\LaneSystem.csproj" />
+        <ProjectReference Include="..\TrafficLightsEnhancement.Logic\TrafficLightsEnhancement.Logic.csproj" />
     </ItemGroup>
 
     <Target Name="InstallUI" AfterTargets="AfterBuild">

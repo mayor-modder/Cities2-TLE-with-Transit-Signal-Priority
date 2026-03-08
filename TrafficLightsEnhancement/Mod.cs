@@ -78,6 +78,7 @@ public class Mod : IMod
         updateSystem.UpdateAt<Systems.UI.UISystem>(SystemUpdatePhase.UIUpdate);
         updateSystem.UpdateAt<Systems.Tool.ToolSystem>(SystemUpdatePhase.ToolUpdate);
         updateSystem.UpdateAt<Systems.Update.ModificationUpdateSystem>(SystemUpdatePhase.ModificationEnd);
+        updateSystem.UpdateAt<Systems.TransitSignalPriorityDiagnosticsSystem>(SystemUpdatePhase.UIUpdate);
         updateSystem.UpdateAfter<Systems.Update.SimulationUpdateSystem>(SystemUpdatePhase.GameSimulation);
         updateSystem.UpdateAfter<Systems.Overlay.TrafficLightsOverlaySystem, AreaRenderSystem>(SystemUpdatePhase.Rendering);
 

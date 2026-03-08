@@ -21,6 +21,7 @@
     "styled-components": "^6.1.19"
   },
   "devDependencies": {
+    "@dnd-kit/sortable": "^10.0.0",
     "@types/react": "18.0.26",
     "@types/react-dom": "18.0.9",
     "@dnd-kit/modifiers": "^9.0.0",

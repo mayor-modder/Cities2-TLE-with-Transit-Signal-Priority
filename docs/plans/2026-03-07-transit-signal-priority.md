@@ -10,6 +10,32 @@
 
 ---
 
+## Scope Update
+
+The first in-game validation showed that users can enable TSP on `Vanilla` and other built-in TLE patterns, but the runtime currently only honors TSP inside the `CustomPhase` branch.
+
+This plan therefore expands implementation to cover:
+
+- `CustomPhase` intersections,
+- `Vanilla`,
+- `SplitPhasing`,
+- `ProtectedCentreTurn`,
+- and `SplitPhasingProtectedLeft`.
+
+The implementation should reuse the existing built-in signal-group selector in `PatchedTrafficLightSystem.GetNextSignalGroup(...)` rather than auto-converting intersections to `CustomPhase`.
+
+---
+
+## Behavior Update
+
+Follow-up runtime validation showed that the initial implementation was functioning but too soft to be obvious in-game. The current iteration therefore trials a more aggressive preemption-style behavior:
+
+- shorten the minimum green before switching to a conflicting transit-serving group,
+- latch active requests instead of dropping them immediately on petitioner flicker,
+- and hold the current transit-serving green while the latched request remains active, up to the configured hard cap.
+
+---
+
 ### Task 1: Add a Small Pure Logic Test Surface For TSP Decisions
 
 **Files:**
@@ -278,7 +304,62 @@ git add TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/CustomSt
 git commit -m "feat: bias local phase selection with TSP"
 ```
 
-### Task 5: Propagate Requests Through Existing Coordinated Traffic Groups
+### Task 5: Honor TSP On Built-In Traffic Signal Patterns
+
+**Files:**
+- Modify: `TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs`
+- Modify: `TrafficLightsEnhancement.Tests/Tsp/TspDecisionEngineTests.cs`
+
+**Step 1: Write the failing test**
+
+```csharp
+[Fact]
+public void Override_selection_can_be_used_for_built_in_signal_groups()
+{
+    var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
+        basePhaseIndex: 0,
+        currentPhaseIndex: 0,
+        phaseCount: 4,
+        targetPhaseIndex: 2,
+        new TspRequest(TspSource.Track, 1f, extensionEligible: false));
+
+    Assert.True(overrideSelection.Applied);
+    Assert.Equal(2, overrideSelection.SelectedPhaseIndex);
+}
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `dotnet test TrafficLightsEnhancement.Tests/TrafficLightsEnhancement.Tests.csproj -c Release --filter Override_selection_can_be_used_for_built_in_signal_groups`
+Expected: FAIL until the built-in pattern path actually consumes the override and emits diagnostics.
+
+**Step 3: Write minimal implementation**
+
+```csharp
+bool hasTspRequest = TryBuildOrLoadRequest(..., out var activeTspRequest);
+int baseSignalGroup = GetNextSignalGroupWithoutTsp(..., out canExtend);
+
+var tspSelection = TspOverrideEngine.ApplyRequestOverride(
+    baseSignalGroup > 0 ? baseSignalGroup - 1 : -1,
+    trafficLights.m_CurrentSignalGroup > 0 ? trafficLights.m_CurrentSignalGroup - 1 : -1,
+    trafficLights.m_SignalGroupCount,
+    activeTspRequest.m_TargetSignalGroup > 0 ? activeTspRequest.m_TargetSignalGroup - 1 : -1,
+    new TspRequest((TspSource)activeTspRequest.m_SourceType, activeTspRequest.m_Strength, activeTspRequest.m_ExtendCurrentPhase));
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `dotnet test TrafficLightsEnhancement.Tests/TrafficLightsEnhancement.Tests.csproj -c Release`
+Expected: PASS with built-in selector coverage included.
+
+**Step 5: Commit**
+
+```bash
+git add TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs TrafficLightsEnhancement.Tests/Tsp/TspDecisionEngineTests.cs
+git commit -m "feat: honor TSP on built-in traffic signal patterns"
+```
+
+### Task 6: Propagate Requests Through Existing Coordinated Traffic Groups
 
 **Files:**
 - Create: `TrafficLightsEnhancement/Components/TrafficGroupTspState.cs`
@@ -336,7 +417,7 @@ git add TrafficLightsEnhancement/Components/TrafficGroupTspState.cs TrafficLight
 git commit -m "feat: propagate TSP through coordinated traffic groups"
 ```
 
-### Task 6: Add TSP Controls To The Existing Traffic-Light And Group UI
+### Task 7: Add TSP Controls To The Existing Traffic-Light And Group UI
 
 **Files:**
 - Modify: `TrafficLightsEnhancement/Systems/UI/UITypes.cs`
@@ -397,7 +478,7 @@ git add TrafficLightsEnhancement/Systems/UI/UITypes.cs TrafficLightsEnhancement/
 git commit -m "feat: add TSP controls to junction and group UI"
 ```
 
-### Task 7: Run Build Verification And Manual Smoke Checks
+### Task 8: Run Build Verification And Manual Smoke Checks
 
 **Files:**
 - Modify: `README.md`

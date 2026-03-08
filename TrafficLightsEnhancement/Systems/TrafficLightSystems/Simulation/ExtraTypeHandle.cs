@@ -52,6 +52,18 @@ public struct ExtraTypeHandle
     [ReadOnly]
     public ComponentLookup<CustomTrafficLights> m_CustomTrafficLightsLookup;
 
+    public ComponentLookup<TransitSignalPrioritySettings> m_TransitSignalPrioritySettings;
+
+    public ComponentLookup<TransitSignalPriorityRequest> m_TransitSignalPriorityRequest;
+
+    [ReadOnly]
+    public ComponentLookup<TransitSignalPrioritySettings> m_TransitSignalPrioritySettingsLookup;
+
+    [ReadOnly]
+    public ComponentLookup<TrafficGroupTspState> m_TrafficGroupTspState;
+
+    public ComponentLookup<TransitSignalPriorityDecisionTrace> m_TransitSignalPriorityDecisionTrace;
+
     [ReadOnly]
     public BufferLookup<EdgeGroupMask> m_EdgeGroupMaskLookup;
 
@@ -78,6 +90,11 @@ public struct ExtraTypeHandle
         m_CustomPhaseDataLookup = state.GetBufferLookup<CustomPhaseData>(isReadOnly: true);
         m_TrafficLightsLookup = state.GetComponentLookup<Game.Net.TrafficLights>(isReadOnly: true);
         m_CustomTrafficLightsLookup = state.GetComponentLookup<CustomTrafficLights>(isReadOnly: true);
+        m_TransitSignalPrioritySettings = state.GetComponentLookup<TransitSignalPrioritySettings>(isReadOnly: false);
+        m_TransitSignalPriorityRequest = state.GetComponentLookup<TransitSignalPriorityRequest>(isReadOnly: false);
+        m_TransitSignalPrioritySettingsLookup = state.GetComponentLookup<TransitSignalPrioritySettings>(isReadOnly: true);
+        m_TrafficGroupTspState = state.GetComponentLookup<TrafficGroupTspState>(isReadOnly: true);
+        m_TransitSignalPriorityDecisionTrace = state.GetComponentLookup<TransitSignalPriorityDecisionTrace>(isReadOnly: false);
         m_EdgeGroupMaskLookup = state.GetBufferLookup<EdgeGroupMask>(isReadOnly: true);
         m_SignalDelayLookup = state.GetBufferLookup<SignalDelayData>(isReadOnly: true);
     }
@@ -101,6 +118,11 @@ public struct ExtraTypeHandle
         m_CustomPhaseDataLookup.Update(ref state);
         m_TrafficLightsLookup.Update(ref state);
         m_CustomTrafficLightsLookup.Update(ref state);
+        m_TransitSignalPrioritySettings.Update(ref state);
+        m_TransitSignalPriorityRequest.Update(ref state);
+        m_TransitSignalPrioritySettingsLookup.Update(ref state);
+        m_TrafficGroupTspState.Update(ref state);
+        m_TransitSignalPriorityDecisionTrace.Update(ref state);
         m_EdgeGroupMaskLookup.Update(ref state);
         m_SignalDelayLookup.Update(ref state);
         return this;

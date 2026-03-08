@@ -242,3 +242,65 @@ Implement TSP as a new per-junction settings + runtime request layer that plugs 
 - and the existing `TrafficGroup` leader/follower model for corridor decisions.
 
 This gives the requested “use the current grouped/green-wave system” behavior without introducing a second coordination model.
+
+## Design Update: Built-In Pattern Support
+
+After the first in-game test, one important behavioral constraint became clear:
+
+- the TSP UI is currently visible and usable on `Vanilla`, `SplitPhasing`, `ProtectedCentreTurn`, and `SplitPhasingProtectedLeft`,
+- but the runtime only applies TSP inside the `CustomPhase` branch.
+
+That mismatch is the root cause of the "enabled but no effect" result on existing saved intersections.
+
+### Updated Scope
+
+V1 TSP must support both:
+
+- `CustomPhase` intersections,
+- and the existing built-in TLE pattern path used by `Vanilla`, `SplitPhasing`, `ProtectedCentreTurn`, and `SplitPhasingProtectedLeft`.
+
+### Updated Architecture
+
+The built-in patterns already converge on one signal-group selector in `PatchedTrafficLightSystem.GetNextSignalGroup(...)`.
+
+That is the correct seam for non-`CustomPhase` TSP:
+
+- keep local request detection unchanged,
+- keep coordinated group aggregation unchanged,
+- apply the same request override model at the built-in selector layer,
+- and keep the current built-in state machine and safety sequencing authoritative.
+
+This is lower risk than auto-converting intersections to `CustomPhase` or hiding the UI on built-in patterns.
+
+### Built-In Pattern Behavior
+
+For non-`CustomPhase` intersections, TSP should:
+
+- bias the next selected signal group toward the request target for early green,
+- keep the current signal group when the request is already being served,
+- and continue using the existing built-in transition states (`Ongoing`, `Extending`, `Extended`, `Ending`, `Changing`) for clearance and safety.
+
+The built-in path should not create a second phase editor or require new per-pattern mapping UI. It should still infer the target signal group from the requesting lane's existing `LaneSignal.m_GroupMask`.
+
+### Corrected Assumption
+
+The earlier concern that TSP settings might not persist because they are not referenced by `TLEDataMigrationSystem` was wrong.
+
+The loaded save already showed persisted TSP checkboxes on restart, which is direct evidence that the serialized `TransitSignalPrioritySettings` component is loading correctly. No serialization redesign is required for this scope unless a new regression appears during verification.
+
+## Design Update: Aggressive Preemption Trial
+
+Runtime verification showed that the original v1 implementation was active but too soft to be visually obvious most of the time:
+
+- many local TSP requests were detected,
+- but most of them reaffirmed the already-selected signal group,
+- and request lifetimes were too short to reliably hold green until transit had actually cleared the junction.
+
+For the next iteration, the selected strategy is a bounded preemption-style trial:
+
+- use a shorter minimum green before breaking toward a conflicting transit request,
+- latch requests for a short period instead of clearing them immediately when petitioner state flickers,
+- keep the transit-serving group green while the request remains latched,
+- and cap that hold with `m_MaxGreenExtensionTicks` so one bad/stuck request cannot freeze the junction indefinitely.
+
+This is intentionally more aggressive than the earlier “bias only” design, but still bounded by an explicit maximum hold.

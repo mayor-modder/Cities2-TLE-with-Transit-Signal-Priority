@@ -315,6 +315,7 @@ export interface MainPanelItemTrafficGroup {
   greenWaveEnabled: boolean,
   greenWaveSpeed: number,
   greenWaveOffset: number,
+  tspPropagationEnabled: boolean,
   leaderIndex?: number,
   leaderVersion?: number,
   currentJunctionIndex?: number,
