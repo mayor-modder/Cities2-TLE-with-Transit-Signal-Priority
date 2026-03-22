@@ -4,11 +4,10 @@ import { useValue } from 'cs2/api';
 import { MainPanelState } from '../../constants';
 import Header from './header';
 import Content from './content';
+import FloatingButton from '../../components/common/floating-button';
 import CustomPhaseMainPanel from '../../components/custom-phase-tool/main-panel';
 import TrafficGroupsMainPanel from '../traffic-groups/main-panel/IndexComponent';
-import{Button, Tooltip} from "cs2/ui"
 import { mainPanel, callMainPanelSave, callMainPanelUpdatePosition, callSetMainPanelState, addMemberState } from '../../../bindings';
-const traffLightSrc = "Media/Game/Icons/TrafficLights.svg"
 const defaultPanel = {
   title: "",
   image: "",
@@ -163,17 +162,13 @@ export default function MainPanel() {
 
   return (
     <>
-    <Tooltip tooltip={"Traffic Lights Enhancement"} direction={"down"}>
-      <Button
-      variant='floating'
-      src={traffLightSrc}
-      onSelect={floatingButtonClickHandler}
-      selected={showPanel}
-      tooltipLabel
-    />
-    </Tooltip>
-    
-    
+      <FloatingButton
+        show={showFloatingButton}
+        src="Media/Game/Icons/TrafficLights.svg"
+        tooltip={panel.title || "Traffic Lights Enhancement"}
+        onClick={floatingButtonClickHandler}
+      />
+
       
       <div className={styles.indexContainer}
         ref={containerRef}
