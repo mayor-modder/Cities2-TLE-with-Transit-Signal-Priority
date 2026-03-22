@@ -11,6 +11,24 @@ You cannot downgrade this mod to an older version. Cities saved with the new ver
 > [!WARNING]
 > These modifications are highly experimental. Your game may crash more frequently, and your save files could be corrupted.
 
+## Transit Signal Priority
+
+This fork adds Transit Signal Priority (TSP) on top of the upstream TLE feature set.
+
+### What it does
+
+* Lets you enable TSP per junction from the traffic signal panel
+* Prioritizes phases that serve track transit such as trams
+* Prioritizes phases that serve transit using public-only or bus lanes
+* Can propagate transit requests through coordinated traffic groups so a corridor leader can react to requests coming from follower junctions
+
+### How it works
+
+* TSP watches for approaching eligible transit on lanes that are already mapped to the junction's existing signal groups
+* When a request is detected, the mod creates a short-lived priority request for the signal group that serves that movement
+* If the requested movement is already active, the current phase can be held briefly; otherwise phase selection is biased toward the serving phase or signal group
+* In coordinated groups, follower junctions can forward requests and the leader uses the strongest active request while the existing coordination and green-wave timing remain the base model
+
 Do you have any suggestion on the translations? You could submit them on [Crowdin](https://crowdin.com/project/Cities2-TrafficLightsEnhancement), your contributions are appreciated!
 
 ## Installation
