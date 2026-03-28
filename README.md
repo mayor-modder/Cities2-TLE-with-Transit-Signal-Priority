@@ -27,6 +27,8 @@
 - The current junction UI exposes `Enable Transit Signal Priority`, `Allow Tram and Track Requests`, and `Allow Bus Lane Requests`.
 - When a junction belongs to a traffic group, the junction UI also exposes `Propagate Requests to Coordinated Group`.
 - Traffic groups expose a separate `Allow Coordinated TSP` setting. Group propagation only occurs when the group setting and the per-junction propagation setting are both enabled.
+- Transit Signal Priority is only available on standalone intersections.
+- Intersections that are part of a traffic group keep their saved TSP settings, but TSP stays inactive until they are removed from the traffic group.
 - The runtime generates local TSP requests from eligible track lanes and public-only car lanes. In practice, the current bus/public-transit path is the public-only car-lane path.
 - Requests are mapped onto the junction's existing signal groups. This fork does not create a separate TSP-only phase plan or a second corridor editor.
 - Custom-phase junctions can either keep the current phase briefly when it already serves the request or bias the next-phase choice toward a phase that does.
