@@ -29,8 +29,6 @@ public static class TspPreemptionPolicy
         byte currentSignalGroup,
         out TspSignalRequest request)
     {
-        _ = currentSignalGroup;
-
         if (freshRequest.HasValue)
         {
             TspSignalRequest fresh = freshRequest.Value;
@@ -47,7 +45,9 @@ public static class TspPreemptionPolicy
         {
             TspSignalRequest existing = existingRequest.Value;
             uint nextExpiry = existing.ExpiryTimer - 1;
-            if (nextExpiry > ReleaseGraceTicks)
+            if (currentSignalGroup > 0
+                && existing.TargetSignalGroup == currentSignalGroup
+                && nextExpiry > ReleaseGraceTicks)
             {
                 nextExpiry = ReleaseGraceTicks;
             }

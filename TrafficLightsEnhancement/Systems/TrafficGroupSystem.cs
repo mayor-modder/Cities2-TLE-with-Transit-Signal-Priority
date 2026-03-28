@@ -140,11 +140,30 @@ public partial class TrafficGroupSystem : GameSystemBase
 			if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
 			{
 				var priorState = EntityManager.GetComponentData<TrafficGroupTspState>(groupEntity);
-				if (priorState.m_ExpiryTimer > 1)
+				byte currentSignalGroup = 0;
+				Entity leaderEntity = GetGroupLeader(groupEntity);
+				if (leaderEntity != Entity.Null && EntityManager.HasComponent<TrafficLights>(leaderEntity))
 				{
-					priorState.m_ExpiryTimer = math.min(
-						priorState.m_ExpiryTimer - 1,
-						global::TrafficLightsEnhancement.Logic.Tsp.TspPreemptionPolicy.ReleaseGraceTicks);
+					currentSignalGroup = EntityManager.GetComponentData<TrafficLights>(leaderEntity).m_CurrentSignalGroup;
+				}
+
+				if (global::TrafficLightsEnhancement.Logic.Tsp.TspPreemptionPolicy.TryRefreshOrLatchRequest(
+					freshRequest: null,
+					existingRequest: new global::TrafficLightsEnhancement.Logic.Tsp.TspSignalRequest(
+						priorState.m_TargetSignalGroup,
+						(global::TrafficLightsEnhancement.Logic.Tsp.TspSource)priorState.m_SourceType,
+						priorState.m_Strength,
+						priorState.m_ExpiryTimer,
+						priorState.m_ExtendCurrentPhase),
+					requestHorizonTicks: 0,
+					currentSignalGroup,
+					out var retainedRequest))
+				{
+					priorState.m_TargetSignalGroup = (byte)retainedRequest.TargetSignalGroup;
+					priorState.m_SourceType = (byte)retainedRequest.Source;
+					priorState.m_Strength = retainedRequest.Strength;
+					priorState.m_ExpiryTimer = retainedRequest.ExpiryTimer;
+					priorState.m_ExtendCurrentPhase = retainedRequest.ExtendCurrentPhase;
 					EntityManager.SetComponentData(groupEntity, priorState);
 					return;
 				}

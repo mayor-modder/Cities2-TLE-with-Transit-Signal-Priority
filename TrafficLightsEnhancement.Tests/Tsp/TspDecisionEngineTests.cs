@@ -182,6 +182,21 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void Existing_signal_request_keeps_full_horizon_until_target_group_is_active()
+    {
+        bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
+            freshRequest: null,
+            existingRequest: new TspSignalRequest(targetSignalGroup: 2, TspSource.Track, strength: 1f, expiryTimer: 120, extendCurrentPhase: false),
+            requestHorizonTicks: 120,
+            currentSignalGroup: 1,
+            out var request);
+
+        Assert.True(active);
+        Assert.Equal(119u, request.ExpiryTimer);
+        Assert.False(request.ExtendCurrentPhase);
+    }
+
+    [Fact]
     public void Stale_signal_request_collapses_to_short_release_grace()
     {
         bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
