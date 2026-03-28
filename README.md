@@ -25,7 +25,7 @@
 
 - TSP is stored per junction in a dedicated serialized `TransitSignalPrioritySettings` component and defaults to off.
 - The current junction UI exposes `Enable Transit Signal Priority`, `Allow Tram and Track Requests`, and `Allow Bus Lane Requests`.
-- When a junction belongs to a traffic group, the junction UI also exposes `Propagate Requests to Coordinated Group`.
+- When a junction belongs to a traffic group, TSP controls may still be visible, but runtime TSP stays inactive while grouped.
 - In this branch slice, the traffic-group panel shows coordinated TSP as unavailable.
 - Transit Signal Priority is only available on standalone intersections.
 - Intersections that are part of a traffic group keep their saved TSP settings, but TSP stays inactive while grouped.
@@ -33,7 +33,6 @@
 - Requests are mapped onto the junction's existing signal groups. This fork does not create a separate TSP-only phase plan or a second corridor editor.
 - Custom-phase junctions can either keep the current phase briefly when it already serves the request or bias the next-phase choice toward a phase that does.
 - Non-custom / built-in signal patterns also have an explicit signal-group override path for TSP; the request is not limited to the custom-phase branch.
-- Coordinated traffic groups can forward TSP requests from follower junctions to the leader when propagation is enabled.
 - The serialized TSP settings include a request horizon and a maximum green extension. The current code defaults them to `120` ticks and `45` ticks respectively.
 
 ### How it works
@@ -43,7 +42,7 @@
 3. New requests are latched for a short window instead of dropping immediately, so transient gaps do not instantly clear priority.
 4. If the active signal group already serves the requested movement and extension is allowed, TSP can hold that group briefly.
 5. Otherwise the base next-phase or next-signal-group choice is overridden toward the target that serves the request.
-6. In coordinated groups, followers can contribute requests and the leader consumes the strongest active request while the existing coordination and green-wave logic remains the base timing model.
+6. This branch slice does not describe any active coordinated/group TSP runtime behavior; grouped intersections keep their saved settings but TSP remains inactive while grouped.
 
 ### Known limits and uncertainty
 
