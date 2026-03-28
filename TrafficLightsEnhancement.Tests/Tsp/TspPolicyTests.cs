@@ -34,10 +34,14 @@ public class TspPolicyTests
     }
 
     [Fact]
-    public void Default_disabled_settings_do_not_force_mod_state_creation()
+    public void Disabled_settings_with_custom_request_behavior_require_persistence()
     {
-        TransitSignalPrioritySettings settings = new();
-        Assert.False(TspPolicy.HasPersistedUserValue(settings));
+        var settings = new TransitSignalPrioritySettings
+        {
+            m_AllowTrackRequests = false,
+        };
+
+        Assert.True(TspPolicy.HasPersistedUserValue(settings));
     }
 
     [Fact]

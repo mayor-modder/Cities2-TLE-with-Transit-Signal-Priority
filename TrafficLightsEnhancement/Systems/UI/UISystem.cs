@@ -266,9 +266,14 @@ public partial class UISystem: ExtendedUISystemBase
 
     private static bool ShouldPersistCustomTrafficLights(CustomTrafficLights customTrafficLights)
     {
-        CustomTrafficLights.Patterns pattern = customTrafficLights.GetPatternOnly();
-        return pattern != CustomTrafficLights.Patterns.ModDefault
-            && pattern != CustomTrafficLights.Patterns.Vanilla;
+        CustomTrafficLights defaults = new(CustomTrafficLights.Patterns.Vanilla);
+        return customTrafficLights.GetPattern() != defaults.GetPattern()
+            || customTrafficLights.m_PedestrianPhaseDurationMultiplier != defaults.m_PedestrianPhaseDurationMultiplier
+            || customTrafficLights.m_PedestrianPhaseGroupMask != defaults.m_PedestrianPhaseGroupMask
+            || customTrafficLights.m_Timer != defaults.m_Timer
+            || customTrafficLights.m_ManualSignalGroup != defaults.m_ManualSignalGroup
+            || customTrafficLights.GetMode() != defaults.GetMode()
+            || customTrafficLights.GetOptions() != defaults.GetOptions();
     }
 
     private static global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings ToLogicSettings(
