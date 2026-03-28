@@ -79,122 +79,9 @@ public partial class TrafficGroupSystem : GameSystemBase
 
 	private void UpdateGroupTspState(Entity groupEntity)
 	{
-		var members = GetGroupMembers(groupEntity);
-		bool hasCombinedRequest = false;
-		global::TrafficLightsEnhancement.Logic.Tsp.TspRequest combined = default;
-		TransitSignalPriorityRequest bestRequest = default;
-
-		for (int i = 0; i < members.Length; i++)
-		{
-			Entity memberEntity = members[i];
-			if (!EntityManager.HasComponent<TrafficGroupMember>(memberEntity))
-			{
-				continue;
-			}
-
-			var member = EntityManager.GetComponentData<TrafficGroupMember>(memberEntity);
-			if (member.m_IsGroupLeader)
-			{
-				continue;
-			}
-
-			if (!EntityManager.HasComponent<TransitSignalPrioritySettings>(memberEntity) ||
-				!EntityManager.HasComponent<TransitSignalPriorityRequest>(memberEntity))
-			{
-				continue;
-			}
-
-			var settings = EntityManager.GetComponentData<TransitSignalPrioritySettings>(memberEntity);
-			if (!settings.m_Enabled || !settings.m_AllowGroupPropagation)
-			{
-				continue;
-			}
-
-			var request = EntityManager.GetComponentData<TransitSignalPriorityRequest>(memberEntity);
-            if (request.m_TargetSignalGroup == 0 || request.m_Strength <= 0f)
-            {
-                continue;
-            }
-
-			var logicRequest = new global::TrafficLightsEnhancement.Logic.Tsp.TspRequest(
-				(global::TrafficLightsEnhancement.Logic.Tsp.TspSource)request.m_SourceType,
-				request.m_Strength,
-				request.m_ExtendCurrentPhase);
-
-			if (!hasCombinedRequest || logicRequest.Strength > combined.Strength)
-			{
-				combined = logicRequest;
-				hasCombinedRequest = true;
-			}
-
-			if (request.m_Strength > bestRequest.m_Strength)
-			{
-				bestRequest = request;
-			}
-		}
-
-		members.Dispose();
-
-		if (!hasCombinedRequest)
-		{
-			if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
-			{
-				var priorState = EntityManager.GetComponentData<TrafficGroupTspState>(groupEntity);
-				byte currentSignalGroup = 0;
-				Entity leaderEntity = GetGroupLeader(groupEntity);
-				if (leaderEntity != Entity.Null && EntityManager.HasComponent<TrafficLights>(leaderEntity))
-				{
-					currentSignalGroup = EntityManager.GetComponentData<TrafficLights>(leaderEntity).m_CurrentSignalGroup;
-				}
-
-				if (global::TrafficLightsEnhancement.Logic.Tsp.TspPreemptionPolicy.TryRefreshOrLatchRequest(
-					freshRequest: null,
-					existingRequest: new global::TrafficLightsEnhancement.Logic.Tsp.TspSignalRequest(
-						priorState.m_TargetSignalGroup,
-						(global::TrafficLightsEnhancement.Logic.Tsp.TspSource)priorState.m_SourceType,
-						priorState.m_Strength,
-						priorState.m_ExpiryTimer,
-						priorState.m_ExtendCurrentPhase),
-					requestHorizonTicks: 0,
-					currentSignalGroup,
-					out var retainedRequest))
-				{
-					priorState.m_TargetSignalGroup = (byte)retainedRequest.TargetSignalGroup;
-					priorState.m_SourceType = (byte)retainedRequest.Source;
-					priorState.m_Strength = retainedRequest.Strength;
-					priorState.m_ExpiryTimer = retainedRequest.ExpiryTimer;
-					priorState.m_ExtendCurrentPhase = retainedRequest.ExtendCurrentPhase;
-					EntityManager.SetComponentData(groupEntity, priorState);
-					return;
-				}
-			}
-
-			RemoveGroupTspState(groupEntity);
-			return;
-		}
-
-		if (combined.Source == global::TrafficLightsEnhancement.Logic.Tsp.TspSource.None || combined.Strength <= 0f)
-		{
-			RemoveGroupTspState(groupEntity);
-			return;
-		}
-
-		var state = new TrafficGroupTspState
-		{
-			m_TargetSignalGroup = bestRequest.m_TargetSignalGroup,
-			m_SourceType = (byte)combined.Source,
-			m_Strength = combined.Strength,
-			m_ExpiryTimer = math.max(1u, bestRequest.m_ExpiryTimer),
-			m_ExtendCurrentPhase = bestRequest.m_ExtendCurrentPhase,
-		};
-
 		if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
 		{
-			EntityManager.SetComponentData(groupEntity, state);
-		}
-		else
-		{
-			EntityManager.AddComponentData(groupEntity, state);
+			RemoveGroupTspState(groupEntity);
 		}
 	}
 
@@ -254,6 +141,15 @@ public partial class TrafficGroupSystem : GameSystemBase
 
 		var member = new TrafficGroupMember(groupEntity, leaderEntity, memberCount, 0f, 0f, 0, 0, isLeader);
 		EntityManager.AddComponentData(junctionEntity, member);
+		if (EntityManager.HasComponent<TransitSignalPriorityRequest>(junctionEntity))
+		{
+			EntityManager.RemoveComponent<TransitSignalPriorityRequest>(junctionEntity);
+		}
+
+		if (EntityManager.HasComponent<TransitSignalPriorityDecisionTrace>(junctionEntity))
+		{
+			EntityManager.RemoveComponent<TransitSignalPriorityDecisionTrace>(junctionEntity);
+		}
 		if (EntityManager.HasComponent<CustomTrafficLights>(junctionEntity))
 		{
 			var customTrafficLights = EntityManager.GetComponentData<CustomTrafficLights>(junctionEntity);

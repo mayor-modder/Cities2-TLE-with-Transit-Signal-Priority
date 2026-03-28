@@ -23,6 +23,24 @@ public static class TransitSignalPriorityRuntime
             return false;
         }
 
+        bool isGroupedIntersection = job.m_ExtraTypeHandle.m_TrafficGroupMember.HasComponent(junctionEntity);
+        var availability = TspPolicy.GetAvailability(
+            new global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings
+            {
+                m_Enabled = settings.m_Enabled,
+                m_AllowTrackRequests = settings.m_AllowTrackRequests,
+                m_AllowPublicCarRequests = settings.m_AllowPublicCarRequests,
+                m_AllowGroupPropagation = settings.m_AllowGroupPropagation,
+                m_RequestHorizonTicks = settings.m_RequestHorizonTicks,
+                m_MaxGreenExtensionTicks = settings.m_MaxGreenExtensionTicks,
+            },
+            isGroupedIntersection);
+
+        if (!availability.IsRuntimeEligible)
+        {
+            return false;
+        }
+
         TransitSignalPriorityRequest freshRequest = default;
         bool hasFreshRequest = TryBuildFreshRequest(job, subLanes, trafficLights, settings, out freshRequest);
 
@@ -167,6 +185,11 @@ public static class TransitSignalPriorityRuntime
         out TransitSignalPriorityRequest request)
     {
         request = default;
+
+        if (job.m_ExtraTypeHandle.m_TrafficGroupMember.HasComponent(junctionEntity))
+        {
+            return false;
+        }
 
         if (!job.m_ExtraTypeHandle.m_TrafficGroupMember.TryGetComponent(junctionEntity, out var member))
         {

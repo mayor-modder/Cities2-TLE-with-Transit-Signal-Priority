@@ -39,4 +39,14 @@ public class TspPolicyTests
         var settings = new TransitSignalPrioritySettings { m_Enabled = true };
         Assert.True(TspPolicy.HasPersistedUserValue(settings));
     }
+
+    [Fact]
+    public void Grouped_intersection_settings_can_be_persisted_without_runtime_eligibility()
+    {
+        var settings = new TransitSignalPrioritySettings { m_Enabled = true };
+        var availability = TspPolicy.GetAvailability(settings, isGroupedIntersection: true);
+
+        Assert.True(TspPolicy.HasPersistedUserValue(settings));
+        Assert.False(availability.IsRuntimeEligible);
+    }
 }
