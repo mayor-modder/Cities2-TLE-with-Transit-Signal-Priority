@@ -14,6 +14,9 @@ It does not:
 - add new user-facing settings in this slice
 - change non-TSP traffic-light behavior
 
+This slice does include one small TSP UI copy cleanup:
+- shorten the selected-intersection status label from `Transit Signal Priority Status` to `Status`, since it already sits inside the `Transit Signal Priority` section
+
 ## Problem Summary
 
 The current TSP runtime only builds a fresh request once a sublane's `LaneSignal.m_Petitioner` is already set. In practice this means detection happens very late, often when a tram is already at the stop line or already slowing for the signal. That makes TSP harder to notice and reduces its ability to smooth transit movement.
@@ -111,6 +114,11 @@ If full ECS integration tests are too heavy for this slice, factor any non-ECS d
 ## Recommendation
 
 Ship this as a conservative detection improvement with no new settings first.
+
+Update the selected-intersection TSP panel label at the same time so the section reads more naturally in-game:
+- `Enable Transit Signal Priority`
+- `Status`
+- request filters
 
 If the feel is good in-game, future follow-up options could include:
 - exposing the early-detection threshold as a tuning parameter
