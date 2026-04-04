@@ -194,7 +194,7 @@ public class GroupedTspPropagationTests
     }
 
     [Fact]
-    public void Build_assignments_use_lower_origin_index_when_strength_and_distance_are_equal()
+    public void Build_assignments_use_earlier_caller_order_when_strength_and_distance_are_equal()
     {
         var members = new[]
         {
@@ -229,7 +229,7 @@ public class GroupedTspPropagationTests
     }
 
     [Fact]
-    public void Build_assignments_use_caller_order_for_the_final_tiebreak()
+    public void Build_assignments_use_earlier_caller_order_even_when_candidates_are_enumerated_in_reverse()
     {
         var members = new[]
         {
@@ -241,19 +241,19 @@ public class GroupedTspPropagationTests
         var candidates = new[]
         {
             new GroupedTspCandidate(
-                originMemberIndex: 10,
-                targetSignalGroup: 6,
-                source: TspSource.Track,
-                strength: 1f,
-                expiryTimer: 10,
-                extendCurrentPhase: false),
-            new GroupedTspCandidate(
                 originMemberIndex: 5,
                 targetSignalGroup: 6,
                 source: TspSource.PublicCar,
                 strength: 1f,
                 expiryTimer: 10,
                 extendCurrentPhase: true),
+            new GroupedTspCandidate(
+                originMemberIndex: 10,
+                targetSignalGroup: 6,
+                source: TspSource.Track,
+                strength: 1f,
+                expiryTimer: 10,
+                extendCurrentPhase: false),
         };
 
         var assignments = GroupedTspPropagation.BuildAssignments(members, candidates, maxPropagationDistance: 100f);
