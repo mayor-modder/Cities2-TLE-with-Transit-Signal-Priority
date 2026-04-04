@@ -22,6 +22,7 @@ export default {
   AllowBusLaneRequests: "Allow Bus Lane Requests",
   PropagateTransitRequestsToGroup: "Propagate Transit Requests Downstream",
   PropagateTransitRequestsToGroupHelp: "Nearby downstream group members can benefit from the request without coordinating the whole corridor.",
+  PropagateTransitRequestsRequiresCoordination: "Enable coordination first to use local downstream propagation.",
   AllowCoordinatedTsp: "Allow Local Grouped Transit Priority",
   GiveWayToOncomingVehicles: "Give Way to Oncoming Vehicles",
   CustomPedestrianDurationMultiplier: "Pedestrian Phase Duration",

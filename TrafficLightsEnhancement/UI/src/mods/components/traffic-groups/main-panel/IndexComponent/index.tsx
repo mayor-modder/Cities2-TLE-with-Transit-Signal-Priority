@@ -20,6 +20,7 @@ import {
 	callCalculateSignalDelays,
 	callSetMainPanelState,
 	callCopyPhasesToJunction,
+	callSetTspPropagationEnabled,
 	callUpdateMemberPattern,
 	edgeInfo
 } from '../../../../../bindings';
@@ -627,6 +628,18 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 		}
 	};
 
+	const handleTspPropagationToggle = () => {
+		if (!displayedGroup || !displayedGroup.isCoordinated) {
+			return;
+		}
+
+		callSetTspPropagationEnabled(JSON.stringify({
+			groupIndex: displayedGroup.groupIndex,
+			groupVersion: displayedGroup.groupVersion,
+			enabled: !displayedGroup.tspPropagationEnabled
+		}));
+	};
+
 	const handleMemberClick = (member: GroupMemberInfo) => {
 		if (rightPanelScrollRef.current) {
 			const currentScroll = rightPanelScrollRef.current.getScrollPosition();
@@ -753,25 +766,29 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 									<div className={styles.dimLabel}>Enable Green Wave</div>
 								</Row>
 								<Row
-									hoverEffect={true}
+									hoverEffect={displayedGroup.isCoordinated}
 									className={styles.hover}
-									data={{
-										itemType: "checkbox",
-										type: "",
-										isChecked: displayedGroup.tspPropagationEnabled,
-										key: "GroupTspPropagationEnabled",
-										value: displayedGroup.tspPropagationEnabled ? "1" : "0",
-										label: "",
-										groupIndex: displayedGroup.groupIndex,
-										groupVersion: displayedGroup.groupVersion,
-										enabled: !displayedGroup.tspPropagationEnabled,
-										engineEventName: "C2VM.TrafficLightsEnhancement.TRIGGER:CallSetTspPropagationEnabled"
-									} as any}
+									disableEngineCall={true}
+									style={{ opacity: displayedGroup.isCoordinated ? 1 : 0.55 }}
 								>
-									<Checkbox isChecked={displayedGroup.tspPropagationEnabled} />
-									<div className={styles.dimLabel}>{getString(locale, "AllowCoordinatedTsp")}</div>
+									<div
+										onClick={displayedGroup.isCoordinated ? handleTspPropagationToggle : undefined}
+										style={{
+											display: "flex",
+											alignItems: "center",
+											width: "100%",
+											cursor: displayedGroup.isCoordinated ? "pointer" : "default"
+										}}
+									>
+										<Checkbox isChecked={displayedGroup.isCoordinated && displayedGroup.tspPropagationEnabled} />
+										<div className={styles.dimLabel}>{getString(locale, "AllowCoordinatedTsp")}</div>
+									</div>
 								</Row>
-								<div className={styles.infoText}>{getString(locale, "PropagateTransitRequestsToGroupHelp")}</div>
+								<div className={styles.infoText}>
+									{displayedGroup.isCoordinated
+										? getString(locale, "PropagateTransitRequestsToGroupHelp")
+										: getString(locale, "PropagateTransitRequestsRequiresCoordination")}
+								</div>
 
 							{displayedGroup.greenWaveEnabled && (
 								<>
@@ -854,7 +871,15 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 							<ItemTitle title="Group ID" secondaryText={`${displayedGroup.groupIndex}:${displayedGroup.groupVersion}`} dim={true} />
 							<ItemTitle title="Coordinated" secondaryText={displayedGroup.isCoordinated ? "Yes" : "No"} dim={true} />
 							<ItemTitle title="Green Wave" secondaryText={displayedGroup.greenWaveEnabled ? "Enabled" : "Disabled"} dim={true} />
-							<ItemTitle title="Coordinated TSP" secondaryText={displayedGroup.tspPropagationEnabled ? "Enabled" : "Disabled"} dim={true} />
+							<ItemTitle
+								title="Local Propagation"
+								secondaryText={
+									displayedGroup.tspPropagationEnabled
+										? (displayedGroup.isCoordinated ? "Enabled" : "Inactive")
+										: "Disabled"
+								}
+								dim={true}
+							/>
 							{displayedGroup.greenWaveEnabled && (
 								<>
 									<ItemTitle title="Speed" secondaryText={`${displayedGroup.greenWaveSpeed} u/s`} dim={true} />
