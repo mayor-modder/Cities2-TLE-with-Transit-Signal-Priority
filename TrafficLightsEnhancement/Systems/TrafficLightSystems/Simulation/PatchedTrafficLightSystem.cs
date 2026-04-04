@@ -171,6 +171,11 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                         hasTspRequest = true;
                         activeTspRequest = groupedTspRequest;
                         tspRequestOrigin = TransitSignalPriorityRequestOrigin.GroupedPropagation;
+                        if (m_ExtraTypeHandle.m_TransitSignalPrioritySettingsLookup.TryGetComponent(currentEntity, out var groupedTspSettings)
+                            && groupedTspSettings.m_Enabled)
+                        {
+                            activeTspSettings = groupedTspSettings;
+                        }
                     }
                     else
                     {
