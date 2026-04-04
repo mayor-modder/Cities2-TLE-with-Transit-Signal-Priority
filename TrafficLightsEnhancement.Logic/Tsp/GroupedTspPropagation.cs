@@ -100,6 +100,7 @@ public static class GroupedTspPropagation
         }
 
         var assignmentsByMember = new Dictionary<int, GroupedTspAssignment>();
+        var originPositionsByMemberIndex = new Dictionary<int, int>();
 
         foreach (var candidate in candidates)
         {
@@ -139,13 +140,18 @@ public static class GroupedTspPropagation
 
                 if (assignmentsByMember.TryGetValue(assignment.MemberIndex, out var existing))
                 {
-                    if (CompareRequests(assignment, existing) < 0)
+                    if (CompareRequests(
+                        assignment,
+                        originPosition,
+                        existing,
+                        originPositionsByMemberIndex[existing.MemberIndex]) < 0)
                     {
                         continue;
                     }
                 }
 
                 assignmentsByMember[assignment.MemberIndex] = assignment;
+                originPositionsByMemberIndex[assignment.MemberIndex] = originPosition;
             }
         }
 
@@ -161,7 +167,11 @@ public static class GroupedTspPropagation
         return assignments;
     }
 
-    private static int CompareRequests(GroupedTspAssignment left, GroupedTspAssignment right)
+    private static int CompareRequests(
+        GroupedTspAssignment left,
+        int leftOriginPosition,
+        GroupedTspAssignment right,
+        int rightOriginPosition)
     {
         int strengthComparison = left.Strength.CompareTo(right.Strength);
         if (strengthComparison != 0)
@@ -175,6 +185,6 @@ public static class GroupedTspPropagation
             return distanceComparison;
         }
 
-        return right.OriginMemberIndex.CompareTo(left.OriginMemberIndex);
+        return rightOriginPosition.CompareTo(leftOriginPosition);
     }
 }

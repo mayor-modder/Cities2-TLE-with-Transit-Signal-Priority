@@ -227,4 +227,40 @@ public class GroupedTspPropagationTests
 
         Assert.Equal(0, targetAssignment.OriginMemberIndex);
     }
+
+    [Fact]
+    public void Build_assignments_use_caller_order_for_the_final_tiebreak()
+    {
+        var members = new[]
+        {
+            new GroupedTspMember(memberIndex: 10, distanceFromPrevious: 0f),
+            new GroupedTspMember(memberIndex: 5, distanceFromPrevious: 0f),
+            new GroupedTspMember(memberIndex: 20, distanceFromPrevious: 0f),
+        };
+
+        var candidates = new[]
+        {
+            new GroupedTspCandidate(
+                originMemberIndex: 10,
+                targetSignalGroup: 6,
+                source: TspSource.Track,
+                strength: 1f,
+                expiryTimer: 10,
+                extendCurrentPhase: false),
+            new GroupedTspCandidate(
+                originMemberIndex: 5,
+                targetSignalGroup: 6,
+                source: TspSource.PublicCar,
+                strength: 1f,
+                expiryTimer: 10,
+                extendCurrentPhase: true),
+        };
+
+        var assignments = GroupedTspPropagation.BuildAssignments(members, candidates, maxPropagationDistance: 100f);
+
+        var targetAssignment = Assert.Single(assignments, assignment => assignment.MemberIndex == 20);
+
+        Assert.Equal(10, targetAssignment.OriginMemberIndex);
+        Assert.Equal(TspSource.Track, targetAssignment.Source);
+    }
 }
