@@ -1371,7 +1371,9 @@ public partial class TrafficGroupSystem : GameSystemBase
 		targetMembers.Dispose();
 		sourceMembers.Dispose();
 
+		RemoveGroupTspState(sourceGroupEntity);
 		EntityManager.DestroyEntity(sourceGroupEntity);
+		RefreshGroupTspState(targetGroupEntity);
 
 		if (targetGroup.m_GreenWaveEnabled)
 		{
@@ -2607,6 +2609,11 @@ public partial class TrafficGroupSystem : GameSystemBase
 		
 		foreach (var invalidMember in invalidMembers)
 		{
+			if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(invalidMember))
+			{
+				EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(invalidMember);
+			}
+
 			if (EntityManager.HasComponent<TrafficGroupMember>(invalidMember))
 			{
 				EntityManager.RemoveComponent<TrafficGroupMember>(invalidMember);
