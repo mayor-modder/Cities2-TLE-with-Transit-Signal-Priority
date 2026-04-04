@@ -158,6 +158,39 @@ public class GroupedTspPropagationTests
     }
 
     [Fact]
+    public void Build_assignments_preserve_request_metadata_needed_by_runtime_propagation()
+    {
+        var members = new[]
+        {
+            new GroupedTspMember(memberIndex: 0, distanceFromPrevious: 0f),
+            new GroupedTspMember(memberIndex: 1, distanceFromPrevious: 25f),
+        };
+
+        var candidates = new[]
+        {
+            new GroupedTspCandidate(
+                originMemberIndex: 0,
+                targetSignalGroup: 9,
+                source: TspSource.Track,
+                strength: 0.75f,
+                expiryTimer: 22,
+                extendCurrentPhase: true),
+        };
+
+        var assignment = Assert.Single(
+            GroupedTspPropagation.BuildAssignments(members, candidates, maxPropagationDistance: 30f));
+
+        Assert.Equal(1, assignment.MemberIndex);
+        Assert.Equal(0, assignment.OriginMemberIndex);
+        Assert.Equal(9, assignment.TargetSignalGroup);
+        Assert.Equal(TspSource.Track, assignment.Source);
+        Assert.Equal(0.75f, assignment.Strength);
+        Assert.Equal((uint)22, assignment.ExpiryTimer);
+        Assert.True(assignment.ExtendCurrentPhase);
+        Assert.Equal(25f, assignment.DistanceFromOrigin);
+    }
+
+    [Fact]
     public void Build_assignments_use_distance_before_origin_index_when_strengths_are_equal()
     {
         var members = new[]
