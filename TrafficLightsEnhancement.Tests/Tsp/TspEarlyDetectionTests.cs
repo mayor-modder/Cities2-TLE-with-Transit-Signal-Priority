@@ -77,6 +77,20 @@ public class TspEarlyDetectionTests
     }
 
     [Fact]
+    public void Indexed_track_detection_reports_upstream_lane_match_when_only_upstream_sample_qualifies()
+    {
+        var match = EarlyApproachDetection.EvaluateIndexedTrackTramSamples(
+            hasApproachSample: true,
+            approachCurvePosition: 0.1f,
+            hasUpstreamSample: true,
+            upstreamCurvePosition: 0.95f,
+            approachLaneThreshold: 0.2f,
+            upstreamLaneThreshold: 0.9f);
+
+        Assert.Equal(IndexedTrackProbeMatch.MatchOnUpstreamLane, match);
+    }
+
+    [Fact]
     public void Indexed_track_detection_reports_below_threshold_when_samples_exist_but_are_too_early()
     {
         var match = EarlyApproachDetection.EvaluateIndexedTrackTramSamples(
