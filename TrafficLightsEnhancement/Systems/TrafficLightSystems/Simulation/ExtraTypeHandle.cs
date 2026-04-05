@@ -1,8 +1,16 @@
 using System.Runtime.CompilerServices;
 using C2VM.TrafficLightsEnhancement.Components;
 using Game.Net;
+using Game.Prefabs;
+using Game.Vehicles;
 using Unity.Collections;
 using Unity.Entities;
+using NetCarLane = Game.Net.CarLane;
+using NetPedestrianLane = Game.Net.PedestrianLane;
+using NetSecondaryLane = Game.Net.SecondaryLane;
+using NetTrackLane = Game.Net.TrackLane;
+using PrefabRef = Game.Prefabs.PrefabRef;
+using VehiclePublicTransport = Game.Vehicles.PublicTransport;
 
 namespace C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
 
@@ -27,15 +35,33 @@ public struct ExtraTypeHandle
     public ComponentLookup<MasterLane> m_MasterLane;
 
     [ReadOnly]
-    public ComponentLookup<CarLane> m_CarLane;
+    public ComponentLookup<NetCarLane> m_CarLane;
 
     [ReadOnly]
-    public ComponentLookup<TrackLane> m_TrackLane;
+    public ComponentLookup<NetTrackLane> m_TrackLane;
 
     [ReadOnly]
-    public ComponentLookup<PedestrianLane> m_PedestrianLane;
+    public ComponentLookup<PrefabRef> m_PrefabRef;
+
+    [ReadOnly]
+    public ComponentLookup<TrackLaneData> m_TrackLaneData;
+
+    [ReadOnly]
+    public ComponentLookup<VehiclePublicTransport> m_PublicTransport;
+
+    [ReadOnly]
+    public ComponentLookup<TrainNavigation> m_TrainNavigation;
+
+    [ReadOnly]
+    public ComponentLookup<TrainCurrentLane> m_TrainCurrentLane;
+
+    [ReadOnly]
+    public ComponentLookup<CarCurrentLane> m_CarCurrentLane;
+
+    [ReadOnly]
+    public ComponentLookup<NetPedestrianLane> m_PedestrianLane;
     
-    public ComponentLookup<SecondaryLane> m_SecondaryLane;
+    public ComponentLookup<NetSecondaryLane> m_SecondaryLane;
 
     [ReadOnly]
     public ComponentLookup<TrafficGroupMember> m_TrafficGroupMember;
@@ -84,10 +110,16 @@ public struct ExtraTypeHandle
         m_LaneFlow = state.GetComponentLookup<LaneFlow>(isReadOnly: true);
         m_LaneFlowHistory = state.GetComponentLookup<LaneFlowHistory>(isReadOnly: false);
         m_MasterLane = state.GetComponentLookup<MasterLane>(isReadOnly: true);
-        m_CarLane = state.GetComponentLookup<CarLane>(isReadOnly: true);
-        m_TrackLane = state.GetComponentLookup<TrackLane>(isReadOnly: true);
-        m_PedestrianLane = state.GetComponentLookup<PedestrianLane>(isReadOnly: true);
-        m_SecondaryLane = state.GetComponentLookup<SecondaryLane>(isReadOnly: true);
+        m_CarLane = state.GetComponentLookup<NetCarLane>(isReadOnly: true);
+        m_TrackLane = state.GetComponentLookup<NetTrackLane>(isReadOnly: true);
+        m_PrefabRef = state.GetComponentLookup<PrefabRef>(isReadOnly: true);
+        m_TrackLaneData = state.GetComponentLookup<TrackLaneData>(isReadOnly: true);
+        m_PublicTransport = state.GetComponentLookup<VehiclePublicTransport>(isReadOnly: true);
+        m_TrainNavigation = state.GetComponentLookup<TrainNavigation>(isReadOnly: true);
+        m_TrainCurrentLane = state.GetComponentLookup<TrainCurrentLane>(isReadOnly: true);
+        m_CarCurrentLane = state.GetComponentLookup<CarCurrentLane>(isReadOnly: true);
+        m_PedestrianLane = state.GetComponentLookup<NetPedestrianLane>(isReadOnly: true);
+        m_SecondaryLane = state.GetComponentLookup<NetSecondaryLane>(isReadOnly: true);
         m_TrafficGroupMember = state.GetComponentLookup<TrafficGroupMember>(isReadOnly: true);
         m_TrafficGroup = state.GetComponentLookup<TrafficGroup>(isReadOnly: true);
         m_CustomPhaseDataLookup = state.GetBufferLookup<CustomPhaseData>(isReadOnly: true);
@@ -115,6 +147,12 @@ public struct ExtraTypeHandle
         m_MasterLane.Update(ref state);
         m_CarLane.Update(ref state);
         m_TrackLane.Update(ref state);
+        m_PrefabRef.Update(ref state);
+        m_TrackLaneData.Update(ref state);
+        m_PublicTransport.Update(ref state);
+        m_TrainNavigation.Update(ref state);
+        m_TrainCurrentLane.Update(ref state);
+        m_CarCurrentLane.Update(ref state);
         m_PedestrianLane.Update(ref state);
         m_SecondaryLane.Update(ref state);
         m_TrafficGroupMember.Update(ref state);

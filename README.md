@@ -58,6 +58,11 @@
 - The extracted TSP test project targets `net8.0`.
 - The UI package requires Node.js `>=18` and builds with webpack.
 - The main mod project imports CSII modding targets from `CSII_TOOLPATH`, so the Cities: Skylines II modding toolchain still needs to be installed and configured.
+- This repo now treats compile-only verification and playable deploy as separate workflows:
+  - `.\scripts\Verify-Mod.ps1` is for fast compile-only verification while iterating.
+  - `.\scripts\Deploy-Mod.ps1` is the required end-of-task path for producing a playable installed mod.
+- `dotnet build -p:DisablePostProcessors=true` is useful for verification, but it skips the Cities II postprocessor and local mod deployment. Do not treat it as a playable install path.
+- On the verification path, the UI webpack step can still rebuild frontend assets. Seeing fresh `.mjs` or `.css` files alone does not mean the managed and native mod binaries were deployed.
 - [BUILD.md](BUILD.md) is still the closest thing to a build recipe in this repo. It is inherited from upstream and useful as a starting point, but it has not yet been rewritten as a fork-specific build guide.
 - We have not yet documented a fork-specific packaged release channel or manual-install flow. For now, the safest assumption is that local build and local mod installation are the supported path for this repo.
 

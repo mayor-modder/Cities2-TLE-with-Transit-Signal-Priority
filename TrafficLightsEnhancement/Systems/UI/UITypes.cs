@@ -37,6 +37,8 @@ public static class UITypes
         const string itemType = "title";
 
         public string title;
+
+        public string secondaryText;
     }
 
     public struct ItemMessage

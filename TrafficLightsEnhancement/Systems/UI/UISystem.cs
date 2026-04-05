@@ -11,6 +11,7 @@ using Game.Common;
 using Game.Rendering;
 using Game.SceneFlow;
 using Game.UI;
+using LogicUi = TrafficLightsEnhancement.Logic.UI;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -143,10 +144,23 @@ public partial class UISystem: ExtendedUISystemBase
 
     public void SimulationUpdate()
     {
-        if (m_MainPanelState == MainPanelState.CustomPhase)
+        if (LogicUi.MainPanelRefreshPolicy.ShouldRefreshOnSimulationTick(ToRefreshState(m_MainPanelState)))
         {
             m_MainPanelBinding.Update();
         }
+    }
+
+    private static LogicUi.MainPanelRefreshState ToRefreshState(MainPanelState state)
+    {
+        return state switch
+        {
+            MainPanelState.Hidden => LogicUi.MainPanelRefreshState.Hidden,
+            MainPanelState.Empty => LogicUi.MainPanelRefreshState.Empty,
+            MainPanelState.Main => LogicUi.MainPanelRefreshState.Main,
+            MainPanelState.CustomPhase => LogicUi.MainPanelRefreshState.CustomPhase,
+            MainPanelState.TrafficGroups => LogicUi.MainPanelRefreshState.TrafficGroups,
+            _ => LogicUi.MainPanelRefreshState.Hidden,
+        };
     }
 
     public void SetMainPanelState(MainPanelState state)

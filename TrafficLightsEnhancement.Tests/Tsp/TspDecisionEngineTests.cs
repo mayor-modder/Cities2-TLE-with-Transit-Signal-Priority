@@ -236,7 +236,7 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Stale_signal_request_collapses_to_short_release_grace()
+    public void Stale_signal_request_counts_down_normally_when_target_group_is_current_group()
     {
         bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
             freshRequest: null,
@@ -246,7 +246,7 @@ public class TspDecisionEngineTests
             out var request);
 
         Assert.True(active);
-        Assert.Equal(6u, request.ExpiryTimer);
+        Assert.Equal(119u, request.ExpiryTimer);
         Assert.False(request.ExtendCurrentPhase);
     }
 

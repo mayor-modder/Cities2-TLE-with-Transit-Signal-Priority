@@ -11,6 +11,7 @@ using Colossal.UI.Binding;
 using Game.Net;
 using Game.Rendering;
 using Newtonsoft.Json;
+using LogicTsp = TrafficLightsEnhancement.Logic.Tsp;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -229,6 +230,83 @@ public partial class UISystem
         };
     }
 
+    private LogicTsp.TspStatusPresentation GetTransitSignalPriorityStatus(Entity junctionEntity, bool enabled)
+    {
+        if (!enabled)
+        {
+            return LogicTsp.TspStatusFormatter.Format(new LogicTsp.TspStatusSnapshot(
+                enabled: false,
+                hasRequest: false,
+                source: LogicTsp.TspSource.None,
+                requestOrigin: LogicTsp.TspRequestOrigin.Local,
+                targetSignalGroup: 0,
+                reason: LogicTsp.TspSelectionReason.None));
+        }
+
+        bool hasLocalRequest = EntityManager.TryGetComponent(junctionEntity, out TransitSignalPriorityRequest localRequest)
+            && IsValidTspRequest(localRequest);
+        bool hasGroupedRequest = EntityManager.TryGetComponent(junctionEntity, out GroupedTransitSignalPriorityRequest groupedRequest)
+            && IsValidGroupedTspRequest(groupedRequest);
+
+        if (!hasLocalRequest && !hasGroupedRequest)
+        {
+            return LogicTsp.TspStatusFormatter.Format(new LogicTsp.TspStatusSnapshot(
+                enabled: true,
+                hasRequest: false,
+                source: LogicTsp.TspSource.None,
+                requestOrigin: LogicTsp.TspRequestOrigin.Local,
+                targetSignalGroup: 0,
+                reason: LogicTsp.TspSelectionReason.None));
+        }
+
+        byte targetSignalGroup;
+        byte sourceType;
+        bool extendCurrentPhase;
+        LogicTsp.TspRequestOrigin requestOrigin;
+
+        if (hasLocalRequest && (!hasGroupedRequest || localRequest.m_Strength >= groupedRequest.m_Strength))
+        {
+            targetSignalGroup = localRequest.m_TargetSignalGroup;
+            sourceType = localRequest.m_SourceType;
+            extendCurrentPhase = localRequest.m_ExtendCurrentPhase;
+            requestOrigin = LogicTsp.TspRequestOrigin.Local;
+        }
+        else
+        {
+            targetSignalGroup = groupedRequest.m_TargetSignalGroup;
+            sourceType = groupedRequest.m_SourceType;
+            extendCurrentPhase = groupedRequest.m_ExtendCurrentPhase;
+            requestOrigin = LogicTsp.TspRequestOrigin.GroupedPropagation;
+        }
+
+        LogicTsp.TspSelectionReason reason = LogicTsp.TspSelectionReason.SelectedTargetPhase;
+        if (EntityManager.TryGetComponent(junctionEntity, out TrafficLights trafficLights)
+            && trafficLights.m_CurrentSignalGroup == targetSignalGroup)
+        {
+            reason = extendCurrentPhase
+                ? LogicTsp.TspSelectionReason.ExtendedCurrentPhase
+                : LogicTsp.TspSelectionReason.None;
+        }
+
+        return LogicTsp.TspStatusFormatter.Format(new LogicTsp.TspStatusSnapshot(
+            enabled: true,
+            hasRequest: true,
+            source: (LogicTsp.TspSource)sourceType,
+            requestOrigin: requestOrigin,
+            targetSignalGroup: targetSignalGroup,
+            reason: reason));
+    }
+
+    private static bool IsValidTspRequest(TransitSignalPriorityRequest request)
+    {
+        return request.m_TargetSignalGroup > 0 && request.m_Strength > 0f;
+    }
+
+    private static bool IsValidGroupedTspRequest(GroupedTransitSignalPriorityRequest request)
+    {
+        return request.m_TargetSignalGroup > 0 && request.m_Strength > 0f;
+    }
+
     private bool IsTrafficTypeActive(Entity junctionEntity, int phaseIndex, string trafficType)
     {
         if (junctionEntity == Entity.Null || !EntityManager.Exists(junctionEntity))
@@ -437,6 +515,16 @@ public partial class UISystem
                         engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption",
                     });
                 }
+            }
+            var tspStatus = GetTransitSignalPriorityStatus(m_SelectedEntity, tspSettings.m_Enabled);
+            menu.items.Add(new UITypes.ItemTitle{title = "Status", secondaryText = tspStatus.Status});
+            if (!string.IsNullOrEmpty(tspStatus.Request))
+            {
+                menu.items.Add(new UITypes.ItemTitle{title = "Request", secondaryText = tspStatus.Request});
+            }
+            if (!string.IsNullOrEmpty(tspStatus.TargetSignalGroup))
+            {
+                menu.items.Add(new UITypes.ItemTitle{title = "Target Group", secondaryText = tspStatus.TargetSignalGroup});
             }
             menu.items.Add(default(UITypes.ItemDivider));
             if (EntityManager.HasBuffer<C2VM.CommonLibraries.LaneSystem.CustomLaneDirection>(m_SelectedEntity))

@@ -45,12 +45,6 @@ public static class TspPreemptionPolicy
         {
             TspSignalRequest existing = existingRequest.Value;
             uint nextExpiry = existing.ExpiryTimer - 1;
-            if (currentSignalGroup > 0
-                && existing.TargetSignalGroup == currentSignalGroup
-                && nextExpiry > ReleaseGraceTicks)
-            {
-                nextExpiry = ReleaseGraceTicks;
-            }
 
             request = new TspSignalRequest(
                 existing.TargetSignalGroup,
