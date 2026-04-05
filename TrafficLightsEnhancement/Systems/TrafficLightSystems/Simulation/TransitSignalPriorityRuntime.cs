@@ -568,7 +568,7 @@ public static class TransitSignalPriorityRuntime
     {
         if (laneEntity == Entity.Null || !tramApproachIndex.TryGetValue(laneEntity, out float curvePosition))
         {
-            return new TrackProbeSnapshot(false, 0f, TransitSignalPriorityTrackProbeResult.None);
+            return new TrackProbeSnapshot(false, 0f, TransitSignalPriorityTrackProbeResult.NoTramSamples);
         }
 
         if (curvePosition < threshold)
