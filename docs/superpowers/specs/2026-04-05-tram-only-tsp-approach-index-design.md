@@ -16,6 +16,7 @@ It does:
 - preserve petitioner-based fallback when no early tram request is available
 - keep the current downstream target-group and phase-override logic unchanged
 - keep the debugging surface in the TSP panel, updated to reflect the new track detection model
+- prefer the simplest safe collection model in this slice, even if future optimization later parallelizes it
 
 It does not:
 - redesign bus early detection in this slice
@@ -60,6 +61,7 @@ Recommendation: choose this approach.
 - Trams should continue to use petitioner fallback if no qualifying early approach is found.
 - Performance should scale with `number of trams + number of TSP junction lane lookups`, not `number of trams * number of TSP junctions`.
 - Existing local TSP lifecycle behavior that already matches the user's intent, especially no extra post-clear release grace and the short effective request horizon, should stay in place.
+- The first implementation should prefer a synchronous prepass in `PatchedTrafficLightSystem.OnUpdate` over a second collection job, because that keeps job safety and data ownership simple while the new architecture is being proven.
 
 ## Design
 
@@ -73,13 +75,34 @@ The collector should:
 - ignore stopped or suppressed trams
 - record the front and rear lane positions for qualifying trams
 
+The collector query should target entities with:
+- `TrainCurrentLane`
+- `TrainNavigation`
+- `PublicTransport`
+
+That query may include non-tram rail vehicles. Tram filtering should therefore happen during collection by checking whether the front lane, rear lane, or both resolve to a tram track lane through the existing track lane metadata (`TrackLaneData.m_TrackTypes`).
+
 The index should be keyed by lane entity and contain enough information to answer one question efficiently:
 
 > "Is there a moving tram on this lane far enough along the lane to justify an early TSP request?"
 
 The index lifetime is one traffic-light update only. It should be rebuilt on the same cadence as the traffic-light system rather than on every simulation tick.
 
-### 2. Use a lane-keyed tram index instead of `LaneObject` for tracks
+### 2. Use an explicit lane-keyed best-sample map
+
+The index shape should be explicit in this slice:
+- key: `Entity` lane
+- value: highest normalized curve position observed on that lane during the current traffic-light update
+
+This should be implemented as a temporary `NativeParallelHashMap<Entity, float>` that supports read access from the traffic-light update job. The intended shape for the first implementation is a single-value lane map rather than a multimap.
+
+A tram may contribute up to two lane samples in the same update:
+- one for `TrainCurrentLane.m_Front.m_Lane`
+- one for `TrainCurrentLane.m_Rear.m_Lane`
+
+If multiple trams contribute samples for the same lane, the stored value should keep the highest curve position. That gives the lookup exactly the value the TSP threshold check cares about, while keeping the collection compact.
+
+### 3. Use a lane-keyed tram index instead of `LaneObject` for tracks
 
 Track early detection in `TransitSignalPriorityRuntime` should stop probing `LaneObject` buffers entirely.
 
@@ -90,13 +113,17 @@ For each eligible track-controlled approach, the runtime should resolve:
 
 The runtime should then check the tram index for those lane keys instead of trying to read `LaneObject` buffers from the lanes themselves.
 
+If `ExtraLaneSignal.m_SourceSubLane` is absent, the existing fallback remains valid:
+- the approach lane resolves to the signaled lane
+- the approach lookup therefore reuses the signaled lane key rather than inventing a separate fallback path
+
 The early request decision should be based on the best qualifying sample found on:
 - the approach lane first
 - the immediate upstream lane second
 
 The signaled lane should remain useful as a diagnostic sanity check, but the real early-trigger behavior should be driven by the physical approach lane and the immediate upstream lane.
 
-### 3. Keep early track evaluation lane-local and threshold-based
+### 4. Keep early track evaluation lane-local and threshold-based
 
 The current threshold model remains a reasonable starting point once the data source is corrected:
 - the approach lane should trigger with a relatively early threshold
@@ -108,7 +135,7 @@ This preserves the intent of the earlier design:
 
 The thresholds should remain implementation constants in this slice. User-facing tuning is a separate future feature.
 
-### 4. Leave buses on petitioner fallback only
+### 5. Leave buses on petitioner fallback only
 
 This slice should stop pretending bus early detection is validated.
 
@@ -118,7 +145,7 @@ For now:
 
 That keeps the rewrite honest and prevents this slice from expanding into a second unverified subsystem.
 
-### 5. Keep the panel diagnostics, but update them to match the new architecture
+### 6. Keep the panel diagnostics, but update them to match the new architecture
 
 The recent debugging instrumentation was useful and should stay.
 
@@ -133,6 +160,12 @@ But the meanings should change from lane-object probe results to tram-index look
 - tram sample matched on approach lane
 - tram sample matched on upstream lane
 
+The debug contract should make those outcomes explicit rather than implicit. The expected track-facing states in this slice are:
+- `NoTramSamples`
+- `BelowThreshold`
+- `MatchOnApproachLane`
+- `MatchOnUpstreamLane`
+
 This keeps the next debugging loop grounded in real runtime evidence instead of inference.
 
 ## Architecture
@@ -141,12 +174,16 @@ This keeps the next debugging loop grounded in real runtime evidence instead of 
 
 Add a tram collection step that runs once per traffic-light update before junction evaluation consumes TSP requests.
 
-The preferred shape is:
-- a dedicated tram query scoped to the runtime data needed for track early detection
-- a temporary native lane-keyed collection created for that update
-- a collector job or prepass that writes tram lane samples into that collection
+The preferred first implementation is deliberately conservative:
+- cache a dedicated rail-transit query on `PatchedTrafficLightSystem`
+- allocate a temporary lane-keyed native map with `Allocator.TempJob`
+- fill that map synchronously on the main thread inside `PatchedTrafficLightSystem.OnUpdate`
+- then schedule `UpdateTrafficLightsJob` with the map passed in as a `[ReadOnly]` field
+- dispose the temporary map by chaining disposal to the returned job dependency
 
-The collection must be safe to read from the parallel traffic-light update job.
+This avoids adding a second writer job and avoids concurrent merge logic while the feature is still being validated. It also makes the "highest curve position wins" rule straightforward to implement.
+
+The collection must still be safe to read from the parallel traffic-light update job, which is why the map allocator and disposal path must match job usage.
 
 ### Runtime Consumption
 
@@ -161,7 +198,7 @@ The current lane-object logic for buses can remain only where it is still actual
 ## Data Flow
 
 1. `PatchedTrafficLightSystem.OnUpdate` starts a traffic-light simulation update.
-2. A tram collection step scans qualifying tram entities once and builds a temporary lane-keyed approach index for that update.
+2. A synchronous tram collection step scans the rail-transit query once, filters for tram track samples, and builds a temporary lane-keyed approach index for that update.
 3. `UpdateTrafficLightsJob` evaluates TSP-enabled junctions in parallel.
 4. `TransitSignalPriorityRuntime` resolves the signaled lane, approach lane, and immediate upstream lane for each eligible track approach.
 5. The runtime checks the temporary tram approach index for those lane keys.
@@ -185,10 +222,12 @@ Because the traffic-light system already updates on a fixed interval of four sim
 
 - Only moving, non-suppressed trams should enter the approach index.
 - Null lane entities must be ignored.
+- An update with zero qualifying trams must produce an empty index and still behave correctly.
 - If a lane has no tram samples in the index, the runtime must return no early request rather than guessing.
 - Petitioner fallback must remain intact so the feature degrades safely instead of disappearing.
 - Bus early detection should not be expanded in this slice.
 - The temporary native collection used for the tram approach index must be disposed when the update dependency completes.
+- If the track rewrite makes `TransitApproachEntityResolver` unused, it should be removed as cleanup in this slice rather than left behind as dead code.
 
 ## Testing
 
@@ -220,6 +259,7 @@ The clean tram-loop repro should verify the following:
 - If the lane entities stored in `TrainCurrentLane` still do not align with the approach/upstream lane entities resolved by TSP, the index will still miss; however, the updated diagnostics should make that mismatch visible quickly.
 - If the collector stores too much per-tram data, the temporary allocation could become larger than necessary. The data shape should stay minimal and lane-focused.
 - If petitioner fallback and early detection refresh each other incorrectly, request lifecycle bugs could reappear; the existing local request tests should protect against that.
+- `ReleaseGraceTicks = 6` is already behaviorally dead for the user-desired path; removing the leftover constant is optional cleanup, not part of this design's required behavior.
 
 ## Recommendation
 
