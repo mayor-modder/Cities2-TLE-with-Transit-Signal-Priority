@@ -175,4 +175,58 @@ public class TspEarlyDetectionTests
         Assert.Equal(earlyRequest.Strength, selected.Value.Strength);
         Assert.Equal(earlyRequest.ExtensionEligible, selected.Value.ExtensionEligible);
     }
+
+    [Fact]
+    public void Road_transit_early_detection_stays_disabled_in_tram_only_slice()
+    {
+        bool enabled = EarlyApproachDetection.ShouldEvaluateRoadTransitEarlyDetection(isPublicCarLane: true);
+
+        Assert.False(enabled);
+    }
+
+    [Fact]
+    public void Reported_track_probe_diagnostics_preserve_petitioner_fallback_snapshot()
+    {
+        var earlyDiagnostics = new IndexedTrackProbeDiagnostics(
+            IndexedTrackProbeMatch.MatchOnApproachLane,
+            IndexedTrackProbeMatch.MatchOnApproachLane,
+            IndexedTrackProbeMatch.NoTramSamples);
+        var petitionerDiagnostics = new IndexedTrackProbeDiagnostics(
+            IndexedTrackProbeMatch.NoTramSamples,
+            IndexedTrackProbeMatch.BelowThreshold,
+            IndexedTrackProbeMatch.NoTramSamples);
+
+        IndexedTrackProbeDiagnostics reported = EarlyApproachDetection.SelectReportedTrackProbeDiagnostics(
+            selectedEarlyRequest: false,
+            earlyDiagnostics,
+            selectedPetitionerRequest: true,
+            petitionerDiagnostics);
+
+        Assert.Equal(IndexedTrackProbeMatch.NoTramSamples, reported.SignaledLane);
+        Assert.Equal(IndexedTrackProbeMatch.BelowThreshold, reported.ApproachLane);
+        Assert.Equal(IndexedTrackProbeMatch.NoTramSamples, reported.UpstreamLane);
+    }
+
+    [Fact]
+    public void Reported_track_probe_diagnostics_clear_when_no_fresh_request_was_selected()
+    {
+        var earlyDiagnostics = new IndexedTrackProbeDiagnostics(
+            IndexedTrackProbeMatch.NoTramSamples,
+            IndexedTrackProbeMatch.BelowThreshold,
+            IndexedTrackProbeMatch.NoTramSamples);
+        var petitionerDiagnostics = new IndexedTrackProbeDiagnostics(
+            IndexedTrackProbeMatch.NoTramSamples,
+            IndexedTrackProbeMatch.BelowThreshold,
+            IndexedTrackProbeMatch.NoTramSamples);
+
+        IndexedTrackProbeDiagnostics reported = EarlyApproachDetection.SelectReportedTrackProbeDiagnostics(
+            selectedEarlyRequest: false,
+            earlyDiagnostics,
+            selectedPetitionerRequest: false,
+            petitionerDiagnostics);
+
+        Assert.Equal(IndexedTrackProbeMatch.None, reported.SignaledLane);
+        Assert.Equal(IndexedTrackProbeMatch.None, reported.ApproachLane);
+        Assert.Equal(IndexedTrackProbeMatch.None, reported.UpstreamLane);
+    }
 }

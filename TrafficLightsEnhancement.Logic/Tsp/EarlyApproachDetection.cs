@@ -24,6 +24,25 @@ public struct TransitApproachScanState
     public TspRequest? PetitionerRequest { get; set; }
 }
 
+public readonly struct IndexedTrackProbeDiagnostics
+{
+    public IndexedTrackProbeDiagnostics(
+        IndexedTrackProbeMatch signaledLane,
+        IndexedTrackProbeMatch approachLane,
+        IndexedTrackProbeMatch upstreamLane)
+    {
+        SignaledLane = signaledLane;
+        ApproachLane = approachLane;
+        UpstreamLane = upstreamLane;
+    }
+
+    public IndexedTrackProbeMatch SignaledLane { get; }
+
+    public IndexedTrackProbeMatch ApproachLane { get; }
+
+    public IndexedTrackProbeMatch UpstreamLane { get; }
+}
+
 public static class EarlyApproachDetection
 {
     public static TEntity ResolveApproachLane<TEntity>(TEntity signaledLane, TEntity sourceLane, TEntity nullLane)
@@ -148,6 +167,30 @@ public static class EarlyApproachDetection
         }
 
         return IndexedTrackProbeMatch.NoTramSamples;
+    }
+
+    public static bool ShouldEvaluateRoadTransitEarlyDetection(bool isPublicCarLane)
+    {
+        return false;
+    }
+
+    public static IndexedTrackProbeDiagnostics SelectReportedTrackProbeDiagnostics(
+        bool selectedEarlyRequest,
+        IndexedTrackProbeDiagnostics earlyDiagnostics,
+        bool selectedPetitionerRequest,
+        IndexedTrackProbeDiagnostics petitionerDiagnostics)
+    {
+        if (selectedEarlyRequest)
+        {
+            return earlyDiagnostics;
+        }
+
+        if (selectedPetitionerRequest)
+        {
+            return petitionerDiagnostics;
+        }
+
+        return default;
     }
 
     public static TransitApproachScanState RecordLaneRequests(
