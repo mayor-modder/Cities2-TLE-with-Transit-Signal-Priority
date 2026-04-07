@@ -40,6 +40,17 @@ public struct TransitSignalPriorityRuntimeDebugInfo : IComponentData
     public bool m_HasEarlyCandidate;
     public bool m_HasPetitionerCandidate;
     public bool m_HadExistingRequest;
+    public byte m_BusEarlyProbeResult;
+    public byte m_BusPetitionerProbeResult;
+    public byte m_BusSuppressionFlags;
+    public int m_BusLaneObjectCount;
+    public int m_BusPublicTransportObjectCount;
+    public int m_BusCurrentLaneFlags;
+    public Entity m_BusSignaledLaneEntity;
+    public Entity m_BusApproachLaneEntity;
+    public Entity m_BusCurrentLaneEntity;
+    public Entity m_BusMatchedVehicleEntity;
+    public Entity m_BusPetitionerEntity;
     public byte m_TrackSignaledLaneProbe;
     public byte m_TrackApproachLaneProbe;
     public byte m_TrackUpstreamLaneProbe;
