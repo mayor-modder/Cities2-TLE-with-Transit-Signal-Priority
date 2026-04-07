@@ -183,4 +183,98 @@ public class TspEarlyDetectionTests
         Assert.Equal(IndexedTrackProbeMatch.None, reported.ApproachLane);
         Assert.Equal(IndexedTrackProbeMatch.None, reported.UpstreamLane);
     }
+
+    [Fact]
+    public void Track_lane_source_resolution_uses_recursive_lookup()
+    {
+        bool recursive = EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+            isTrackLane: true,
+            isPedestrianCrosswalk: false);
+
+        Assert.True(recursive);
+    }
+
+    [Fact]
+    public void Crosswalk_source_resolution_stays_recursive()
+    {
+        bool recursive = EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+            isTrackLane: false,
+            isPedestrianCrosswalk: true);
+
+        Assert.True(recursive);
+    }
+
+    [Fact]
+    public void Ordinary_road_lane_source_resolution_stays_non_recursive()
+    {
+        bool recursive = EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+            isTrackLane: false,
+            isPedestrianCrosswalk: false);
+
+        Assert.False(recursive);
+    }
+
+    [Fact]
+    public void Track_crosswalk_overlap_still_resolves_recursively()
+    {
+        bool recursive = EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+            isTrackLane: true,
+            isPedestrianCrosswalk: true);
+
+        Assert.True(recursive);
+    }
+
+    [Fact]
+    public void Connected_upstream_edge_candidate_requires_a_different_edge_feeding_the_same_start_node()
+    {
+        bool candidate = EarlyApproachDetection.IsConnectedUpstreamEdgeCandidate(
+            currentEdgeIndex: 10,
+            candidateEdgeIndex: 11,
+            candidateLaneEndOwnerIndex: 42,
+            baseLaneStartOwnerIndex: 42);
+
+        Assert.True(candidate);
+    }
+
+    [Fact]
+    public void Connected_upstream_edge_candidate_rejects_same_edge_or_wrong_node()
+    {
+        Assert.False(EarlyApproachDetection.IsConnectedUpstreamEdgeCandidate(
+            currentEdgeIndex: 10,
+            candidateEdgeIndex: 10,
+            candidateLaneEndOwnerIndex: 42,
+            baseLaneStartOwnerIndex: 42));
+
+        Assert.False(EarlyApproachDetection.IsConnectedUpstreamEdgeCandidate(
+            currentEdgeIndex: 10,
+            candidateEdgeIndex: 11,
+            candidateLaneEndOwnerIndex: 41,
+            baseLaneStartOwnerIndex: 42));
+    }
+
+    [Fact]
+    public void Path_node_owner_index_resolves_to_matching_edge_node()
+    {
+        bool resolved = EarlyApproachDetection.TryResolvePathNodeOwnerEntityIndex(
+            pathNodeOwnerIndex: 7,
+            edgeStartNodeIndex: 7,
+            edgeEndNodeIndex: 9,
+            out int nodeIndex);
+
+        Assert.True(resolved);
+        Assert.Equal(7, nodeIndex);
+    }
+
+    [Fact]
+    public void Path_node_owner_index_returns_false_when_edge_does_not_own_the_node()
+    {
+        bool resolved = EarlyApproachDetection.TryResolvePathNodeOwnerEntityIndex(
+            pathNodeOwnerIndex: 8,
+            edgeStartNodeIndex: 7,
+            edgeEndNodeIndex: 9,
+            out int nodeIndex);
+
+        Assert.False(resolved);
+        Assert.Equal(-1, nodeIndex);
+    }
 }

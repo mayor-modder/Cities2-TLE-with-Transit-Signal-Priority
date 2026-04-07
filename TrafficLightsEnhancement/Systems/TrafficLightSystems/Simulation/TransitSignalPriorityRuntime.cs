@@ -21,6 +21,7 @@ public static class TransitSignalPriorityRuntime
         public TransitSignalPriorityTrackProbeResult TrackSignaledLaneProbe;
         public TransitSignalPriorityTrackProbeResult TrackApproachLaneProbe;
         public TransitSignalPriorityTrackProbeResult TrackUpstreamLaneProbe;
+        public TrackLaneDebugInfo TrackLaneDebugInfo;
     }
 
     private struct TransitApproachCandidate
@@ -32,6 +33,33 @@ public static class TransitSignalPriorityRuntime
         public TransitSignalPriorityTrackProbeResult TrackSignaledLaneProbe;
         public TransitSignalPriorityTrackProbeResult TrackApproachLaneProbe;
         public TransitSignalPriorityTrackProbeResult TrackUpstreamLaneProbe;
+        public TrackLaneDebugInfo TrackLaneDebugInfo;
+    }
+
+    private struct ConnectedEdgeFallbackDiagnostics
+    {
+        public byte ConnectedEdgeCount;
+        public byte TramSublaneCount;
+        public byte PathNodeMatchCount;
+        public byte IndexHitCount;
+        public float BestCurvePosition;
+    }
+
+    private struct TrackLaneDebugInfo
+    {
+        public Entity SignaledLaneEntity;
+        public Entity ApproachLaneEntity;
+        public Entity UpstreamLaneEntity;
+        public Entity SignaledLaneOwnerEntity;
+        public Entity ApproachLaneOwnerEntity;
+        public Entity UpstreamLaneOwnerEntity;
+        public byte SignaledSiblingSampleCount;
+        public byte ApproachSiblingSampleCount;
+        public byte UpstreamSiblingSampleCount;
+        public bool SignaledLaneIsMaster;
+        public bool ApproachLaneIsMaster;
+        public bool UpstreamLaneIsMaster;
+        public ConnectedEdgeFallbackDiagnostics FallbackDiagnostics;
     }
 
     private readonly struct TrackProbeSnapshot
@@ -52,6 +80,7 @@ public static class TransitSignalPriorityRuntime
 
     private const float TramApproachLaneCurveThreshold = 0.2f;
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
+    private const float TramConnectedEdgeLaneCurveThreshold = 0f;
 
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
@@ -128,6 +157,24 @@ public static class TransitSignalPriorityRuntime
             m_TrackSignaledLaneProbe = (byte)freshDebugInfo.TrackSignaledLaneProbe,
             m_TrackApproachLaneProbe = (byte)freshDebugInfo.TrackApproachLaneProbe,
             m_TrackUpstreamLaneProbe = (byte)freshDebugInfo.TrackUpstreamLaneProbe,
+            m_TramApproachIndexLaneCount = job.m_TramApproachIndexLaneCount,
+            m_TrackSignaledLaneEntity = freshDebugInfo.TrackLaneDebugInfo.SignaledLaneEntity,
+            m_TrackApproachLaneEntity = freshDebugInfo.TrackLaneDebugInfo.ApproachLaneEntity,
+            m_TrackUpstreamLaneEntity = freshDebugInfo.TrackLaneDebugInfo.UpstreamLaneEntity,
+            m_TrackSignaledLaneOwnerEntity = freshDebugInfo.TrackLaneDebugInfo.SignaledLaneOwnerEntity,
+            m_TrackApproachLaneOwnerEntity = freshDebugInfo.TrackLaneDebugInfo.ApproachLaneOwnerEntity,
+            m_TrackUpstreamLaneOwnerEntity = freshDebugInfo.TrackLaneDebugInfo.UpstreamLaneOwnerEntity,
+            m_TrackSignaledSiblingSampleCount = freshDebugInfo.TrackLaneDebugInfo.SignaledSiblingSampleCount,
+            m_TrackApproachSiblingSampleCount = freshDebugInfo.TrackLaneDebugInfo.ApproachSiblingSampleCount,
+            m_TrackUpstreamSiblingSampleCount = freshDebugInfo.TrackLaneDebugInfo.UpstreamSiblingSampleCount,
+            m_TrackSignaledLaneIsMaster = freshDebugInfo.TrackLaneDebugInfo.SignaledLaneIsMaster,
+            m_TrackApproachLaneIsMaster = freshDebugInfo.TrackLaneDebugInfo.ApproachLaneIsMaster,
+            m_TrackUpstreamLaneIsMaster = freshDebugInfo.TrackLaneDebugInfo.UpstreamLaneIsMaster,
+            m_FallbackConnectedEdgeCount = freshDebugInfo.TrackLaneDebugInfo.FallbackDiagnostics.ConnectedEdgeCount,
+            m_FallbackTramSublaneCount = freshDebugInfo.TrackLaneDebugInfo.FallbackDiagnostics.TramSublaneCount,
+            m_FallbackPathNodeMatchCount = freshDebugInfo.TrackLaneDebugInfo.FallbackDiagnostics.PathNodeMatchCount,
+            m_FallbackIndexHitCount = freshDebugInfo.TrackLaneDebugInfo.FallbackDiagnostics.IndexHitCount,
+            m_FallbackBestCurvePosition = freshDebugInfo.TrackLaneDebugInfo.FallbackDiagnostics.BestCurvePosition,
         };
         return true;
     }
@@ -151,6 +198,15 @@ public static class TransitSignalPriorityRuntime
     {
         return TspPreemptionPolicy.GetMinimumGreenDurationTicks(
             defaultMinimumGreenTicks,
+            trafficLights.m_CurrentSignalGroup,
+            ToSignalRequest(request));
+    }
+
+    public static bool ShouldAggressivelyPreemptToTargetGroup(
+        TrafficLights trafficLights,
+        TransitSignalPriorityRequest request)
+    {
+        return TspPreemptionPolicy.ShouldAggressivelyPreemptToConflictingGroup(
             trafficLights.m_CurrentSignalGroup,
             ToSignalRequest(request));
     }
@@ -214,7 +270,8 @@ public static class TransitSignalPriorityRuntime
                     out var detectedLaneRole,
                     out var trackSignaledLaneProbe,
                     out var trackApproachLaneProbe,
-                    out var trackUpstreamLaneProbe))
+                    out var trackUpstreamLaneProbe,
+                    out var trackDebugInfo))
             {
                 earlyRequest = detectedEarlyRequest;
             }
@@ -250,6 +307,7 @@ public static class TransitSignalPriorityRuntime
                     TrackSignaledLaneProbe = trackSignaledLaneProbe,
                     TrackApproachLaneProbe = trackApproachLaneProbe,
                     TrackUpstreamLaneProbe = trackUpstreamLaneProbe,
+                    TrackLaneDebugInfo = trackDebugInfo,
                 };
             }
 
@@ -263,6 +321,7 @@ public static class TransitSignalPriorityRuntime
                     TrackSignaledLaneProbe = trackSignaledLaneProbe,
                     TrackApproachLaneProbe = trackApproachLaneProbe,
                     TrackUpstreamLaneProbe = trackUpstreamLaneProbe,
+                    TrackLaneDebugInfo = trackDebugInfo,
                 };
             }
         }
@@ -311,6 +370,7 @@ public static class TransitSignalPriorityRuntime
             TrackSignaledLaneProbe = ToTrackProbeResult(reportedTrackProbeDiagnostics.SignaledLane),
             TrackApproachLaneProbe = ToTrackProbeResult(reportedTrackProbeDiagnostics.ApproachLane),
             TrackUpstreamLaneProbe = ToTrackProbeResult(reportedTrackProbeDiagnostics.UpstreamLane),
+            TrackLaneDebugInfo = selectedCandidate.Value.TrackLaneDebugInfo,
         };
         return true;
     }
@@ -339,13 +399,15 @@ public static class TransitSignalPriorityRuntime
         out TransitSignalPriorityApproachLaneRole laneRole,
         out TransitSignalPriorityTrackProbeResult trackSignaledLaneProbe,
         out TransitSignalPriorityTrackProbeResult trackApproachLaneProbe,
-        out TransitSignalPriorityTrackProbeResult trackUpstreamLaneProbe)
+        out TransitSignalPriorityTrackProbeResult trackUpstreamLaneProbe,
+        out TrackLaneDebugInfo trackDebugInfo)
     {
         request = default;
         laneRole = TransitSignalPriorityApproachLaneRole.None;
         trackSignaledLaneProbe = TransitSignalPriorityTrackProbeResult.None;
         trackApproachLaneProbe = TransitSignalPriorityTrackProbeResult.None;
         trackUpstreamLaneProbe = TransitSignalPriorityTrackProbeResult.None;
+        trackDebugInfo = default;
 
         if (isTramTrackLane)
         {
@@ -358,7 +420,8 @@ public static class TransitSignalPriorityRuntime
                 out laneRole,
                 out trackSignaledLaneProbe,
                 out trackApproachLaneProbe,
-                out trackUpstreamLaneProbe);
+                out trackUpstreamLaneProbe,
+                out trackDebugInfo);
         }
 
         if (!EarlyApproachDetection.ShouldEvaluateRoadTransitEarlyDetection(isPublicCarLane))
@@ -414,13 +477,15 @@ public static class TransitSignalPriorityRuntime
         out TransitSignalPriorityApproachLaneRole laneRole,
         out TransitSignalPriorityTrackProbeResult signaledLaneProbe,
         out TransitSignalPriorityTrackProbeResult approachLaneProbe,
-        out TransitSignalPriorityTrackProbeResult upstreamLaneProbe)
+        out TransitSignalPriorityTrackProbeResult upstreamLaneProbe,
+        out TrackLaneDebugInfo trackDebugInfo)
     {
         request = default;
         laneRole = TransitSignalPriorityApproachLaneRole.None;
         signaledLaneProbe = TransitSignalPriorityTrackProbeResult.None;
         approachLaneProbe = TransitSignalPriorityTrackProbeResult.None;
         upstreamLaneProbe = TransitSignalPriorityTrackProbeResult.None;
+        trackDebugInfo = default;
         TrackProbeSnapshot signaledProbe = ProbeIndexedTrackLane(
             job.m_TramApproachIndex,
             signaledLaneEntity,
@@ -436,9 +501,30 @@ public static class TransitSignalPriorityRuntime
                 TramApproachLaneCurveThreshold,
                 isUpstreamLane: false);
 
+        ConnectedEdgeFallbackDiagnostics fallbackDiagnostics = default;
+        Entity connectedApproachLaneEntity = Entity.Null;
+        if (approachProbe.Result == TransitSignalPriorityTrackProbeResult.NoTramSamples)
+        {
+            TrackProbeSnapshot connectedProbe = TryProbeConnectedEdgeTramLane(
+                job,
+                approachLaneEntity,
+                TramConnectedEdgeLaneCurveThreshold,
+                out fallbackDiagnostics,
+                out connectedApproachLaneEntity);
+            if (connectedProbe.HasSample)
+            {
+                approachProbe = connectedProbe;
+            }
+        }
+
         approachLaneProbe = approachProbe.Result;
 
         Entity upstreamLaneEntity = TryResolveImmediateUpstreamTramLane(job, approachLaneEntity);
+        if (upstreamLaneEntity == Entity.Null && connectedApproachLaneEntity != Entity.Null)
+        {
+            upstreamLaneEntity = TryResolveConnectedUpstreamTramLane(job, connectedApproachLaneEntity);
+        }
+
         TrackProbeSnapshot upstreamProbe = upstreamLaneEntity == Entity.Null
             ? default
             : ProbeIndexedTrackLane(
@@ -447,6 +533,19 @@ public static class TransitSignalPriorityRuntime
                 TramUpstreamLaneCurveThreshold,
                 isUpstreamLane: true);
         upstreamLaneProbe = upstreamProbe.Result;
+        trackDebugInfo = BuildTrackLaneDebugInfo(
+            job,
+            signaledLaneEntity,
+            approachLaneEntity,
+            upstreamLaneEntity);
+        trackDebugInfo.FallbackDiagnostics = fallbackDiagnostics;
+
+        if (approachProbe.Result == TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane)
+        {
+            request = laneRequest;
+            laneRole = TransitSignalPriorityApproachLaneRole.ApproachLane;
+            return true;
+        }
 
         IndexedTrackProbeMatch indexedMatch = EarlyApproachDetection.EvaluateIndexedTrackTramSamples(
             approachProbe.HasSample,
@@ -497,6 +596,157 @@ public static class TransitSignalPriorityRuntime
                 : TransitSignalPriorityTrackProbeResult.MatchOnApproachLane);
     }
 
+    /// <summary>
+    /// Fallback: when the junction-owned approach lane has no tram samples in the index,
+    /// enumerate connected edge sublanes to find the inbound edge lane the tram is actually on.
+    /// </summary>
+    private static TrackProbeSnapshot TryProbeConnectedEdgeTramLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity approachLaneEntity,
+        float threshold,
+        out ConnectedEdgeFallbackDiagnostics diagnostics,
+        out Entity matchedLaneEntity)
+    {
+        diagnostics = default;
+        matchedLaneEntity = Entity.Null;
+
+        if (!job.m_LaneData.TryGetComponent(approachLaneEntity, out var approachLane)
+            || !job.m_OwnerData.TryGetComponent(approachLaneEntity, out var approachOwner))
+        {
+            return default;
+        }
+
+        Entity junctionEntity = approachOwner.m_Owner;
+        if (!job.m_ConnectedEdges.TryGetBuffer(junctionEntity, out var connectedEdges))
+        {
+            return default;
+        }
+
+        diagnostics.ConnectedEdgeCount = (byte)System.Math.Min(connectedEdges.Length, 255);
+        TrackProbeSnapshot bestProbe = default;
+
+        for (int i = 0; i < connectedEdges.Length; i++)
+        {
+            Entity edgeEntity = connectedEdges[i].m_Edge;
+            if (!job.m_SubLanes.TryGetBuffer(edgeEntity, out var edgeSubLanes))
+            {
+                continue;
+            }
+
+            for (int j = 0; j < edgeSubLanes.Length; j++)
+            {
+                Entity edgeLaneEntity = edgeSubLanes[j].m_SubLane;
+                if (!IsTramTrackLane(job, edgeLaneEntity)
+                    || !job.m_LaneData.TryGetComponent(edgeLaneEntity, out var edgeLane))
+                {
+                    continue;
+                }
+
+                diagnostics.TramSublaneCount = (byte)System.Math.Min(diagnostics.TramSublaneCount + 1, 255);
+
+                if (!edgeLane.m_EndNode.Equals(approachLane.m_StartNode))
+                {
+                    continue;
+                }
+
+                diagnostics.PathNodeMatchCount = (byte)System.Math.Min(diagnostics.PathNodeMatchCount + 1, 255);
+
+                if (!job.m_TramApproachIndex.TryGetValue(edgeLaneEntity, out float curvePosition))
+                {
+                    continue;
+                }
+
+                diagnostics.IndexHitCount = (byte)System.Math.Min(diagnostics.IndexHitCount + 1, 255);
+
+                if (!bestProbe.HasSample || curvePosition > bestProbe.CurvePosition)
+                {
+                    diagnostics.BestCurvePosition = curvePosition;
+                    matchedLaneEntity = edgeLaneEntity;
+                    bestProbe = new TrackProbeSnapshot(
+                        true,
+                        curvePosition,
+                        curvePosition >= threshold
+                            ? TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane
+                            : TransitSignalPriorityTrackProbeResult.BelowThreshold);
+                }
+            }
+        }
+
+        return bestProbe;
+    }
+
+    private static Entity TryResolveConnectedUpstreamTramLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity connectedApproachLaneEntity)
+    {
+        if (!job.m_LaneData.TryGetComponent(connectedApproachLaneEntity, out var connectedApproachLane)
+            || !job.m_OwnerData.TryGetComponent(connectedApproachLaneEntity, out var connectedApproachOwner)
+            || !job.m_EdgeData.TryGetComponent(connectedApproachOwner.m_Owner, out var connectedApproachEdge)
+            || !EarlyApproachDetection.TryResolvePathNodeOwnerEntityIndex(
+                connectedApproachLane.m_StartNode.GetOwnerIndex(),
+                connectedApproachEdge.m_Start.Index,
+                connectedApproachEdge.m_End.Index,
+                out int upstreamNodeIndex))
+        {
+            return Entity.Null;
+        }
+
+        Entity upstreamNodeEntity = connectedApproachEdge.m_Start.Index == upstreamNodeIndex
+            ? connectedApproachEdge.m_Start
+            : connectedApproachEdge.m_End;
+
+        if (!job.m_ConnectedEdges.TryGetBuffer(upstreamNodeEntity, out var connectedEdges))
+        {
+            return Entity.Null;
+        }
+
+        Entity currentEdgeEntity = connectedApproachOwner.m_Owner;
+        Entity bestLaneEntity = Entity.Null;
+        float bestCurvePosition = float.MinValue;
+
+        for (int i = 0; i < connectedEdges.Length; i++)
+        {
+            Entity edgeEntity = connectedEdges[i].m_Edge;
+            if (edgeEntity == currentEdgeEntity || !job.m_SubLanes.TryGetBuffer(edgeEntity, out var edgeSubLanes))
+            {
+                continue;
+            }
+
+            for (int j = 0; j < edgeSubLanes.Length; j++)
+            {
+                Entity candidateLaneEntity = edgeSubLanes[j].m_SubLane;
+                if (!IsTramTrackLane(job, candidateLaneEntity)
+                    || !job.m_LaneData.TryGetComponent(candidateLaneEntity, out var candidateLane)
+                    || !EarlyApproachDetection.IsConnectedUpstreamEdgeCandidate(
+                        currentEdgeEntity.Index,
+                        edgeEntity.Index,
+                        candidateLane.m_EndNode.GetOwnerIndex(),
+                        connectedApproachLane.m_StartNode.GetOwnerIndex()))
+                {
+                    continue;
+                }
+
+                if (job.m_TramApproachIndex.TryGetValue(candidateLaneEntity, out float curvePosition))
+                {
+                    if (curvePosition > bestCurvePosition)
+                    {
+                        bestCurvePosition = curvePosition;
+                        bestLaneEntity = candidateLaneEntity;
+                    }
+
+                    continue;
+                }
+
+                if (bestLaneEntity == Entity.Null)
+                {
+                    bestLaneEntity = candidateLaneEntity;
+                }
+            }
+        }
+
+        return bestLaneEntity;
+    }
+
     private static Entity TryResolveImmediateUpstreamTramLane(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         Entity approachLaneEntity)
@@ -543,6 +793,62 @@ public static class TransitSignalPriorityRuntime
     private static TransitSignalPriorityTrackProbeResult ToTrackProbeResult(IndexedTrackProbeMatch match)
     {
         return (TransitSignalPriorityTrackProbeResult)match;
+    }
+
+    private static TrackLaneDebugInfo BuildTrackLaneDebugInfo(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity signaledLaneEntity,
+        Entity approachLaneEntity,
+        Entity upstreamLaneEntity)
+    {
+        return new TrackLaneDebugInfo
+        {
+            SignaledLaneEntity = signaledLaneEntity,
+            ApproachLaneEntity = approachLaneEntity,
+            UpstreamLaneEntity = upstreamLaneEntity,
+            SignaledLaneOwnerEntity = GetLaneOwnerEntity(job, signaledLaneEntity),
+            ApproachLaneOwnerEntity = GetLaneOwnerEntity(job, approachLaneEntity),
+            UpstreamLaneOwnerEntity = GetLaneOwnerEntity(job, upstreamLaneEntity),
+            SignaledSiblingSampleCount = CountIndexedSiblingSamples(job, signaledLaneEntity),
+            ApproachSiblingSampleCount = CountIndexedSiblingSamples(job, approachLaneEntity),
+            UpstreamSiblingSampleCount = CountIndexedSiblingSamples(job, upstreamLaneEntity),
+            SignaledLaneIsMaster = HasMasterLane(job, signaledLaneEntity),
+            ApproachLaneIsMaster = HasMasterLane(job, approachLaneEntity),
+            UpstreamLaneIsMaster = HasMasterLane(job, upstreamLaneEntity),
+        };
+    }
+
+    private static Entity GetLaneOwnerEntity(PatchedTrafficLightSystem.UpdateTrafficLightsJob job, Entity laneEntity)
+    {
+        return laneEntity != Entity.Null && job.m_OwnerData.TryGetComponent(laneEntity, out var owner)
+            ? owner.m_Owner
+            : Entity.Null;
+    }
+
+    private static byte CountIndexedSiblingSamples(PatchedTrafficLightSystem.UpdateTrafficLightsJob job, Entity laneEntity)
+    {
+        if (laneEntity == Entity.Null
+            || !job.m_OwnerData.TryGetComponent(laneEntity, out var owner)
+            || !job.m_SubLanes.TryGetBuffer(owner.m_Owner, out var subLanes))
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < subLanes.Length; i++)
+        {
+            if (job.m_TramApproachIndex.ContainsKey(subLanes[i].m_SubLane))
+            {
+                count++;
+            }
+        }
+
+        return count >= byte.MaxValue ? byte.MaxValue : (byte)count;
+    }
+
+    private static bool HasMasterLane(PatchedTrafficLightSystem.UpdateTrafficLightsJob job, Entity laneEntity)
+    {
+        return laneEntity != Entity.Null && job.m_ExtraTypeHandle.m_MasterLane.HasComponent(laneEntity);
     }
 
     private static TransitSignalPriorityRequest CreateRequest(

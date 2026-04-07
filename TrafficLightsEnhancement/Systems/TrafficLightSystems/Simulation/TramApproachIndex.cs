@@ -34,10 +34,16 @@ internal static class TramApproachIndex
             TransitApproachSuppressionFlags suppressionFlags =
                 GetSuppressionFlags(publicTransport.m_State);
 
+            // For the tram approach index, only suppress boarding trams. RequireStop and
+            // Arriving must not suppress — the whole point of TSP is to detect trams that
+            // are being told to stop and preempt the signal before they have to.
+            TransitApproachSuppressionFlags indexSuppressionFlags =
+                suppressionFlags & TransitApproachSuppressionFlags.Boarding;
+
             if (!EarlyApproachDetection.IsMovingEligibleApproachState(
                     isEligibleLane: true,
                     isVehicleMoving: trainNavigation.m_Speed > MovingTrainSpeedThreshold,
-                    suppressionFlags))
+                    indexSuppressionFlags))
             {
                 continue;
             }

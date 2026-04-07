@@ -85,7 +85,7 @@ public partial class TransitSignalPriorityDiagnosticsSystem : GameSystemBase
             {
                 string action = previousState.m_HadRequest ? "updated" : "started";
                 m_Log.Info(
-                    $"[TSP] Junction {FormatEntity(entity)} request {action}: source={FormatSource(request.m_SourceType)} target={request.m_TargetSignalGroup} extend={request.m_ExtendCurrentPhase} strength={request.m_Strength:0.##} origin={FormatRequestKind(runtimeDebugInfo.m_RequestKind)} laneRole={FormatApproachLaneRole(runtimeDebugInfo.m_ApproachLaneRole)} earlyCandidate={runtimeDebugInfo.m_HasEarlyCandidate} petitionerCandidate={runtimeDebugInfo.m_HasPetitionerCandidate} hadExisting={runtimeDebugInfo.m_HadExistingRequest} trackSignalProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackSignaledLaneProbe)} trackApproachProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackApproachLaneProbe)} trackUpstreamProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackUpstreamLaneProbe)} expiry={runtimeDebugInfo.m_ExpiryTimer}");
+                    $"[TSP] Junction {FormatEntity(entity)} request {action}: source={FormatSource(request.m_SourceType)} target={request.m_TargetSignalGroup} extend={request.m_ExtendCurrentPhase} strength={request.m_Strength:0.##} origin={FormatRequestKind(runtimeDebugInfo.m_RequestKind)} laneRole={FormatApproachLaneRole(runtimeDebugInfo.m_ApproachLaneRole)} earlyCandidate={runtimeDebugInfo.m_HasEarlyCandidate} petitionerCandidate={runtimeDebugInfo.m_HasPetitionerCandidate} hadExisting={runtimeDebugInfo.m_HadExistingRequest} trackSignalProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackSignaledLaneProbe)} trackApproachProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackApproachLaneProbe)} trackUpstreamProbe={FormatTrackProbe(runtimeDebugInfo.m_TrackUpstreamLaneProbe)} indexLanes={runtimeDebugInfo.m_TramApproachIndexLaneCount} signaledLane={FormatTrackLaneRef(runtimeDebugInfo.m_TrackSignaledLaneEntity, runtimeDebugInfo.m_TrackSignaledLaneOwnerEntity, runtimeDebugInfo.m_TrackSignaledLaneIsMaster, runtimeDebugInfo.m_TrackSignaledSiblingSampleCount)} approachLane={FormatTrackLaneRef(runtimeDebugInfo.m_TrackApproachLaneEntity, runtimeDebugInfo.m_TrackApproachLaneOwnerEntity, runtimeDebugInfo.m_TrackApproachLaneIsMaster, runtimeDebugInfo.m_TrackApproachSiblingSampleCount)} upstreamLane={FormatTrackLaneRef(runtimeDebugInfo.m_TrackUpstreamLaneEntity, runtimeDebugInfo.m_TrackUpstreamLaneOwnerEntity, runtimeDebugInfo.m_TrackUpstreamLaneIsMaster, runtimeDebugInfo.m_TrackUpstreamSiblingSampleCount)} expiry={runtimeDebugInfo.m_ExpiryTimer}");
             }
 
             var nextState = new TransitSignalPriorityDebugState
@@ -267,8 +267,19 @@ public partial class TransitSignalPriorityDiagnosticsSystem : GameSystemBase
             TransitSignalPriorityTrackProbeResult.BelowThreshold => "below-threshold",
             TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "match-approach",
             TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "match-upstream",
+            TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "match-connected-approach",
             _ => "none",
         };
+    }
+
+    private static string FormatTrackLaneRef(Entity laneEntity, Entity ownerEntity, bool isMaster, byte siblingSampleCount)
+    {
+        if (laneEntity == Entity.Null)
+        {
+            return "none";
+        }
+
+        return $"{FormatEntity(laneEntity)}/{(isMaster ? "master" : "lane")}:owner={FormatEntity(ownerEntity)}:sib={siblingSampleCount}";
     }
 
 }

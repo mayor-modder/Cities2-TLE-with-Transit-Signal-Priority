@@ -25,6 +25,7 @@ public enum TransitSignalPriorityTrackProbeResult : byte
     BelowThreshold = 2,
     MatchOnApproachLane = 3,
     MatchOnUpstreamLane = 4,
+    MatchOnConnectedApproachLane = 5,
 }
 
 public struct TransitSignalPriorityRuntimeDebugInfo : IComponentData
@@ -42,4 +43,22 @@ public struct TransitSignalPriorityRuntimeDebugInfo : IComponentData
     public byte m_TrackSignaledLaneProbe;
     public byte m_TrackApproachLaneProbe;
     public byte m_TrackUpstreamLaneProbe;
+    public int m_TramApproachIndexLaneCount;
+    public Entity m_TrackSignaledLaneEntity;
+    public Entity m_TrackApproachLaneEntity;
+    public Entity m_TrackUpstreamLaneEntity;
+    public Entity m_TrackSignaledLaneOwnerEntity;
+    public Entity m_TrackApproachLaneOwnerEntity;
+    public Entity m_TrackUpstreamLaneOwnerEntity;
+    public byte m_TrackSignaledSiblingSampleCount;
+    public byte m_TrackApproachSiblingSampleCount;
+    public byte m_TrackUpstreamSiblingSampleCount;
+    public bool m_TrackSignaledLaneIsMaster;
+    public bool m_TrackApproachLaneIsMaster;
+    public bool m_TrackUpstreamLaneIsMaster;
+    public byte m_FallbackConnectedEdgeCount;
+    public byte m_FallbackTramSublaneCount;
+    public byte m_FallbackPathNodeMatchCount;
+    public byte m_FallbackIndexHitCount;
+    public float m_FallbackBestCurvePosition;
 }

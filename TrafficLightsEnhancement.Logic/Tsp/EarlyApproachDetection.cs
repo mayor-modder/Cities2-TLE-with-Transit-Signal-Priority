@@ -158,4 +158,41 @@ public static class EarlyApproachDetection
     {
         return earlyRequest ?? petitionerRequest;
     }
+
+    public static bool ShouldResolveSourceLaneRecursively(bool isTrackLane, bool isPedestrianCrosswalk)
+    {
+        return isTrackLane || isPedestrianCrosswalk;
+    }
+
+    public static bool IsConnectedUpstreamEdgeCandidate(
+        int currentEdgeIndex,
+        int candidateEdgeIndex,
+        int candidateLaneEndOwnerIndex,
+        int baseLaneStartOwnerIndex)
+    {
+        return candidateEdgeIndex != currentEdgeIndex
+            && candidateLaneEndOwnerIndex == baseLaneStartOwnerIndex;
+    }
+
+    public static bool TryResolvePathNodeOwnerEntityIndex(
+        int pathNodeOwnerIndex,
+        int edgeStartNodeIndex,
+        int edgeEndNodeIndex,
+        out int nodeIndex)
+    {
+        if (pathNodeOwnerIndex == edgeStartNodeIndex)
+        {
+            nodeIndex = edgeStartNodeIndex;
+            return true;
+        }
+
+        if (pathNodeOwnerIndex == edgeEndNodeIndex)
+        {
+            nodeIndex = edgeEndNodeIndex;
+            return true;
+        }
+
+        nodeIndex = -1;
+        return false;
+    }
 }

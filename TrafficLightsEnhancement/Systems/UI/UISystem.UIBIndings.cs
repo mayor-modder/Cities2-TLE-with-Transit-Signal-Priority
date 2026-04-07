@@ -352,6 +352,8 @@ public partial class UISystem
             || debugInfo.m_TrackUpstreamLaneProbe != (byte)TransitSignalPriorityTrackProbeResult.None)
         {
             state += $", track[signal={FormatTrackProbe(debugInfo.m_TrackSignaledLaneProbe)}, approach={FormatTrackProbe(debugInfo.m_TrackApproachLaneProbe)}, upstream={FormatTrackProbe(debugInfo.m_TrackUpstreamLaneProbe)}]";
+            state += $"\nindex-lanes={debugInfo.m_TramApproachIndexLaneCount}, lanes[s={FormatTrackLaneRef(debugInfo.m_TrackSignaledLaneEntity, debugInfo.m_TrackSignaledLaneOwnerEntity, debugInfo.m_TrackSignaledLaneIsMaster, debugInfo.m_TrackSignaledSiblingSampleCount)}, a={FormatTrackLaneRef(debugInfo.m_TrackApproachLaneEntity, debugInfo.m_TrackApproachLaneOwnerEntity, debugInfo.m_TrackApproachLaneIsMaster, debugInfo.m_TrackApproachSiblingSampleCount)}, u={FormatTrackLaneRef(debugInfo.m_TrackUpstreamLaneEntity, debugInfo.m_TrackUpstreamLaneOwnerEntity, debugInfo.m_TrackUpstreamLaneIsMaster, debugInfo.m_TrackUpstreamSiblingSampleCount)}]";
+            state += $"\nfallback[edges={debugInfo.m_FallbackConnectedEdgeCount}, tram-sublanes={debugInfo.m_FallbackTramSublaneCount}, pathnode-match={debugInfo.m_FallbackPathNodeMatchCount}, index-hit={debugInfo.m_FallbackIndexHitCount}, curve={debugInfo.m_FallbackBestCurvePosition:F3}]";
         }
 
         return state;
@@ -370,8 +372,24 @@ public partial class UISystem
             TransitSignalPriorityTrackProbeResult.BelowThreshold => "below-threshold",
             TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "match-approach",
             TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "match-upstream",
+            TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "match-connected-approach",
             _ => "none",
         };
+    }
+
+    private static string FormatTrackLaneRef(Entity laneEntity, Entity ownerEntity, bool isMaster, byte siblingSampleCount)
+    {
+        if (laneEntity == Entity.Null)
+        {
+            return "none";
+        }
+
+        return $"{FormatEntity(laneEntity)}/{(isMaster ? "master" : "lane")} owner={FormatEntity(ownerEntity)} sib={siblingSampleCount}";
+    }
+
+    private static string FormatEntity(Entity entity)
+    {
+        return entity == Entity.Null ? "null" : $"{entity.Index}:{entity.Version}";
     }
 
     private bool IsTrafficTypeActive(Entity junctionEntity, int phaseIndex, string trafficType)
