@@ -250,6 +250,11 @@ public static class TransitSignalPriorityRuntime
             bool isPublicCarLane = IsPublicOnlyCarLane(job, approachLaneEntity);
 
             TspRequest? earlyRequest = null;
+            TransitSignalPriorityApproachLaneRole detectedLaneRole = TransitSignalPriorityApproachLaneRole.None;
+            TransitSignalPriorityTrackProbeResult trackSignaledLaneProbe = TransitSignalPriorityTrackProbeResult.None;
+            TransitSignalPriorityTrackProbeResult trackApproachLaneProbe = TransitSignalPriorityTrackProbeResult.None;
+            TransitSignalPriorityTrackProbeResult trackUpstreamLaneProbe = TransitSignalPriorityTrackProbeResult.None;
+            TrackLaneDebugInfo trackDebugInfo = default;
             if (isTramTrackLane
                 && global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPriorityRuntime.TryBuildRequestForLane(
                     logicSettings,
@@ -265,11 +270,11 @@ public static class TransitSignalPriorityRuntime
                     isPublicCarLane,
                     trackLaneRequest,
                     out var detectedEarlyRequest,
-                    out var detectedLaneRole,
-                    out var trackSignaledLaneProbe,
-                    out var trackApproachLaneProbe,
-                    out var trackUpstreamLaneProbe,
-                    out var trackDebugInfo))
+                    out detectedLaneRole,
+                    out trackSignaledLaneProbe,
+                    out trackApproachLaneProbe,
+                    out trackUpstreamLaneProbe,
+                    out trackDebugInfo))
             {
                 earlyRequest = detectedEarlyRequest;
             }
@@ -438,7 +443,7 @@ public static class TransitSignalPriorityRuntime
         Entity approachLaneEntity,
         bool isTrackLane,
         bool isPublicCarLane,
-        TransitSignalPrioritySettings logicSettings,
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings,
         out TspRequest request)
     {
         request = default;
@@ -809,8 +814,8 @@ public static class TransitSignalPriorityRuntime
             isPublicOnlyLane: isPublicCarLane,
             petitionerEntityExists: true,
             petitionerHasPublicTransport: hasPublicTransport,
-            petitionerFrontLaneMatches: hasCarLane && carCurrentLane.m_Front.m_Lane == approachLaneEntity,
-            petitionerRearLaneMatches: hasCarLane && carCurrentLane.m_Rear.m_Lane == approachLaneEntity);
+            petitionerFrontLaneMatches: hasCarLane && carCurrentLane.m_Lane == approachLaneEntity,
+            petitionerRearLaneMatches: false);
     }
 
     private static IndexedTrackProbeDiagnostics ToIndexedTrackProbeDiagnostics(TransitApproachCandidate? candidate)
