@@ -129,6 +129,21 @@ public class TspEarlyDetectionTests
     }
 
     [Fact]
+    public void Bus_early_probe_reports_no_public_transport_lane_objects_before_lane_mismatch()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 0,
+            matchedApproachLane: false,
+            reachedThreshold: true,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.None);
+
+        Assert.Equal(BusEarlyProbeResult.NoPublicTransportLaneObjects, result);
+    }
+
+    [Fact]
     public void Bus_early_probe_reports_suppressed_when_transit_stop_suppression_applies()
     {
         BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
@@ -139,6 +154,21 @@ public class TspEarlyDetectionTests
             blocked: false,
             reachedLaneEnd: false,
             suppressionFlags: TransitApproachSuppressionFlags.Boarding);
+
+        Assert.Equal(BusEarlyProbeResult.Suppressed, result);
+    }
+
+    [Fact]
+    public void Bus_early_probe_reports_suppressed_before_below_threshold_when_threshold_is_not_reached()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 1,
+            matchedApproachLane: true,
+            reachedThreshold: false,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.Arriving);
 
         Assert.Equal(BusEarlyProbeResult.Suppressed, result);
     }
@@ -193,6 +223,18 @@ public class TspEarlyDetectionTests
             petitionerHasPublicTransport: false,
             petitionerFrontLaneMatches: true,
             petitionerRearLaneMatches: true);
+
+        Assert.Equal(BusPetitionerProbeResult.NotPublicTransport, result);
+    }
+
+    [Fact]
+    public void Bus_petitioner_probe_reports_not_public_transport_before_lane_mismatch_when_no_lane_matches()
+    {
+        BusPetitionerProbeResult result = EarlyApproachDetection.EvaluateBusPetitionerProbe(
+            petitionerExists: true,
+            petitionerHasPublicTransport: false,
+            petitionerFrontLaneMatches: false,
+            petitionerRearLaneMatches: false);
 
         Assert.Equal(BusPetitionerProbeResult.NotPublicTransport, result);
     }
