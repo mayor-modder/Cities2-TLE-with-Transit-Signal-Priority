@@ -175,64 +175,12 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     m_CommandBuffer.RemoveComponent<TransitSignalPriorityRequest>(unfilteredChunkIndex, currentEntity);
                 }
 
-                if (TspRuntime.TryGetGroupedPropagatedRequest(this, currentEntity, trafficLights, out var groupedTspRequest))
-                {
-                    if (!hasTspRequest)
-                    {
-                        hasTspRequest = true;
-                        activeTspRequest = groupedTspRequest;
-                        tspRequestOrigin = TransitSignalPriorityRequestOrigin.GroupedPropagation;
-                        if (m_ExtraTypeHandle.m_TransitSignalPrioritySettingsLookup.TryGetComponent(currentEntity, out var groupedTspSettings)
-                            && groupedTspSettings.m_Enabled)
-                        {
-                            activeTspSettings = groupedTspSettings;
-                        }
-                    }
-                    else
-                    {
-                        TransitSignalPriorityRequest preferredRequest = TspRuntime.SelectPreferredRequest(
-                            activeTspRequest,
-                            groupedTspRequest,
-                            preferActiveOnTie: true);
-
-                        if (preferredRequest.m_TargetSignalGroup != activeTspRequest.m_TargetSignalGroup
-                            || preferredRequest.m_SourceType != activeTspRequest.m_SourceType
-                            || preferredRequest.m_Strength != activeTspRequest.m_Strength
-                            || preferredRequest.m_ExpiryTimer != activeTspRequest.m_ExpiryTimer
-                            || preferredRequest.m_ExtendCurrentPhase != activeTspRequest.m_ExtendCurrentPhase)
-                        {
-                            activeTspRequest = preferredRequest;
-                            tspRequestOrigin = TransitSignalPriorityRequestOrigin.GroupedPropagation;
-                        }
-                    }
-                }
-
                 TransitSignalPriorityRuntimeDebugInfo activeTspDebugInfo = default;
                 bool hasActiveTspDebugInfo = false;
-                if (hasTspRequest)
+                if (hasLocalTspDebugInfo)
                 {
-                    if (tspRequestOrigin == TransitSignalPriorityRequestOrigin.GroupedPropagation)
-                    {
-                        activeTspDebugInfo = new TransitSignalPriorityRuntimeDebugInfo
-                        {
-                            m_RequestKind = (byte)TransitSignalPriorityRequestKind.GroupedPropagation,
-                            m_ApproachLaneRole = (byte)TransitSignalPriorityApproachLaneRole.None,
-                            m_SourceType = activeTspRequest.m_SourceType,
-                            m_TargetSignalGroup = activeTspRequest.m_TargetSignalGroup,
-                            m_Strength = activeTspRequest.m_Strength,
-                            m_ExpiryTimer = activeTspRequest.m_ExpiryTimer,
-                            m_ExtendCurrentPhase = activeTspRequest.m_ExtendCurrentPhase,
-                            m_HasEarlyCandidate = false,
-                            m_HasPetitionerCandidate = false,
-                            m_HadExistingRequest = false,
-                        };
-                        hasActiveTspDebugInfo = true;
-                    }
-                    else if (hasLocalTspDebugInfo)
-                    {
-                        activeTspDebugInfo = localTspDebugInfo;
-                        hasActiveTspDebugInfo = true;
-                    }
+                    activeTspDebugInfo = localTspDebugInfo;
+                    hasActiveTspDebugInfo = true;
                 }
 
                 if (hasActiveTspDebugInfo)

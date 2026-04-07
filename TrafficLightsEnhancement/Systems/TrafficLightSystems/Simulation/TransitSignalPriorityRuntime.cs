@@ -892,37 +892,6 @@ public static class TransitSignalPriorityRuntime
         };
     }
 
-    public static bool TryGetGroupedPropagatedRequest(
-        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
-        Entity junctionEntity,
-        TrafficLights trafficLights,
-        out TransitSignalPriorityRequest request)
-    {
-        request = default;
-
-        if (!job.m_ExtraTypeHandle.m_GroupedTransitSignalPriorityRequest.TryGetComponent(junctionEntity, out var groupedRequest))
-        {
-            return false;
-        }
-
-        if (groupedRequest.m_TargetSignalGroup == 0 || groupedRequest.m_Strength <= 0f)
-        {
-            return false;
-        }
-
-        request = new TransitSignalPriorityRequest
-        {
-            m_TargetSignalGroup = groupedRequest.m_TargetSignalGroup,
-            m_SourceType = groupedRequest.m_SourceType,
-            m_Strength = groupedRequest.m_Strength,
-            m_ExpiryTimer = groupedRequest.m_ExpiryTimer,
-            m_ExtendCurrentPhase = groupedRequest.m_ExtendCurrentPhase
-                && trafficLights.m_CurrentSignalGroup > 0
-                && trafficLights.m_CurrentSignalGroup == groupedRequest.m_TargetSignalGroup,
-        };
-        return true;
-    }
-
     public static TransitSignalPriorityRequest SelectPreferredRequest(
         TransitSignalPriorityRequest activeRequest,
         TransitSignalPriorityRequest candidateRequest,

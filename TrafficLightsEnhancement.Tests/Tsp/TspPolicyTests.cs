@@ -72,6 +72,21 @@ public class TspPolicyTests
     }
 
     [Fact]
+    public void Grouped_propagation_setting_remains_persisted_but_runtime_does_not_require_grouped_tsp_paths()
+    {
+        var settings = new TransitSignalPrioritySettings
+        {
+            m_Enabled = true,
+            m_AllowGroupPropagation = false,
+        };
+
+        var availability = TspPolicy.GetAvailability(settings, isGroupedIntersection: true);
+
+        Assert.True(TspPolicy.HasPersistedUserValue(settings));
+        Assert.True(availability.IsRuntimeEligible);
+    }
+
+    [Fact]
     public void Legacy_default_request_horizon_is_normalized_to_short_runtime_value()
     {
         Assert.Equal(

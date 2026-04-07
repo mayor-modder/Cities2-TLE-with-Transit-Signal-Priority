@@ -109,7 +109,6 @@ public partial class UISystem
         CreateTrigger<string>("CallDeleteTrafficGroup", CallDeleteTrafficGroup);
         CreateTrigger<string>("CallSetTrafficGroupName", CallSetTrafficGroupName);
         CreateTrigger<string>("CallSetGreenWaveEnabled", CallSetGreenWaveEnabled);
-        CreateTrigger<string>("CallSetTspPropagationEnabled", CallSetTspPropagationEnabled);
         CreateTrigger<string>("CallSetGreenWaveSpeed", CallSetGreenWaveSpeed);
         CreateTrigger<string>("CallSetGreenWaveOffset", CallSetGreenWaveOffset);
         CreateTrigger<string>("CallCalculateSignalDelays", CallCalculateSignalDelays);
@@ -245,10 +244,7 @@ public partial class UISystem
 
         bool hasLocalRequest = EntityManager.TryGetComponent(junctionEntity, out TransitSignalPriorityRequest localRequest)
             && IsValidTspRequest(localRequest);
-        bool hasGroupedRequest = EntityManager.TryGetComponent(junctionEntity, out GroupedTransitSignalPriorityRequest groupedRequest)
-            && IsValidGroupedTspRequest(groupedRequest);
-
-        if (!hasLocalRequest && !hasGroupedRequest)
+        if (!hasLocalRequest)
         {
             return LogicTsp.TspStatusFormatter.Format(new LogicTsp.TspStatusSnapshot(
                 enabled: true,
@@ -262,22 +258,10 @@ public partial class UISystem
         byte targetSignalGroup;
         byte sourceType;
         bool extendCurrentPhase;
-        LogicTsp.TspRequestOrigin requestOrigin;
-
-        if (hasLocalRequest && (!hasGroupedRequest || localRequest.m_Strength >= groupedRequest.m_Strength))
-        {
-            targetSignalGroup = localRequest.m_TargetSignalGroup;
-            sourceType = localRequest.m_SourceType;
-            extendCurrentPhase = localRequest.m_ExtendCurrentPhase;
-            requestOrigin = LogicTsp.TspRequestOrigin.Local;
-        }
-        else
-        {
-            targetSignalGroup = groupedRequest.m_TargetSignalGroup;
-            sourceType = groupedRequest.m_SourceType;
-            extendCurrentPhase = groupedRequest.m_ExtendCurrentPhase;
-            requestOrigin = LogicTsp.TspRequestOrigin.GroupedPropagation;
-        }
+        LogicTsp.TspRequestOrigin requestOrigin = LogicTsp.TspRequestOrigin.Local;
+        targetSignalGroup = localRequest.m_TargetSignalGroup;
+        sourceType = localRequest.m_SourceType;
+        extendCurrentPhase = localRequest.m_ExtendCurrentPhase;
 
         LogicTsp.TspSelectionReason reason = LogicTsp.TspSelectionReason.SelectedTargetPhase;
         if (EntityManager.TryGetComponent(junctionEntity, out TrafficLights trafficLights)
@@ -298,11 +282,6 @@ public partial class UISystem
     }
 
     private static bool IsValidTspRequest(TransitSignalPriorityRequest request)
-    {
-        return request.m_TargetSignalGroup > 0 && request.m_Strength > 0f;
-    }
-
-    private static bool IsValidGroupedTspRequest(GroupedTransitSignalPriorityRequest request)
     {
         return request.m_TargetSignalGroup > 0 && request.m_Strength > 0f;
     }
@@ -893,7 +872,6 @@ public partial class UISystem
                         greenWaveEnabled = group.m_GreenWaveEnabled,
                         greenWaveSpeed = group.m_GreenWaveSpeed,
                         greenWaveOffset = group.m_GreenWaveOffset,
-                        tspPropagationEnabled = group.m_TspPropagationEnabled,
                         leaderIndex = leaderEntity.Index,
                         leaderVersion = leaderEntity.Version,
                         currentJunctionIndex = m_SelectedEntity.Index,
@@ -1785,48 +1763,6 @@ public partial class UISystem
         {
             var trafficGroupSystem = World.GetOrCreateSystemManaged<TrafficGroupSystem>();
             trafficGroupSystem.SetGreenWaveEnabled(groupEntity, enabled);
-            m_MainPanelBinding.Update();
-        }
-    }
-
-    protected void CallSetTspPropagationEnabled(string input)
-    {
-        var definition = new { groupIndex = 0, groupVersion = 0, enabled = false, key = "", value = "", isChecked = false };
-        var data = JsonConvert.DeserializeAnonymousType(input, definition);
-
-        Entity groupEntity;
-        bool enabled;
-
-        if (data.key == "TspPropagationEnabled")
-        {
-            if (m_SelectedEntity == Entity.Null || !EntityManager.HasComponent<TrafficGroupMember>(m_SelectedEntity))
-            {
-                return;
-            }
-
-            var member = EntityManager.GetComponentData<TrafficGroupMember>(m_SelectedEntity);
-            groupEntity = member.m_GroupEntity;
-
-            if (EntityManager.HasComponent<TrafficGroup>(groupEntity))
-            {
-                var currentGroup = EntityManager.GetComponentData<TrafficGroup>(groupEntity);
-                enabled = !currentGroup.m_TspPropagationEnabled;
-            }
-            else
-            {
-                enabled = false;
-            }
-        }
-        else
-        {
-            groupEntity = new Entity { Index = data.groupIndex, Version = data.groupVersion };
-            enabled = data.enabled;
-        }
-
-        if (groupEntity != Entity.Null)
-        {
-            var trafficGroupSystem = World.GetOrCreateSystemManaged<TrafficGroupSystem>();
-            trafficGroupSystem.SetTspPropagationEnabled(groupEntity, enabled);
             m_MainPanelBinding.Update();
         }
     }

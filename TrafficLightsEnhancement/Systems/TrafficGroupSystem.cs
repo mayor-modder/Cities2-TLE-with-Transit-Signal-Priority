@@ -12,17 +12,12 @@ using System.Collections.Generic;
 using C2VM.TrafficLightsEnhancement.Domain;
 using Colossal.Entities;
 using Game.SceneFlow;
-using GroupedTspCandidate = TrafficLightsEnhancement.Logic.Tsp.GroupedTspCandidate;
-using GroupedTspMember = TrafficLightsEnhancement.Logic.Tsp.GroupedTspMember;
-using GroupedTspPropagation = TrafficLightsEnhancement.Logic.Tsp.GroupedTspPropagation;
-using TspSource = TrafficLightsEnhancement.Logic.Tsp.TspSource;
 
 namespace C2VM.TrafficLightsEnhancement.Systems;
 
 public partial class TrafficGroupSystem : GameSystemBase
 {
 	private static ILog m_Log = Mod.m_Log;
-	private const float GroupTspPropagationDistance = 90f;
 
 	private EntityQuery m_GroupQuery;
 	private EntityQuery m_MemberQuery;
@@ -54,21 +49,8 @@ public partial class TrafficGroupSystem : GameSystemBase
 		{
 			var groupEntity = groups[i];
 			var group = groupComponents[i];
-			
-			if (!group.m_IsCoordinated)
-			{
-				RemoveGroupTspState(groupEntity);
-				continue;
-			}
-			
-			if (group.m_TspPropagationEnabled)
-			{
-				UpdateGroupTspState(groupEntity);
-			}
-			else
-			{
-				RemoveGroupTspState(groupEntity);
-			}
+
+			RemoveGroupTspState(groupEntity);
 			group.m_CycleTimer += 1f;
 			if (group.m_CycleTimer >= group.m_CycleLength)
 			{
@@ -80,139 +62,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		
 		groups.Dispose();
 		groupComponents.Dispose();
-	}
-
-	private void UpdateGroupTspState(Entity groupEntity)
-	{
-		if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
-		{
-			EntityManager.RemoveComponent<TrafficGroupTspState>(groupEntity);
-		}
-
-		var members = GetGroupMembers(groupEntity);
-		if (members.Length == 0)
-		{
-			members.Dispose();
-			return;
-		}
-
-		var orderedMembers = new List<GroupedTspRuntimeMember>(members.Length);
-		for (int i = 0; i < members.Length; i++)
-		{
-			Entity memberEntity = members[i];
-			if (!EntityManager.Exists(memberEntity) || !EntityManager.HasComponent<TrafficGroupMember>(memberEntity))
-			{
-				continue;
-			}
-
-			var member = EntityManager.GetComponentData<TrafficGroupMember>(memberEntity);
-			bool hasNode = EntityManager.TryGetComponent(memberEntity, out Node node);
-			bool hasSettings = EntityManager.TryGetComponent(memberEntity, out TransitSignalPrioritySettings settings);
-			bool hasLocalRequest = EntityManager.TryGetComponent(memberEntity, out TransitSignalPriorityRequest localRequest);
-
-			orderedMembers.Add(new GroupedTspRuntimeMember(
-				memberEntity,
-				member.m_GroupIndex,
-				hasNode,
-				hasNode ? node.m_Position : float3.zero,
-				hasSettings,
-				hasSettings ? settings : default,
-				hasLocalRequest,
-				hasLocalRequest ? localRequest : default));
-		}
-
-		orderedMembers.Sort(static (left, right) => left.GroupIndex.CompareTo(right.GroupIndex));
-
-		var helperMembers = new List<GroupedTspMember>(orderedMembers.Count);
-		var helperCandidates = new List<GroupedTspCandidate>(orderedMembers.Count);
-		var entitiesByMemberIndex = new Dictionary<int, Entity>(orderedMembers.Count);
-		float3 previousEligiblePosition = float3.zero;
-		bool hasPreviousEligiblePosition = false;
-
-		for (int i = 0; i < orderedMembers.Count; i++)
-		{
-			var member = orderedMembers[i];
-			if (!member.IsPropagationEligible)
-			{
-				continue;
-			}
-
-			float distanceFromPrevious = 0f;
-			if (hasPreviousEligiblePosition)
-			{
-				distanceFromPrevious = math.distance(previousEligiblePosition, member.Position);
-			}
-
-			helperMembers.Add(new GroupedTspMember(member.GroupIndex, distanceFromPrevious));
-			entitiesByMemberIndex[member.GroupIndex] = member.Entity;
-			previousEligiblePosition = member.Position;
-			hasPreviousEligiblePosition = true;
-
-			if (!member.HasValidLocalRequest)
-			{
-				continue;
-			}
-
-			helperCandidates.Add(new GroupedTspCandidate(
-				originMemberIndex: member.GroupIndex,
-				targetSignalGroup: member.LocalRequest.m_TargetSignalGroup,
-				source: (TspSource)member.LocalRequest.m_SourceType,
-				strength: member.LocalRequest.m_Strength,
-				expiryTimer: member.LocalRequest.m_ExpiryTimer,
-				extendCurrentPhase: member.LocalRequest.m_ExtendCurrentPhase));
-		}
-
-		var assignments = GroupedTspPropagation.BuildAssignments(
-			helperMembers,
-			helperCandidates,
-			GroupTspPropagationDistance);
-
-		var affectedMembers = new HashSet<Entity>();
-		for (int i = 0; i < assignments.Count; i++)
-		{
-			var assignment = assignments[i];
-			if (!entitiesByMemberIndex.TryGetValue(assignment.MemberIndex, out Entity targetEntity) ||
-				!entitiesByMemberIndex.TryGetValue(assignment.OriginMemberIndex, out Entity originEntity))
-			{
-				continue;
-			}
-
-			var request = new GroupedTransitSignalPriorityRequest
-			{
-				m_TargetSignalGroup = (byte)assignment.TargetSignalGroup,
-				m_SourceType = (byte)assignment.Source,
-				m_Strength = assignment.Strength,
-				m_ExpiryTimer = assignment.ExpiryTimer,
-				m_ExtendCurrentPhase = assignment.ExtendCurrentPhase,
-				m_OriginMemberIndex = assignment.OriginMemberIndex,
-				m_OriginEntity = originEntity,
-				m_GroupEntity = groupEntity,
-			};
-
-			if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(targetEntity))
-			{
-				EntityManager.SetComponentData(targetEntity, request);
-			}
-			else
-			{
-				EntityManager.AddComponentData(targetEntity, request);
-			}
-
-			affectedMembers.Add(targetEntity);
-		}
-
-		for (int i = 0; i < members.Length; i++)
-		{
-			Entity memberEntity = members[i];
-			if (affectedMembers.Contains(memberEntity) || !EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(memberEntity))
-			{
-				continue;
-			}
-
-			EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(memberEntity);
-		}
-
-		members.Dispose();
 	}
 
 	private void RemoveGroupTspState(Entity groupEntity)
@@ -242,64 +91,7 @@ public partial class TrafficGroupSystem : GameSystemBase
 			return;
 		}
 
-		var group = EntityManager.GetComponentData<TrafficGroup>(groupEntity);
-		if (!group.m_IsCoordinated || !group.m_TspPropagationEnabled)
-		{
-			RemoveGroupTspState(groupEntity);
-			return;
-		}
-
-		UpdateGroupTspState(groupEntity);
-	}
-
-	private readonly struct GroupedTspRuntimeMember
-	{
-		public GroupedTspRuntimeMember(
-			Entity entity,
-			int groupIndex,
-			bool hasNode,
-			float3 position,
-			bool hasSettings,
-			TransitSignalPrioritySettings settings,
-			bool hasLocalRequest,
-			TransitSignalPriorityRequest localRequest)
-		{
-			Entity = entity;
-			GroupIndex = groupIndex;
-			HasNode = hasNode;
-			Position = position;
-			HasSettings = hasSettings;
-			Settings = settings;
-			HasLocalRequest = hasLocalRequest;
-			LocalRequest = localRequest;
-		}
-
-		public Entity Entity { get; }
-
-		public int GroupIndex { get; }
-
-		public bool HasNode { get; }
-
-		public float3 Position { get; }
-
-		public bool HasSettings { get; }
-
-		public TransitSignalPrioritySettings Settings { get; }
-
-		public bool HasLocalRequest { get; }
-
-		public TransitSignalPriorityRequest LocalRequest { get; }
-
-		public bool IsPropagationEligible =>
-			HasNode &&
-			HasSettings &&
-			Settings.m_Enabled &&
-			Settings.m_AllowGroupPropagation;
-
-		public bool HasValidLocalRequest =>
-			HasLocalRequest &&
-			LocalRequest.m_TargetSignalGroup > 0 &&
-			LocalRequest.m_Strength > 0f;
+		RemoveGroupTspState(groupEntity);
 	}
 
 	public Entity CreateGroup(string name = null)

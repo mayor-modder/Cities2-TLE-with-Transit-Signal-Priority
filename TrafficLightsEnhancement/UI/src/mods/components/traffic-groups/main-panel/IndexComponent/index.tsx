@@ -1,4 +1,4 @@
-import React, { CSSProperties, useContext, useState, useRef, useEffect, useCallback } from "react";
+import React, { CSSProperties, useState, useRef, useEffect, useCallback } from "react";
 import Button from 'mods/components/common/button';
 import Checkbox from 'mods/components/common/checkbox';
 import { TextInput } from 'mods/components/common/TextInput';
@@ -20,7 +20,6 @@ import {
 	callCalculateSignalDelays,
 	callSetMainPanelState,
 	callCopyPhasesToJunction,
-	callSetTspPropagationEnabled,
 	callUpdateMemberPattern,
 	edgeInfo
 } from '../../../../../bindings';
@@ -32,8 +31,6 @@ import GroupItem from "../GroupItemComponent/group-item";
 import { MainPanelItemButton, MainPanelItemTitle } from "mods/general";
 import Title from "mods/components/main-panel/items/title";
 import TitleDim from "mods/components/main-panel/items/title-dim";
-import { LocaleContext } from 'mods/context';
-import { getString } from 'mods/localisations';
 import { Entity } from "cs2/bindings";
 import { FocusDisabled } from "cs2/input";
 
@@ -540,7 +537,6 @@ const MemberSignalEditor = ({
 };
 
 export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }) {
-	const locale = useContext(LocaleContext);
 	const groups = props.items.filter(item => item.itemType === "trafficGroup") as MainPanelItemTrafficGroup[];
 	const currentGroup = groups.find(g => g.isCurrentJunctionInGroup);
 	
@@ -626,18 +622,6 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 				name: name
 			}));
 		}
-	};
-
-	const handleTspPropagationToggle = () => {
-		if (!displayedGroup || !displayedGroup.isCoordinated) {
-			return;
-		}
-
-		callSetTspPropagationEnabled(JSON.stringify({
-			groupIndex: displayedGroup.groupIndex,
-			groupVersion: displayedGroup.groupVersion,
-			enabled: !displayedGroup.tspPropagationEnabled
-		}));
 	};
 
 	const handleMemberClick = (member: GroupMemberInfo) => {
@@ -765,30 +749,6 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 									<Checkbox isChecked={displayedGroup.greenWaveEnabled} />
 									<div className={styles.dimLabel}>Enable Green Wave</div>
 								</Row>
-								<Row
-									hoverEffect={displayedGroup.isCoordinated}
-									className={styles.hover}
-									disableEngineCall={true}
-									style={{ opacity: displayedGroup.isCoordinated ? 1 : 0.55 }}
-								>
-									<div
-										onClick={displayedGroup.isCoordinated ? handleTspPropagationToggle : undefined}
-										style={{
-											display: "flex",
-											alignItems: "center",
-											width: "100%",
-											cursor: displayedGroup.isCoordinated ? "pointer" : "default"
-										}}
-									>
-										<Checkbox isChecked={displayedGroup.isCoordinated && displayedGroup.tspPropagationEnabled} />
-										<div className={styles.dimLabel}>{getString(locale, "AllowCoordinatedTsp")}</div>
-									</div>
-								</Row>
-								<div className={styles.infoText}>
-									{displayedGroup.isCoordinated
-										? getString(locale, "PropagateTransitRequestsToGroupHelp")
-										: getString(locale, "PropagateTransitRequestsRequiresCoordination")}
-								</div>
 
 							{displayedGroup.greenWaveEnabled && (
 								<>
@@ -871,15 +831,6 @@ export default function TrafficGroupsMainPanel(props: { items: MainPanelItem[] }
 							<ItemTitle title="Group ID" secondaryText={`${displayedGroup.groupIndex}:${displayedGroup.groupVersion}`} dim={true} />
 							<ItemTitle title="Coordinated" secondaryText={displayedGroup.isCoordinated ? "Yes" : "No"} dim={true} />
 							<ItemTitle title="Green Wave" secondaryText={displayedGroup.greenWaveEnabled ? "Enabled" : "Disabled"} dim={true} />
-							<ItemTitle
-								title="Local Propagation"
-								secondaryText={
-									displayedGroup.tspPropagationEnabled
-										? (displayedGroup.isCoordinated ? "Enabled" : "Inactive")
-										: "Disabled"
-								}
-								dim={true}
-							/>
 							{displayedGroup.greenWaveEnabled && (
 								<>
 									<ItemTitle title="Speed" secondaryText={`${displayedGroup.greenWaveSpeed} u/s`} dim={true} />

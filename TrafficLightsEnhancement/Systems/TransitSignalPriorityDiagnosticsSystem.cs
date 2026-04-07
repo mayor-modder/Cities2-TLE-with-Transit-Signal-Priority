@@ -26,7 +26,6 @@ public partial class TransitSignalPriorityDiagnosticsSystem : GameSystemBase
     protected override void OnUpdate()
     {
         LogJunctionRequestChanges();
-        LogGroupedPropagationChanges();
         LogDecisionTraces();
     }
 
@@ -103,75 +102,6 @@ public partial class TransitSignalPriorityDiagnosticsSystem : GameSystemBase
                 m_TrackSignaledLaneProbe = runtimeDebugInfo.m_TrackSignaledLaneProbe,
                 m_TrackApproachLaneProbe = runtimeDebugInfo.m_TrackApproachLaneProbe,
                 m_TrackUpstreamLaneProbe = runtimeDebugInfo.m_TrackUpstreamLaneProbe,
-            };
-
-            if (hasDebugState)
-            {
-                EntityManager.SetComponentData(entity, nextState);
-            }
-            else
-            {
-                EntityManager.AddComponentData(entity, nextState);
-            }
-        }
-
-        entities.Dispose();
-    }
-
-    private void LogGroupedPropagationChanges()
-    {
-        var entities = m_JunctionQuery.ToEntityArray(Allocator.Temp);
-
-        foreach (Entity entity in entities)
-        {
-            bool hasDebugState = EntityManager.HasComponent<TrafficGroupTspDebugState>(entity);
-            bool hasPropagationRequest = EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(entity);
-            if (!hasDebugState && !hasPropagationRequest)
-            {
-                continue;
-            }
-
-            TrafficGroupTspDebugState previousState = hasDebugState
-                ? EntityManager.GetComponentData<TrafficGroupTspDebugState>(entity)
-                : default;
-
-            if (!hasPropagationRequest)
-            {
-                if (previousState.m_HadRequest)
-                {
-                    m_Log.Info($"[TSP] Junction {FormatEntity(entity)} grouped propagation cleared");
-                }
-
-                if (hasDebugState)
-                {
-                    EntityManager.RemoveComponent<TrafficGroupTspDebugState>(entity);
-                }
-
-                continue;
-            }
-
-            GroupedTransitSignalPriorityRequest groupedRequest = EntityManager.GetComponentData<GroupedTransitSignalPriorityRequest>(entity);
-            bool stateChanged =
-                !previousState.m_HadRequest ||
-                previousState.m_TargetSignalGroup != groupedRequest.m_TargetSignalGroup ||
-                previousState.m_SourceType != groupedRequest.m_SourceType ||
-                previousState.m_Strength != groupedRequest.m_Strength ||
-                previousState.m_ExtendCurrentPhase != groupedRequest.m_ExtendCurrentPhase;
-
-            if (stateChanged)
-            {
-                string action = previousState.m_HadRequest ? "updated" : "started";
-                m_Log.Info(
-                    $"[TSP] Junction {FormatEntity(entity)} grouped propagation {action}: source={FormatSource(groupedRequest.m_SourceType)} target={groupedRequest.m_TargetSignalGroup} extend={groupedRequest.m_ExtendCurrentPhase} strength={groupedRequest.m_Strength:0.##} origin={FormatEntity(groupedRequest.m_OriginEntity)} group={FormatEntity(groupedRequest.m_GroupEntity)}");
-            }
-
-            var nextState = new TrafficGroupTspDebugState
-            {
-                m_HadRequest = true,
-                m_TargetSignalGroup = groupedRequest.m_TargetSignalGroup,
-                m_SourceType = groupedRequest.m_SourceType,
-                m_Strength = groupedRequest.m_Strength,
-                m_ExtendCurrentPhase = groupedRequest.m_ExtendCurrentPhase,
             };
 
             if (hasDebugState)
