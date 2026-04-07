@@ -114,6 +114,66 @@ public class TspEarlyDetectionTests
     }
 
     [Fact]
+    public void Bus_early_probe_reports_no_public_transport_lane_objects_when_lane_has_no_bus()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 0,
+            matchedApproachLane: true,
+            reachedThreshold: true,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.None);
+
+        Assert.Equal(BusEarlyProbeResult.NoPublicTransportLaneObjects, result);
+    }
+
+    [Fact]
+    public void Bus_early_probe_reports_suppressed_when_transit_stop_suppression_applies()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 1,
+            matchedApproachLane: true,
+            reachedThreshold: true,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.Boarding);
+
+        Assert.Equal(BusEarlyProbeResult.Suppressed, result);
+    }
+
+    [Fact]
+    public void Bus_early_probe_reports_below_threshold_when_lane_is_ready_but_has_not_reached_threshold()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 1,
+            matchedApproachLane: true,
+            reachedThreshold: false,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.None);
+
+        Assert.Equal(BusEarlyProbeResult.BelowThreshold, result);
+    }
+
+    [Fact]
+    public void Bus_early_probe_reports_match_when_lane_is_ready_and_unsuppressed()
+    {
+        BusEarlyProbeResult result = EarlyApproachDetection.EvaluateBusEarlyProbe(
+            laneObjectCount: 3,
+            publicTransportObjectCount: 1,
+            matchedApproachLane: true,
+            reachedThreshold: true,
+            blocked: false,
+            reachedLaneEnd: false,
+            suppressionFlags: TransitApproachSuppressionFlags.None);
+
+        Assert.Equal(BusEarlyProbeResult.Match, result);
+    }
+
+    [Fact]
     public void Bus_petitioner_probe_reports_missing_petitioner_when_signal_has_none()
     {
         BusPetitionerProbeResult result = EarlyApproachDetection.EvaluateBusPetitionerProbe(
@@ -126,13 +186,37 @@ public class TspEarlyDetectionTests
     }
 
     [Fact]
-    public void Bus_petitioner_probe_reports_match_when_public_transport_petitioner_reaches_the_lane()
+    public void Bus_petitioner_probe_reports_not_public_transport_when_petitioner_is_not_bus()
+    {
+        BusPetitionerProbeResult result = EarlyApproachDetection.EvaluateBusPetitionerProbe(
+            petitionerExists: true,
+            petitionerHasPublicTransport: false,
+            petitionerFrontLaneMatches: true,
+            petitionerRearLaneMatches: true);
+
+        Assert.Equal(BusPetitionerProbeResult.NotPublicTransport, result);
+    }
+
+    [Fact]
+    public void Bus_petitioner_probe_reports_lane_mismatch_when_no_lane_matches()
     {
         BusPetitionerProbeResult result = EarlyApproachDetection.EvaluateBusPetitionerProbe(
             petitionerExists: true,
             petitionerHasPublicTransport: true,
-            petitionerFrontLaneMatches: true,
+            petitionerFrontLaneMatches: false,
             petitionerRearLaneMatches: false);
+
+        Assert.Equal(BusPetitionerProbeResult.LaneMismatch, result);
+    }
+
+    [Fact]
+    public void Bus_petitioner_probe_reports_match_when_public_transport_petitioner_matches_the_rear_lane()
+    {
+        BusPetitionerProbeResult result = EarlyApproachDetection.EvaluateBusPetitionerProbe(
+            petitionerExists: true,
+            petitionerHasPublicTransport: true,
+            petitionerFrontLaneMatches: false,
+            petitionerRearLaneMatches: true);
 
         Assert.Equal(BusPetitionerProbeResult.Match, result);
     }
