@@ -70,18 +70,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		{
 			EntityManager.RemoveComponent<TrafficGroupTspState>(groupEntity);
 		}
-
-		var members = GetGroupMembers(groupEntity);
-		for (int i = 0; i < members.Length; i++)
-		{
-			Entity memberEntity = members[i];
-			if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(memberEntity))
-			{
-				EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(memberEntity);
-			}
-		}
-
-		members.Dispose();
 	}
 
 	private void RefreshGroupTspState(Entity groupEntity)
@@ -151,10 +139,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		{
 			EntityManager.RemoveComponent<TransitSignalPriorityDecisionTrace>(junctionEntity);
 		}
-		if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(junctionEntity))
-		{
-			EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(junctionEntity);
-		}
 		if (EntityManager.HasComponent<CustomTrafficLights>(junctionEntity))
 		{
 			var customTrafficLights = EntityManager.GetComponentData<CustomTrafficLights>(junctionEntity);
@@ -217,11 +201,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 
 		var member = EntityManager.GetComponentData<TrafficGroupMember>(junctionEntity);
 		Entity groupEntity = member.m_GroupEntity;
-
-		if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(junctionEntity))
-		{
-			EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(junctionEntity);
-		}
 
 		EntityManager.RemoveComponent<TrafficGroupMember>(junctionEntity);
 
@@ -498,23 +477,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 				var leaderLights = EntityManager.GetComponentData<TrafficLights>(leaderEntity);
 				PropagateLeaderPhaseChange(groupEntity, leaderLights.m_CurrentSignalGroup, leaderLights.m_State);
 			}
-		}
-	}
-
-	public void SetTspPropagationEnabled(Entity groupEntity, bool enabled)
-	{
-		if (groupEntity == Entity.Null || !EntityManager.HasComponent<TrafficGroup>(groupEntity))
-		{
-			return;
-		}
-
-		var group = EntityManager.GetComponentData<TrafficGroup>(groupEntity);
-		group.m_TspPropagationEnabled = enabled;
-		EntityManager.SetComponentData(groupEntity, group);
-
-		if (!enabled)
-		{
-			RemoveGroupTspState(groupEntity);
 		}
 	}
 
@@ -2401,11 +2363,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		
 		foreach (var invalidMember in invalidMembers)
 		{
-			if (EntityManager.HasComponent<GroupedTransitSignalPriorityRequest>(invalidMember))
-			{
-				EntityManager.RemoveComponent<GroupedTransitSignalPriorityRequest>(invalidMember);
-			}
-
 			if (EntityManager.HasComponent<TrafficGroupMember>(invalidMember))
 			{
 				EntityManager.RemoveComponent<TrafficGroupMember>(invalidMember);
