@@ -1,5 +1,6 @@
 using C2VM.TrafficLightsEnhancement.Components;
 using Game.Net;
+using Game.Objects;
 using Game.Prefabs;
 using Game.Vehicles;
 using TrafficLightsEnhancement.Logic.Tsp;
@@ -7,6 +8,7 @@ using Unity.Collections;
 using Unity.Entities;
 using NetCarLaneFlags = Game.Net.CarLaneFlags;
 using NetSubLane = Game.Net.SubLane;
+using VehicleCarLaneFlags = Game.Vehicles.CarLaneFlags;
 
 namespace C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
 
@@ -81,6 +83,10 @@ public static class TransitSignalPriorityRuntime
     private const float TramApproachLaneCurveThreshold = 0.2f;
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
     private const float TramConnectedEdgeLaneCurveThreshold = 0f;
+    private const float BusApproachCurveThreshold = 0.35f;
+    private const VehicleCarLaneFlags BusStoppedLaneFlags =
+        VehicleCarLaneFlags.IsBlocked
+        | VehicleCarLaneFlags.EndReached;
 
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
@@ -434,7 +440,12 @@ public static class TransitSignalPriorityRuntime
                 out trackDebugInfo);
         }
 
-        return false;
+        if (!EarlyApproachDetection.ShouldEvaluateRoadTransitEarlyDetection(isPublicCarLane))
+        {
+            return false;
+        }
+
+        return TryBuildEarlyApproachRequestForPublicCarLane(job, approachLaneEntity, laneRequest, out request);
     }
 
     private static bool TryBuildPetitionerRequestForLane(
@@ -796,6 +807,70 @@ public static class TransitSignalPriorityRuntime
         return Entity.Null;
     }
 
+    private static bool TryBuildEarlyApproachRequestForPublicCarLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity approachLaneEntity,
+        TspRequest laneRequest,
+        out TspRequest request)
+    {
+        request = default;
+
+        if (!job.m_LaneObjects.TryGetBuffer(approachLaneEntity, out var laneObjects) || laneObjects.Length == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < laneObjects.Length; i++)
+        {
+            if (TryGetMovingPublicTransportRoadApproachRequest(
+                    job,
+                    approachLaneEntity,
+                    laneObjects[i],
+                    laneRequest,
+                    out request))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetMovingPublicTransportRoadApproachRequest(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity scanLaneEntity,
+        LaneObject laneObject,
+        TspRequest laneRequest,
+        out TspRequest request)
+    {
+        request = default;
+
+        Entity vehicleEntity = laneObject.m_LaneObject;
+        if (!job.m_ExtraTypeHandle.m_PublicTransport.TryGetComponent(vehicleEntity, out var publicTransport))
+        {
+            return false;
+        }
+
+        TransitApproachSuppressionFlags suppressionFlags = GetSuppressionFlags(publicTransport.m_State);
+        bool isVehicleMoving = IsMovingPublicTransportRoadVehicle(
+            job,
+            vehicleEntity,
+            scanLaneEntity,
+            laneObject,
+            suppressionFlags);
+
+        if (!EarlyApproachDetection.IsMovingEligibleApproachState(
+                isEligibleLane: true,
+                isVehicleMoving,
+                suppressionFlags))
+        {
+            return false;
+        }
+
+        request = laneRequest;
+        return true;
+    }
+
     private static bool HasValidatedBusPetitioner(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         Entity petitionerEntity,
@@ -816,6 +891,56 @@ public static class TransitSignalPriorityRuntime
             petitionerHasPublicTransport: hasPublicTransport,
             petitionerFrontLaneMatches: hasCarLane && carCurrentLane.m_Lane == approachLaneEntity,
             petitionerRearLaneMatches: false);
+    }
+
+    private static bool IsMovingPublicTransportRoadVehicle(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity vehicleEntity,
+        Entity subLaneEntity,
+        LaneObject laneObject,
+        TransitApproachSuppressionFlags suppressionFlags)
+    {
+        if (!job.m_ExtraTypeHandle.m_CarCurrentLane.TryGetComponent(vehicleEntity, out var currentLane)
+            || currentLane.m_Lane != subLaneEntity
+            || (currentLane.m_LaneFlags & BusStoppedLaneFlags) != 0)
+        {
+            return false;
+        }
+
+        float approachPosition = laneObject.m_CurvePosition.x;
+        if (currentLane.m_CurvePosition.x > approachPosition)
+        {
+            approachPosition = currentLane.m_CurvePosition.x;
+        }
+
+        return EarlyApproachDetection.IsEligibleRoadTransitApproachState(
+            isEligibleLane: true,
+            hasReachedApproachThreshold: approachPosition >= BusApproachCurveThreshold,
+            isBlocked: (currentLane.m_LaneFlags & VehicleCarLaneFlags.IsBlocked) != 0,
+            hasReachedLaneEnd: (currentLane.m_LaneFlags & VehicleCarLaneFlags.EndReached) != 0,
+            suppressionFlags: suppressionFlags);
+    }
+
+    private static TransitApproachSuppressionFlags GetSuppressionFlags(PublicTransportFlags state)
+    {
+        TransitApproachSuppressionFlags flags = TransitApproachSuppressionFlags.None;
+
+        if ((state & PublicTransportFlags.Boarding) != 0)
+        {
+            flags |= TransitApproachSuppressionFlags.Boarding;
+        }
+
+        if ((state & PublicTransportFlags.Arriving) != 0)
+        {
+            flags |= TransitApproachSuppressionFlags.Arriving;
+        }
+
+        if ((state & PublicTransportFlags.RequireStop) != 0)
+        {
+            flags |= TransitApproachSuppressionFlags.RequireStop;
+        }
+
+        return flags;
     }
 
     private static IndexedTrackProbeDiagnostics ToIndexedTrackProbeDiagnostics(TransitApproachCandidate? candidate)

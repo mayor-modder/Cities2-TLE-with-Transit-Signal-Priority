@@ -119,7 +119,7 @@ public static class EarlyApproachDetection
 
     public static bool ShouldEvaluateRoadTransitEarlyDetection(bool isPublicCarLane)
     {
-        return false;
+        return isPublicCarLane;
     }
 
     public static IndexedTrackProbeDiagnostics SelectReportedTrackProbeDiagnostics(

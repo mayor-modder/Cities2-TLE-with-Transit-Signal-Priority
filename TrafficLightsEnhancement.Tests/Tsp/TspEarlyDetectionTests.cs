@@ -131,9 +131,17 @@ public class TspEarlyDetectionTests
     }
 
     [Fact]
-    public void Road_transit_early_detection_stays_disabled_in_tram_only_slice()
+    public void Road_transit_early_detection_enables_for_public_only_lane()
     {
         bool enabled = EarlyApproachDetection.ShouldEvaluateRoadTransitEarlyDetection(isPublicCarLane: true);
+
+        Assert.True(enabled);
+    }
+
+    [Fact]
+    public void Road_transit_early_detection_stays_disabled_for_non_public_lane()
+    {
+        bool enabled = EarlyApproachDetection.ShouldEvaluateRoadTransitEarlyDetection(isPublicCarLane: false);
 
         Assert.False(enabled);
     }
