@@ -101,9 +101,6 @@ public static class TransitSignalPriorityRuntime
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
     private const float TramConnectedEdgeLaneCurveThreshold = 0f;
     private const float BusApproachCurveThreshold = 0.35f;
-    private const VehicleCarLaneFlags BusStoppedLaneFlags =
-        VehicleCarLaneFlags.IsBlocked
-        | VehicleCarLaneFlags.EndReached;
 
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
@@ -961,34 +958,6 @@ public static class TransitSignalPriorityRuntime
 
         request = laneRequest;
         return true;
-    }
-
-    private static bool IsMovingPublicTransportRoadVehicle(
-        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
-        Entity vehicleEntity,
-        Entity subLaneEntity,
-        LaneObject laneObject,
-        TransitApproachSuppressionFlags suppressionFlags)
-    {
-        if (!job.m_ExtraTypeHandle.m_CarCurrentLane.TryGetComponent(vehicleEntity, out var currentLane)
-            || currentLane.m_Lane != subLaneEntity
-            || (currentLane.m_LaneFlags & BusStoppedLaneFlags) != 0)
-        {
-            return false;
-        }
-
-        float approachPosition = laneObject.m_CurvePosition.x;
-        if (currentLane.m_CurvePosition.x > approachPosition)
-        {
-            approachPosition = currentLane.m_CurvePosition.x;
-        }
-
-        return EarlyApproachDetection.IsEligibleRoadTransitApproachState(
-            isEligibleLane: true,
-            hasReachedApproachThreshold: approachPosition >= BusApproachCurveThreshold,
-            isBlocked: (currentLane.m_LaneFlags & VehicleCarLaneFlags.IsBlocked) != 0,
-            hasReachedLaneEnd: (currentLane.m_LaneFlags & VehicleCarLaneFlags.EndReached) != 0,
-            suppressionFlags: suppressionFlags);
     }
 
     private static TransitApproachSuppressionFlags GetSuppressionFlags(PublicTransportFlags state)
