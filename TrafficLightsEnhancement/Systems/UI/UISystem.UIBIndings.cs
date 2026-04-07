@@ -334,6 +334,14 @@ public partial class UISystem
             state += $"\nfallback[edges={debugInfo.m_FallbackConnectedEdgeCount}, tram-sublanes={debugInfo.m_FallbackTramSublaneCount}, pathnode-match={debugInfo.m_FallbackPathNodeMatchCount}, index-hit={debugInfo.m_FallbackIndexHitCount}, curve={debugInfo.m_FallbackBestCurvePosition:F3}]";
         }
 
+        if ((LogicTsp.TspSource)debugInfo.m_SourceType == LogicTsp.TspSource.PublicCar
+            || debugInfo.m_BusEarlyProbeResult != (byte)LogicTsp.BusEarlyProbeResult.None
+            || debugInfo.m_BusPetitionerProbeResult != (byte)LogicTsp.BusPetitionerProbeResult.None)
+        {
+            state += $"\nbus[early={FormatBusEarlyProbe(debugInfo.m_BusEarlyProbeResult)}, petitioner={FormatBusPetitionerProbe(debugInfo.m_BusPetitionerProbeResult)}, suppression={(LogicTsp.TransitApproachSuppressionFlags)debugInfo.m_BusSuppressionFlags}, laneObjects={debugInfo.m_BusLaneObjectCount}, publicTransportObjects={debugInfo.m_BusPublicTransportObjectCount}, laneFlags={debugInfo.m_BusCurrentLaneFlags}]";
+            state += $"\nentities[s={FormatEntity(debugInfo.m_BusSignaledLaneEntity)}, a={FormatEntity(debugInfo.m_BusApproachLaneEntity)}, c={FormatEntity(debugInfo.m_BusCurrentLaneEntity)}, vehicle={FormatEntity(debugInfo.m_BusMatchedVehicleEntity)}, petitioner={FormatEntity(debugInfo.m_BusPetitionerEntity)}]";
+        }
+
         return state;
     }
 
@@ -351,6 +359,32 @@ public partial class UISystem
             TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "match-approach",
             TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "match-upstream",
             TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "match-connected-approach",
+            _ => "none",
+        };
+    }
+
+    private static string FormatBusEarlyProbe(byte value)
+    {
+        return ((LogicTsp.BusEarlyProbeResult)value) switch
+        {
+            LogicTsp.BusEarlyProbeResult.NoLaneObjects => "no-lane-objects",
+            LogicTsp.BusEarlyProbeResult.NoPublicTransportLaneObjects => "no-public-transport",
+            LogicTsp.BusEarlyProbeResult.CurrentLaneMismatch => "current-lane-mismatch",
+            LogicTsp.BusEarlyProbeResult.Suppressed => "suppressed",
+            LogicTsp.BusEarlyProbeResult.BelowThreshold => "below-threshold",
+            LogicTsp.BusEarlyProbeResult.Match => "match",
+            _ => "none",
+        };
+    }
+
+    private static string FormatBusPetitionerProbe(byte value)
+    {
+        return ((LogicTsp.BusPetitionerProbeResult)value) switch
+        {
+            LogicTsp.BusPetitionerProbeResult.MissingPetitioner => "missing",
+            LogicTsp.BusPetitionerProbeResult.NotPublicTransport => "not-public-transport",
+            LogicTsp.BusPetitionerProbeResult.LaneMismatch => "lane-mismatch",
+            LogicTsp.BusPetitionerProbeResult.Match => "match",
             _ => "none",
         };
     }
