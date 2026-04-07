@@ -8,6 +8,21 @@ public static class TransitSignalPriorityRuntime
         bool isPublicCarLane,
         out TspRequest request)
     {
+        return TryBuildRequestForLane(
+            settings,
+            isTrackLane,
+            isPublicCarLane,
+            hasValidatedBusOccupant: false,
+            out request);
+    }
+
+    public static bool TryBuildRequestForLane(
+        TransitSignalPrioritySettings settings,
+        bool isTrackLane,
+        bool isPublicCarLane,
+        bool hasValidatedBusOccupant,
+        out TspRequest request)
+    {
         request = default;
 
         if (!settings.m_Enabled)
@@ -21,7 +36,7 @@ public static class TransitSignalPriorityRuntime
             return true;
         }
 
-        if (isPublicCarLane && settings.m_AllowPublicCarRequests)
+        if (isPublicCarLane && hasValidatedBusOccupant && settings.m_AllowPublicCarRequests)
         {
             request = new TspRequest(source: TspSource.PublicCar, strength: 1f, extensionEligible: true);
             return true;

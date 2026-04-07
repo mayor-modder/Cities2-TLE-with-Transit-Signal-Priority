@@ -49,6 +49,7 @@ public class TspDecisionEngineTests
             settings,
             isTrackLane: false,
             isPublicCarLane: true,
+            hasValidatedBusOccupant: true,
             out var request);
 
         Assert.True(built);
@@ -56,6 +57,34 @@ public class TspDecisionEngineTests
         var decision = TspDecisionEngine.SelectNextPhase(phases, 0, request);
 
         Assert.Equal(1, decision.NextPhaseIndex);
+    }
+
+    [Fact]
+    public void Public_only_lane_without_validated_bus_does_not_build_a_tsp_request()
+    {
+        bool built = TransitSignalPriorityRuntime.TryBuildRequestForLane(
+            settings: new TransitSignalPrioritySettings { m_Enabled = true, m_AllowPublicCarRequests = true },
+            isTrackLane: false,
+            isPublicCarLane: true,
+            hasValidatedBusOccupant: false,
+            out var request);
+
+        Assert.False(built);
+        Assert.Equal(default, request);
+    }
+
+    [Fact]
+    public void Public_only_lane_with_validated_bus_builds_a_public_car_request()
+    {
+        bool built = TransitSignalPriorityRuntime.TryBuildRequestForLane(
+            settings: new TransitSignalPrioritySettings { m_Enabled = true, m_AllowPublicCarRequests = true },
+            isTrackLane: false,
+            isPublicCarLane: true,
+            hasValidatedBusOccupant: true,
+            out var request);
+
+        Assert.True(built);
+        Assert.Equal(TspSource.PublicCar, request.Source);
     }
 
     [Fact]

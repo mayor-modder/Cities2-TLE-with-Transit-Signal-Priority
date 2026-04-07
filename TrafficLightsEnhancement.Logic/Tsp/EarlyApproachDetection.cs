@@ -119,7 +119,6 @@ public static class EarlyApproachDetection
 
     public static bool ShouldEvaluateRoadTransitEarlyDetection(bool isPublicCarLane)
     {
-        // Road transit early detection is intentionally disabled in this tram-only slice.
         return false;
     }
 
