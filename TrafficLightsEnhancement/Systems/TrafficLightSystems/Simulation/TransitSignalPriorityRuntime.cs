@@ -258,6 +258,7 @@ public static class TransitSignalPriorityRuntime
             }
 
             Entity approachLaneEntity = ResolveApproachLane(job, subLaneEntity);
+            Entity roadTransitProbeLaneEntity = approachLaneEntity;
             bool isTramTrackLane = IsTramTrackLane(job, approachLaneEntity);
             bool isPublicCarLane = IsPublicOnlyCarLane(job, approachLaneEntity);
 
@@ -300,11 +301,17 @@ public static class TransitSignalPriorityRuntime
             else if (isPublicCarLane)
             {
                 TryDiscoverUpstreamBusLane(job, approachLaneEntity, ref busDebugInfo);
+                roadTransitProbeLaneEntity = EarlyApproachDetection.ResolveRoadTransitProbeLane(
+                    approachLaneEntity,
+                    busDebugInfo.UpstreamSiblingEntity,
+                    busDebugInfo.UpstreamConnectedEdgeEntity,
+                    Entity.Null);
+                busDebugInfo.ApproachLaneEntity = roadTransitProbeLaneEntity;
                 TspRequest busProbeRequest = new(source: TspSource.PublicCar, strength: 1f, extensionEligible: true);
                 TryBuildEarlyApproachRequestForLane(
                     job,
                     subLaneEntity,
-                    approachLaneEntity,
+                    roadTransitProbeLaneEntity,
                     isTramTrackLane,
                     isPublicCarLane,
                     busProbeRequest,
@@ -322,6 +329,7 @@ public static class TransitSignalPriorityRuntime
                     job,
                     laneSignal,
                     approachLaneEntity,
+                    roadTransitProbeLaneEntity,
                     isTramTrackLane,
                     isPublicCarLane,
                     logicSettings,
@@ -505,6 +513,7 @@ public static class TransitSignalPriorityRuntime
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         LaneSignal laneSignal,
         Entity approachLaneEntity,
+        Entity roadTransitProbeLaneEntity,
         bool isTrackLane,
         bool isPublicCarLane,
         global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings,
@@ -516,7 +525,9 @@ public static class TransitSignalPriorityRuntime
 
         bool hasPublicTransport = job.m_ExtraTypeHandle.m_PublicTransport.HasComponent(laneSignal.m_Petitioner);
         bool hasCarLane = job.m_ExtraTypeHandle.m_CarCurrentLane.TryGetComponent(laneSignal.m_Petitioner, out var carCurrentLane);
-        bool frontLaneMatches = hasCarLane && carCurrentLane.m_Lane == approachLaneEntity;
+        bool frontLaneMatches = hasCarLane
+            && (carCurrentLane.m_Lane == approachLaneEntity
+                || carCurrentLane.m_Lane == roadTransitProbeLaneEntity);
 
         busDebugInfo.PetitionerProbeResult = EarlyApproachDetection.EvaluateBusPetitionerProbe(
             petitionerExists: laneSignal.m_Petitioner != Entity.Null,

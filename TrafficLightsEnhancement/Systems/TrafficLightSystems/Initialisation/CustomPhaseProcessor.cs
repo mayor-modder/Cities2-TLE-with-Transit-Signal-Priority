@@ -46,13 +46,16 @@ public struct CustomPhaseProcessor
             }
             bool isPedestrianCrosswalk = (pedestrianLane.m_Flags & PedestrianLaneFlags.Crosswalk) != 0;
             bool isTrackLane = job.m_ExtraTypeHandle.m_TrackLane.HasComponent(subLane);
+            bool isPublicOnlyRoadLane = job.m_CarLaneData.TryGetComponent(subLane, out var nodeCarLaneForSourceResolution)
+                && (nodeCarLaneForSourceResolution.m_Flags & CarLaneFlags.PublicOnly) != 0;
 
             var laneConnection = NodeUtils.GetLaneConnectionFromNodeSubLane(
                 subLane,
                 laneConnectionMap,
                 EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
                     isTrackLane,
-                    isPedestrianCrosswalk));
+                    isPedestrianCrosswalk,
+                    isPublicOnlyRoadLane));
 
             var sourceEdge = laneConnection.m_SourceEdge == Entity.Null && isPedestrian
                 ? laneConnection.m_DestEdge

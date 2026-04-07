@@ -153,6 +153,26 @@ public static class EarlyApproachDetection
         return isPublicCarLane;
     }
 
+    public static TEntity ResolveRoadTransitProbeLane<TEntity>(
+        TEntity approachLane,
+        TEntity siblingUpstreamLane,
+        TEntity connectedEdgeUpstreamLane,
+        TEntity nullLane)
+        where TEntity : struct, IEquatable<TEntity>
+    {
+        if (!siblingUpstreamLane.Equals(nullLane))
+        {
+            return siblingUpstreamLane;
+        }
+
+        if (!connectedEdgeUpstreamLane.Equals(nullLane))
+        {
+            return connectedEdgeUpstreamLane;
+        }
+
+        return approachLane;
+    }
+
     public static IndexedTrackProbeDiagnostics SelectReportedTrackProbeDiagnostics(
         bool selectedEarlyRequest,
         IndexedTrackProbeDiagnostics earlyDiagnostics,
@@ -252,9 +272,12 @@ public static class EarlyApproachDetection
         return earlyRequest ?? petitionerRequest;
     }
 
-    public static bool ShouldResolveSourceLaneRecursively(bool isTrackLane, bool isPedestrianCrosswalk)
+    public static bool ShouldResolveSourceLaneRecursively(
+        bool isTrackLane,
+        bool isPedestrianCrosswalk,
+        bool isPublicOnlyRoadLane)
     {
-        return isTrackLane || isPedestrianCrosswalk;
+        return isTrackLane || isPedestrianCrosswalk || isPublicOnlyRoadLane;
     }
 
     public static bool IsConnectedUpstreamEdgeCandidate(
