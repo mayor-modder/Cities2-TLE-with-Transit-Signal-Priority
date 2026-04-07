@@ -10,7 +10,7 @@ It supports:
 - Trams on tram/track lanes
 - Actual buses on bus-only lanes
 
-Both sources share the same request lifecycle and the same aggressive built-in signal preemption behavior that now works for trams. The feature remains a single Transit Signal Priority capability in the UI, with separate per-junction toggles for tram requests and bus requests. The master TSP toggle stays default-off. Only newly created or previously unset settings start with both source toggles enabled.
+Both sources share the same request lifecycle and the same aggressive built-in signal preemption behavior that now works for trams. The feature remains a single Transit Signal Priority capability in the UI, with separate per-junction toggles for tram requests and bus requests. The master TSP toggle stays default-off, only newly created or previously unset settings default both source toggles on, and re-enabling the master toggle preserves existing per-source choices.
 
 ## Goals
 
