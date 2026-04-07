@@ -50,7 +50,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 			var groupEntity = groups[i];
 			var group = groupComponents[i];
 
-			RemoveGroupTspState(groupEntity);
 			group.m_CycleTimer += 1f;
 			if (group.m_CycleTimer >= group.m_CycleLength)
 			{
@@ -62,24 +61,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		
 		groups.Dispose();
 		groupComponents.Dispose();
-	}
-
-	private void RemoveGroupTspState(Entity groupEntity)
-	{
-		if (EntityManager.HasComponent<TrafficGroupTspState>(groupEntity))
-		{
-			EntityManager.RemoveComponent<TrafficGroupTspState>(groupEntity);
-		}
-	}
-
-	private void RefreshGroupTspState(Entity groupEntity)
-	{
-		if (groupEntity == Entity.Null || !EntityManager.HasComponent<TrafficGroup>(groupEntity))
-		{
-			return;
-		}
-
-		RemoveGroupTspState(groupEntity);
 	}
 
 	public Entity CreateGroup(string name = null)
@@ -183,7 +164,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 			var leaderLights = EntityManager.GetComponentData<TrafficLights>(leaderEntity);
 			PropagateLeaderPhaseChange(groupEntity, leaderLights.m_CurrentSignalGroup, leaderLights.m_State);
 		}
-		RefreshGroupTspState(groupEntity);
 		return true;
 	}
 
@@ -210,8 +190,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		}
 
 		ReindexGroupMembers(groupEntity);
-		RefreshGroupTspState(groupEntity);
-
 		return true;
 	}
 
@@ -221,8 +199,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		{
 			return;
 		}
-
-		RemoveGroupTspState(groupEntity);
 
 		var members = GetGroupMembers(groupEntity);
 		foreach (var memberEntity in members)
@@ -1125,9 +1101,7 @@ public partial class TrafficGroupSystem : GameSystemBase
 		targetMembers.Dispose();
 		sourceMembers.Dispose();
 
-		RemoveGroupTspState(sourceGroupEntity);
 		EntityManager.DestroyEntity(sourceGroupEntity);
-		RefreshGroupTspState(targetGroupEntity);
 
 		if (targetGroup.m_GreenWaveEnabled)
 		{
@@ -2376,7 +2350,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 		int memberCount = GetGroupMemberCount(groupEntity);
 		if (memberCount == 0)
 		{
-			RemoveGroupTspState(groupEntity);
 			EntityManager.DestroyEntity(groupEntity);
 			return;
 		}
@@ -2390,7 +2363,6 @@ public partial class TrafficGroupSystem : GameSystemBase
 
 		
 		ReindexGroupMembers(groupEntity);
-		RefreshGroupTspState(groupEntity);
 	}
 
 	
