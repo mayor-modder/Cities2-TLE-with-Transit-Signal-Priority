@@ -286,90 +286,6 @@ public partial class UISystem
         return request.m_TargetSignalGroup > 0 && request.m_Strength > 0f;
     }
 
-    private string? GetTransitSignalPriorityDebugSource(Entity junctionEntity)
-    {
-        if (!EntityManager.TryGetComponent(junctionEntity, out TransitSignalPriorityRuntimeDebugInfo debugInfo)
-            || debugInfo.m_RequestKind == (byte)TransitSignalPriorityRequestKind.None)
-        {
-            return null;
-        }
-
-        string source = ((TransitSignalPriorityRequestKind)debugInfo.m_RequestKind) switch
-        {
-            TransitSignalPriorityRequestKind.FreshEarly => "Fresh early request",
-            TransitSignalPriorityRequestKind.FreshPetitioner => "Fresh petitioner request",
-            TransitSignalPriorityRequestKind.LatchedExisting => "Latched existing request",
-            _ => "Unknown",
-        };
-
-        if ((TransitSignalPriorityRequestKind)debugInfo.m_RequestKind == TransitSignalPriorityRequestKind.FreshEarly)
-        {
-            source += ((TransitSignalPriorityApproachLaneRole)debugInfo.m_ApproachLaneRole) switch
-            {
-                TransitSignalPriorityApproachLaneRole.ApproachLane => " (approach lane)",
-                TransitSignalPriorityApproachLaneRole.UpstreamLane => " (upstream lane)",
-                _ => string.Empty,
-            };
-        }
-
-        return source;
-    }
-
-    private string? GetTransitSignalPriorityDebugState(Entity junctionEntity)
-    {
-        if (!EntityManager.TryGetComponent(junctionEntity, out TransitSignalPriorityRuntimeDebugInfo debugInfo)
-            || debugInfo.m_RequestKind == (byte)TransitSignalPriorityRequestKind.None)
-        {
-            return null;
-        }
-
-        string state = $"early={FormatDebugFlag(debugInfo.m_HasEarlyCandidate)}, petitioner={FormatDebugFlag(debugInfo.m_HasPetitionerCandidate)}, prior={FormatDebugFlag(debugInfo.m_HadExistingRequest)}, expiry={debugInfo.m_ExpiryTimer}, extend={FormatDebugFlag(debugInfo.m_ExtendCurrentPhase)}";
-
-        if (debugInfo.m_TrackSignaledLaneProbe != (byte)TransitSignalPriorityTrackProbeResult.None
-            || debugInfo.m_TrackApproachLaneProbe != (byte)TransitSignalPriorityTrackProbeResult.None
-            || debugInfo.m_TrackUpstreamLaneProbe != (byte)TransitSignalPriorityTrackProbeResult.None)
-        {
-            state += $", track[signal={FormatTrackProbe(debugInfo.m_TrackSignaledLaneProbe)}, approach={FormatTrackProbe(debugInfo.m_TrackApproachLaneProbe)}, upstream={FormatTrackProbe(debugInfo.m_TrackUpstreamLaneProbe)}]";
-            state += $"\nindex-lanes={debugInfo.m_TramApproachIndexLaneCount}, lanes[s={FormatTrackLaneRef(debugInfo.m_TrackSignaledLaneEntity, debugInfo.m_TrackSignaledLaneOwnerEntity, debugInfo.m_TrackSignaledLaneIsMaster, debugInfo.m_TrackSignaledSiblingSampleCount)}, a={FormatTrackLaneRef(debugInfo.m_TrackApproachLaneEntity, debugInfo.m_TrackApproachLaneOwnerEntity, debugInfo.m_TrackApproachLaneIsMaster, debugInfo.m_TrackApproachSiblingSampleCount)}, u={FormatTrackLaneRef(debugInfo.m_TrackUpstreamLaneEntity, debugInfo.m_TrackUpstreamLaneOwnerEntity, debugInfo.m_TrackUpstreamLaneIsMaster, debugInfo.m_TrackUpstreamSiblingSampleCount)}]";
-            state += $"\nfallback[edges={debugInfo.m_FallbackConnectedEdgeCount}, tram-sublanes={debugInfo.m_FallbackTramSublaneCount}, pathnode-match={debugInfo.m_FallbackPathNodeMatchCount}, index-hit={debugInfo.m_FallbackIndexHitCount}, curve={debugInfo.m_FallbackBestCurvePosition:F3}]";
-        }
-
-        return state;
-    }
-
-    private static string FormatDebugFlag(bool value)
-    {
-        return value ? "yes" : "no";
-    }
-
-    private static string FormatTrackProbe(byte value)
-    {
-        return ((TransitSignalPriorityTrackProbeResult)value) switch
-        {
-            TransitSignalPriorityTrackProbeResult.NoTramSamples => "no-tram-samples",
-            TransitSignalPriorityTrackProbeResult.BelowThreshold => "below-threshold",
-            TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "match-approach",
-            TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "match-upstream",
-            TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "match-connected-approach",
-            _ => "none",
-        };
-    }
-
-    private static string FormatTrackLaneRef(Entity laneEntity, Entity ownerEntity, bool isMaster, byte siblingSampleCount)
-    {
-        if (laneEntity == Entity.Null)
-        {
-            return "none";
-        }
-
-        return $"{FormatEntity(laneEntity)}/{(isMaster ? "master" : "lane")} owner={FormatEntity(ownerEntity)} sib={siblingSampleCount}";
-    }
-
-    private static string FormatEntity(Entity entity)
-    {
-        return entity == Entity.Null ? "null" : $"{entity.Index}:{entity.Version}";
-    }
-
     private bool IsTrafficTypeActive(Entity junctionEntity, int phaseIndex, string trafficType)
     {
         if (junctionEntity == Entity.Null || !EntityManager.Exists(junctionEntity))
@@ -465,9 +381,6 @@ public partial class UISystem
         {
             bool isGroupedIntersection = m_SelectedEntity != Entity.Null
                 && EntityManager.HasComponent<TrafficGroupMember>(m_SelectedEntity);
-            TransitSignalPrioritySettings tspSettings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
-                ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
-                : new TransitSignalPrioritySettings();
             
             if (!isGroupedIntersection)
             {
@@ -535,8 +448,13 @@ public partial class UISystem
                 menu.items.Add(new UITypes.ItemMessage{message = "EditPhasesFromGroupMenu"});
             }
 
+            TransitSignalPrioritySettings tspSettings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+                ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+                : new TransitSignalPrioritySettings();
+            var tspStatus = GetTransitSignalPriorityStatus(m_SelectedEntity, tspSettings.m_Enabled);
+
             menu.items.Add(default(UITypes.ItemDivider));
-            menu.items.Add(new UITypes.ItemTitle{title = "TransitSignalPriority"});
+            menu.items.Add(new UITypes.ItemTitle { title = "TransitSignalPriority" });
             menu.items.Add(new UITypes.ItemCheckbox
             {
                 type = "checkbox",
@@ -544,49 +462,18 @@ public partial class UISystem
                 value = tspSettings.m_Enabled.ToString(),
                 isChecked = tspSettings.m_Enabled,
                 label = "EnableTransitSignalPriority",
-                engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption",
+                engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption"
             });
-            if (tspSettings.m_Enabled)
-            {
-                menu.items.Add(new UITypes.ItemCheckbox
-                {
-                    type = "checkbox",
-                    key = "TspAllowTrackRequests",
-                    value = tspSettings.m_AllowTrackRequests.ToString(),
-                    isChecked = tspSettings.m_AllowTrackRequests,
-                    label = "AllowTrackTransitRequests",
-                    engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption",
-                });
-                menu.items.Add(new UITypes.ItemCheckbox
-                {
-                    type = "checkbox",
-                    key = "TspAllowPublicCarRequests",
-                    value = tspSettings.m_AllowPublicCarRequests.ToString(),
-                    isChecked = tspSettings.m_AllowPublicCarRequests,
-                    label = "AllowBusLaneRequests",
-                    engineEventName = "C2VM.TrafficLightsEnhancement.TRIGGER:CallMainPanelUpdateOption",
-                });
-            }
-            var tspStatus = GetTransitSignalPriorityStatus(m_SelectedEntity, tspSettings.m_Enabled);
-            menu.items.Add(new UITypes.ItemTitle{title = "Status", secondaryText = tspStatus.Status});
+            menu.items.Add(new UITypes.ItemTitle { title = "Status", secondaryText = tspStatus.Status });
             if (!string.IsNullOrEmpty(tspStatus.Request))
             {
-                menu.items.Add(new UITypes.ItemTitle{title = "Request", secondaryText = tspStatus.Request});
+                menu.items.Add(new UITypes.ItemTitle { title = "Request", secondaryText = tspStatus.Request });
             }
             if (!string.IsNullOrEmpty(tspStatus.TargetSignalGroup))
             {
-                menu.items.Add(new UITypes.ItemTitle{title = "Target Group", secondaryText = tspStatus.TargetSignalGroup});
+                menu.items.Add(new UITypes.ItemTitle { title = "Target Group", secondaryText = tspStatus.TargetSignalGroup });
             }
-            string? tspDebugSource = GetTransitSignalPriorityDebugSource(m_SelectedEntity);
-            if (!string.IsNullOrEmpty(tspDebugSource))
-            {
-                menu.items.Add(new UITypes.ItemTitle{title = "Debug Source", secondaryText = tspDebugSource});
-            }
-            string? tspDebugState = GetTransitSignalPriorityDebugState(m_SelectedEntity);
-            if (!string.IsNullOrEmpty(tspDebugState))
-            {
-                menu.items.Add(new UITypes.ItemTitle{title = "Debug State", secondaryText = tspDebugState});
-            }
+
             menu.items.Add(default(UITypes.ItemDivider));
             if (EntityManager.HasBuffer<C2VM.CommonLibraries.LaneSystem.CustomLaneDirection>(m_SelectedEntity))
             {
@@ -1009,8 +896,8 @@ public partial class UISystem
     protected void CallMainPanelUpdateOption(string input)
     {
         UITypes.ItemCheckbox option = JsonConvert.DeserializeObject<UITypes.ItemCheckbox>(input);
-        if (option.key == "TspEnabled" || option.key == "TspAllowTrackRequests" ||
-            option.key == "TspAllowPublicCarRequests")
+
+        if (option.key == "TspEnabled")
         {
             if (m_SelectedEntity == Entity.Null)
             {
@@ -1025,12 +912,6 @@ public partial class UISystem
             {
                 case "TspEnabled":
                     settings.m_Enabled = !settings.m_Enabled;
-                    break;
-                case "TspAllowTrackRequests":
-                    settings.m_AllowTrackRequests = !settings.m_AllowTrackRequests;
-                    break;
-                case "TspAllowPublicCarRequests":
-                    settings.m_AllowPublicCarRequests = !settings.m_AllowPublicCarRequests;
                     break;
             }
 

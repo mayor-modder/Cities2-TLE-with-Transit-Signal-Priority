@@ -48,19 +48,13 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Public_car_request_only_targets_public_car_phase()
+    public void Public_car_lane_does_not_build_tsp_request()
     {
         var settings = new TransitSignalPrioritySettings
         {
             m_Enabled = true,
             m_AllowTrackRequests = false,
             m_AllowPublicCarRequests = true,
-        };
-
-        var phases = new[]
-        {
-            new PhaseScore(0, 100, 1f, servesTrack: false, servesPublicCar: false),
-            new PhaseScore(1, 100, 1f, servesTrack: false, servesPublicCar: true),
         };
 
         bool built = TransitSignalPriorityRuntime.TryBuildRequestForLane(
@@ -70,11 +64,8 @@ public class TspDecisionEngineTests
             hasValidatedBusOccupant: true,
             out var request);
 
-        Assert.True(built);
-
-        var decision = TspDecisionEngine.SelectNextPhase(phases, 0, request);
-
-        Assert.Equal(1, decision.NextPhaseIndex);
+        Assert.False(built);
+        Assert.Equal(default, request);
     }
 
     [Fact]

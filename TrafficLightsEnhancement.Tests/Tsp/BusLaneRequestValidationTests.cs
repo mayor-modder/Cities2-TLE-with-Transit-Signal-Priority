@@ -33,7 +33,7 @@ public class BusLaneRequestValidationTests
     }
 
     [Fact]
-    public void Public_only_lane_with_validated_bus_builds_a_public_car_request()
+    public void Public_only_lane_with_validated_bus_does_not_build_a_tsp_request()
     {
         bool built = TransitSignalPriorityRuntime.TryBuildRequestForLane(
             settings: new TransitSignalPrioritySettings { m_Enabled = true, m_AllowPublicCarRequests = true },
@@ -42,12 +42,12 @@ public class BusLaneRequestValidationTests
             hasValidatedBusOccupant: true,
             out var request);
 
-        Assert.True(built);
-        Assert.Equal(TspSource.PublicCar, request.Source);
+        Assert.False(built);
+        Assert.Equal(default, request);
     }
 
     [Fact]
-    public void Public_only_lane_defers_until_validated_bus_petitioner_is_present()
+    public void Public_only_lane_validation_no_longer_enables_bus_tsp()
     {
         Assert.False(TransitSignalPriorityRuntime.IsValidatedBusPetitionerCandidate(
             isPublicOnlyLane: true,
@@ -71,7 +71,7 @@ public class BusLaneRequestValidationTests
             out var request);
 
         Assert.False(builtWithoutValidatedPetitioner);
-        Assert.True(builtWithValidatedPetitioner);
-        Assert.Equal(TspSource.PublicCar, request.Source);
+        Assert.False(builtWithValidatedPetitioner);
+        Assert.Equal(default, request);
     }
 }

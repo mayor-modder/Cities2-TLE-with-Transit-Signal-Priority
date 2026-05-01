@@ -572,13 +572,13 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                         
                         if (delayData.m_OpenDelay < 0 || delayData.m_OpenDelay > 300)
                         {
-                            delayData.m_OpenDelay = System.Math.Clamp(delayData.m_OpenDelay, 0, 300);
+                            delayData.m_OpenDelay = System.Math.Min(System.Math.Max(delayData.m_OpenDelay, 0), 300);
                             needsUpdate = true;
                         }
                         
                         if (delayData.m_CloseDelay < 0 || delayData.m_CloseDelay > 300)
                         {
-                            delayData.m_CloseDelay = System.Math.Clamp(delayData.m_CloseDelay, 0, 300);
+                            delayData.m_CloseDelay = System.Math.Min(System.Math.Max(delayData.m_CloseDelay, 0), 300);
                             needsUpdate = true;
                         }
                         

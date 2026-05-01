@@ -296,8 +296,8 @@ public partial class UISystem: ExtendedUISystemBase
         return new global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings
         {
             m_Enabled = settings.m_Enabled,
-            m_AllowTrackRequests = settings.m_AllowTrackRequests,
-            m_AllowPublicCarRequests = settings.m_AllowPublicCarRequests,
+            m_AllowTrackRequests = true,
+            m_AllowPublicCarRequests = false,
             m_AllowGroupPropagation = settings.m_AllowGroupPropagation,
             m_RequestHorizonTicks = global::TrafficLightsEnhancement.Logic.Tsp.TspPolicy.GetEffectiveRequestHorizonTicks(settings.m_RequestHorizonTicks),
             m_MaxGreenExtensionTicks = settings.m_MaxGreenExtensionTicks,

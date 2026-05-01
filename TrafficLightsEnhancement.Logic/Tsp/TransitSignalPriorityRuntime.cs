@@ -22,12 +22,6 @@ public static class TransitSignalPriorityRuntime
             return true;
         }
 
-        if (isPublicCarLane && hasValidatedBusOccupant && settings.m_AllowPublicCarRequests)
-        {
-            request = new TspRequest(source: TspSource.PublicCar, strength: 1f, extensionEligible: true);
-            return true;
-        }
-
         return false;
     }
 

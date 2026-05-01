@@ -112,8 +112,8 @@ public static class TransitSignalPriorityRuntime
             new global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings
             {
                 m_Enabled = settings.m_Enabled,
-                m_AllowTrackRequests = settings.m_AllowTrackRequests,
-                m_AllowPublicCarRequests = settings.m_AllowPublicCarRequests,
+                m_AllowTrackRequests = true,
+                m_AllowPublicCarRequests = false,
                 m_AllowGroupPropagation = settings.m_AllowGroupPropagation,
                 m_RequestHorizonTicks = effectiveRequestHorizonTicks,
                 m_MaxGreenExtensionTicks = settings.m_MaxGreenExtensionTicks,
@@ -232,8 +232,8 @@ public static class TransitSignalPriorityRuntime
         var logicSettings = new global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings
         {
             m_Enabled = settings.m_Enabled,
-            m_AllowTrackRequests = settings.m_AllowTrackRequests,
-            m_AllowPublicCarRequests = settings.m_AllowPublicCarRequests,
+            m_AllowTrackRequests = true,
+            m_AllowPublicCarRequests = false,
             m_AllowGroupPropagation = settings.m_AllowGroupPropagation,
             m_RequestHorizonTicks = effectiveRequestHorizonTicks,
             m_MaxGreenExtensionTicks = settings.m_MaxGreenExtensionTicks,
