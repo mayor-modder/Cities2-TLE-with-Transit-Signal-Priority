@@ -286,6 +286,22 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void Override_selection_protects_active_exclusive_pedestrian_phase()
+    {
+        var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
+            basePhaseIndex: 1,
+            currentPhaseIndex: 2,
+            phaseCount: 3,
+            targetPhaseIndex: 0,
+            new TspRequest(TspSource.Track, 1f, extensionEligible: false),
+            protectActivePedestrianPhase: true);
+
+        Assert.False(overrideSelection.Applied);
+        Assert.False(overrideSelection.ChangedBaseSelection);
+        Assert.Equal(1, overrideSelection.SelectedPhaseIndex);
+    }
+
+    [Fact]
     public void Override_selection_ignores_public_car_extension_request()
     {
         var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
@@ -342,6 +358,21 @@ public class TspDecisionEngineTests
         Assert.True(overrideSelection.Applied);
         Assert.Equal(TspSelectionReason.SelectedTargetPhase, overrideSelection.Reason);
         Assert.Equal(3, overrideSelection.SelectedPhaseIndex + 1);
+    }
+
+    [Fact]
+    public void Signal_group_override_protects_active_exclusive_pedestrian_phase()
+    {
+        var overrideSelection = TspOverrideEngine.ApplySignalGroupOverride(
+            baseSignalGroup: 2,
+            currentSignalGroup: 3,
+            signalGroupCount: 4,
+            targetSignalGroup: 1,
+            new TspRequest(TspSource.Track, 1f, extensionEligible: false),
+            protectActivePedestrianPhase: true);
+
+        Assert.False(overrideSelection.Applied);
+        Assert.Equal(2, overrideSelection.SelectedPhaseIndex + 1);
     }
 
     [Fact]

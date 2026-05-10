@@ -681,7 +681,8 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 new TspRequest(
                     (TspSource)tspRequest.m_SourceType,
                     tspRequest.m_Strength,
-                    tspRequest.m_ExtendCurrentPhase));
+                    tspRequest.m_ExtendCurrentPhase),
+                protectActivePedestrianPhase: IsActiveExclusivePedestrianPhase(trafficLights, customTrafficLights));
 
             if (tspSelection.Applied && tspSelection.SelectedPhaseIndex >= 0)
             {

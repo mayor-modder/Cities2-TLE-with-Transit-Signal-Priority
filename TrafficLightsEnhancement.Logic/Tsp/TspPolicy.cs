@@ -54,9 +54,7 @@ public static class TspPolicy
 {
     public static ushort GetEffectiveRequestHorizonTicks(ushort configuredRequestHorizonTicks)
     {
-        return configuredRequestHorizonTicks == TransitSignalPrioritySettings.LegacyDefaultRequestHorizonTicks
-            ? TransitSignalPrioritySettings.DefaultRequestHorizonTicks
-            : configuredRequestHorizonTicks;
+        return TransitSignalPrioritySettings.NormalizeRequestHorizonTicks(configuredRequestHorizonTicks);
     }
 
     public static ushort GetEffectiveMaxGreenExtensionTicks(ushort configuredMaxGreenExtensionTicks)
@@ -114,7 +112,6 @@ public static class TspPolicy
         return settings.m_Enabled != defaults.m_Enabled
             || settings.m_AllowTrackRequests != defaults.m_AllowTrackRequests
             || settings.m_AllowPublicCarRequests != defaults.m_AllowPublicCarRequests
-            || settings.m_AllowGroupPropagation != defaults.m_AllowGroupPropagation
             || GetEffectiveRequestHorizonTicks(settings.m_RequestHorizonTicks) != defaults.m_RequestHorizonTicks
             || GetEffectiveMaxGreenExtensionTicks(settings.m_MaxGreenExtensionTicks) != defaults.m_MaxGreenExtensionTicks;
     }

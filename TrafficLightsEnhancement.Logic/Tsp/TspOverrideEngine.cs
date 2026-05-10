@@ -32,14 +32,16 @@ public static class TspOverrideEngine
         int currentSignalGroup,
         int signalGroupCount,
         int targetSignalGroup,
-        TspRequest request)
+        TspRequest request,
+        bool protectActivePedestrianPhase = false)
     {
         return ApplyRequestOverride(
             basePhaseIndex: baseSignalGroup > 0 ? baseSignalGroup - 1 : -1,
             currentPhaseIndex: currentSignalGroup > 0 ? currentSignalGroup - 1 : -1,
             phaseCount: signalGroupCount,
             targetPhaseIndex: targetSignalGroup > 0 ? targetSignalGroup - 1 : -1,
-            request);
+            request,
+            protectActivePedestrianPhase);
     }
 
     public static TspOverrideSelection ApplyRequestOverride(
@@ -47,7 +49,8 @@ public static class TspOverrideEngine
         int currentPhaseIndex,
         int phaseCount,
         int targetPhaseIndex,
-        TspRequest request)
+        TspRequest request,
+        bool protectActivePedestrianPhase = false)
     {
         if (phaseCount <= 0)
         {
@@ -73,6 +76,11 @@ public static class TspOverrideEngine
 
         if (targetPhaseIndex >= 0 && targetPhaseIndex < phaseCount)
         {
+            if (protectActivePedestrianPhase && targetPhaseIndex != currentPhaseIndex)
+            {
+                return new TspOverrideSelection(basePhaseIndex, basePhaseIndex, canExtendCurrent: false, TspSelectionReason.None);
+            }
+
             return new TspOverrideSelection(
                 basePhaseIndex,
                 targetPhaseIndex,

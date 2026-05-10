@@ -812,28 +812,6 @@ public static class TransitSignalPriorityRuntime
         return Entity.Null;
     }
 
-    private static TransitApproachSuppressionFlags GetSuppressionFlags(PublicTransportFlags state)
-    {
-        TransitApproachSuppressionFlags flags = TransitApproachSuppressionFlags.None;
-
-        if ((state & PublicTransportFlags.Boarding) != 0)
-        {
-            flags |= TransitApproachSuppressionFlags.Boarding;
-        }
-
-        if ((state & PublicTransportFlags.Arriving) != 0)
-        {
-            flags |= TransitApproachSuppressionFlags.Arriving;
-        }
-
-        if ((state & PublicTransportFlags.RequireStop) != 0)
-        {
-            flags |= TransitApproachSuppressionFlags.RequireStop;
-        }
-
-        return flags;
-    }
-
     private static IndexedTrackProbeDiagnostics ToIndexedTrackProbeDiagnostics(TransitApproachCandidate? candidate)
     {
         if (!candidate.HasValue)

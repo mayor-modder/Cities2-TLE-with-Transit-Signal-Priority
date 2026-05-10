@@ -140,7 +140,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                     out var linked,
                     out tspSelection,
                     hasTspRequest,
-                    tspRequest);
+                    tspRequest,
+                    protectActivePedestrianPhase: IsActiveExclusivePedestrianPhase(trafficLights, customTrafficLights));
                 if (stepDone && nextGroup != trafficLights.m_CurrentSignalGroup)
                 {
                     trafficLights.m_State = TrafficLightState.Ending;
@@ -356,7 +357,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
             out bool linked,
             out TspOverrideSelection tspSelection,
             bool hasTspRequest = false,
-            TransitSignalPriorityRequest tspRequest = default)
+            TransitSignalPriorityRequest tspRequest = default,
+            bool protectActivePedestrianPhase = false)
         {
             tspSelection = default;
             linked = false;
@@ -387,7 +389,7 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                     nextGroup = (byte)(nextStep + 1);
                 }
 
-                return ApplyTspOverride(currentGroup, customPhaseDataBuffer.Length, nextGroup, hasTspRequest, tspRequest, out tspSelection);
+                return ApplyTspOverride(currentGroup, customPhaseDataBuffer.Length, nextGroup, hasTspRequest, tspRequest, protectActivePedestrianPhase, out tspSelection);
             }
             // Dynamic mode: cycle sequentially, skip phases with min=0 and no demand
             byte dynamicNextGroup = 0;
@@ -418,7 +420,7 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 dynamicNextGroup = (byte)(fallbackStep + 1);
             }
 
-            return ApplyTspOverride(currentGroup, customPhaseDataBuffer.Length, dynamicNextGroup, hasTspRequest, tspRequest, out tspSelection);
+            return ApplyTspOverride(currentGroup, customPhaseDataBuffer.Length, dynamicNextGroup, hasTspRequest, tspRequest, protectActivePedestrianPhase, out tspSelection);
         }
 
         private static byte ApplyTspOverride(
@@ -427,6 +429,7 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
             byte nextGroup,
             bool hasTspRequest,
             TransitSignalPriorityRequest tspRequest,
+            bool protectActivePedestrianPhase,
             out TspOverrideSelection tspSelection)
         {
             tspSelection = default;
@@ -448,7 +451,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 new TspRequest(
                     (TspSource)tspRequest.m_SourceType,
                     tspRequest.m_Strength,
-                    tspRequest.m_ExtendCurrentPhase));
+                    tspRequest.m_ExtendCurrentPhase),
+                protectActivePedestrianPhase);
 
             if (tspSelection.Applied && tspSelection.SelectedPhaseIndex >= 0)
             {
@@ -456,6 +460,15 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
             }
 
             return nextGroup;
+        }
+
+        private static bool IsActiveExclusivePedestrianPhase(TrafficLights trafficLights, CustomTrafficLights customTrafficLights)
+        {
+            return TspPreemptionPolicy.ShouldProtectActivePedestrianPhase(
+                exclusivePedestrianEnabled: ((uint)customTrafficLights.GetPattern() & (uint)CustomTrafficLights.Patterns.ExclusivePedestrian) != 0,
+                trafficLights.m_CurrentSignalGroup,
+                customTrafficLights.m_PedestrianPhaseGroupMask,
+                isOngoing: trafficLights.m_State == TrafficLightState.Ongoing);
         }
 
         private static int MaxPriority(DynamicBuffer<CustomPhaseData> customPhaseDataBuffer)

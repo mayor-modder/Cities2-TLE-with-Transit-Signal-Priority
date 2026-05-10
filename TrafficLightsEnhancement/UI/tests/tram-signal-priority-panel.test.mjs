@@ -135,3 +135,25 @@ test("tool removal clears tram signal priority runtime components", async () => 
 
   assert.match(removalSource, /RemoveTransitSignalPriorityComponents\(m_RaycastResult\)/);
 });
+
+test("tram signal priority settings reserve public car priority without persisting group propagation", async () => {
+  const settings = await repoSource("Components/TransitSignalPrioritySettings.cs");
+  const normalizeStart = settings.indexOf("public void Normalize()");
+  const serializeStart = settings.indexOf("public void Serialize");
+  const deserializeStart = settings.indexOf("public void Deserialize");
+
+  assert.notEqual(normalizeStart, -1);
+  assert.notEqual(serializeStart, -1);
+  assert.notEqual(deserializeStart, -1);
+
+  const normalizeSource = settings.slice(normalizeStart, serializeStart);
+  const serializeSource = settings.slice(serializeStart, deserializeStart);
+  const deserializeSource = settings.slice(deserializeStart);
+
+  assert.doesNotMatch(normalizeSource, /m_AllowPublicCarRequests\s*=/);
+  assert.match(serializeSource, /writer\.Write\(2\)/);
+  assert.match(serializeSource, /writer\.Write\(m_AllowPublicCarRequests\)/);
+  assert.doesNotMatch(serializeSource, /m_AllowGroupPropagation/);
+  assert.match(deserializeSource, /if\s*\(version\s*==\s*1\)/);
+  assert.doesNotMatch(deserializeSource, /reader\.Read\(out m_AllowGroupPropagation\)/);
+});

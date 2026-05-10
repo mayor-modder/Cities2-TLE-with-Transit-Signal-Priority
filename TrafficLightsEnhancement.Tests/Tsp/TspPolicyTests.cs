@@ -11,8 +11,7 @@ public class TspPolicyTests
         var settings = new TransitSignalPrioritySettings(
             enabled: true,
             allowTrackRequests: true,
-            allowPublicCarRequests: false,
-            allowGroupPropagation: false);
+            allowPublicCarRequests: false);
 
         var availability = TspPolicy.GetAvailability(settings, isGroupedIntersection: false);
 
@@ -47,7 +46,6 @@ public class TspPolicyTests
 
         Assert.True(settings.m_AllowTrackRequests);
         Assert.False(settings.m_AllowPublicCarRequests);
-        Assert.False(settings.m_AllowGroupPropagation);
     }
 
     [Fact]
@@ -139,6 +137,41 @@ public class TspPolicyTests
         Assert.Equal(
             8,
             TspPolicy.GetEffectiveRequestHorizonTicks(8));
+    }
+
+    [Fact]
+    public void Zero_request_horizon_uses_default()
+    {
+        Assert.Equal(
+            TransitSignalPrioritySettings.DefaultRequestHorizonTicks,
+            TspPolicy.GetEffectiveRequestHorizonTicks(0));
+    }
+
+    [Fact]
+    public void Excessive_request_horizon_is_clamped()
+    {
+        Assert.Equal(
+            TransitSignalPrioritySettings.MaxRequestHorizonTicksUpperBound,
+            TspPolicy.GetEffectiveRequestHorizonTicks(ushort.MaxValue));
+    }
+
+    [Fact]
+    public void Settings_constructor_clamps_excessive_request_horizon()
+    {
+        var settings = new TransitSignalPrioritySettings(requestHorizonTicks: ushort.MaxValue);
+
+        Assert.Equal(
+            TransitSignalPrioritySettings.MaxRequestHorizonTicksUpperBound,
+            settings.m_RequestHorizonTicks);
+    }
+
+    [Fact]
+    public void Public_car_setting_is_preserved_as_reserved_bus_priority_input()
+    {
+        var settings = new TransitSignalPrioritySettings(allowPublicCarRequests: true);
+
+        Assert.True(settings.m_AllowPublicCarRequests);
+        Assert.True(TspPolicy.HasPersistedUserValue(settings));
     }
 
     [Fact]

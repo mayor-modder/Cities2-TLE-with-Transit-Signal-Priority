@@ -868,7 +868,6 @@ public partial class UISystem
         settings.m_Enabled = true;
         settings.m_AllowTrackRequests = true;
         settings.m_AllowPublicCarRequests = false;
-        settings.m_AllowGroupPropagation = false;
         settings.Normalize();
 
         if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
