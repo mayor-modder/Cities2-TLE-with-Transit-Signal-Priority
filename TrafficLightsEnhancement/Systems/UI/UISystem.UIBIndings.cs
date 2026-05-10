@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using C2VM.TrafficLightsEnhancement.Components;
 using C2VM.TrafficLightsEnhancement.Extensions;
@@ -18,6 +20,32 @@ namespace C2VM.TrafficLightsEnhancement.Systems.UI;
 
 public partial class UISystem
 {
+    private const string TspDiagnosticsTraceFileName = "C2VM.TrafficLightsEnhancement.TspDiagnostics.jsonl";
+    private const long TspDiagnosticsTraceMaxBytes = 5 * 1024 * 1024;
+    private const int TspDiagnosticsTraceMaxRotatedFiles = 3;
+    private static readonly object TspDiagnosticsTraceFileLock = new();
+
+    private sealed class TspDiagnosticsHistory
+    {
+        public string LastSignature = string.Empty;
+        public bool HadTspActivity;
+        public int Sequence;
+        public List<TspDiagnosticsEvent> Events = [];
+    }
+
+    private readonly struct TspDiagnosticsEvent
+    {
+        public TspDiagnosticsEvent(int sequence, string value)
+        {
+            Sequence = sequence;
+            Value = value;
+        }
+
+        public int Sequence { get; }
+
+        public string Value { get; }
+    }
+
     public static GetterValueBinding<string> m_MainPanelBinding { get; private set; }
 
     private static GetterValueBinding<string> m_LocaleBinding;
@@ -75,6 +103,7 @@ public partial class UISystem
         CreateTrigger<uint>("SetPattern", SetPattern);
         CreateTrigger<uint>("ToggleOption", ToggleOption);
         CreateTrigger<float>("SetPedestrianDuration", SetPedestrianDuration);
+        CreateTrigger<bool>("ToggleTramSignalPriority", ToggleTramSignalPriority);
         CreateTrigger<string>("CallMainPanelUpdatePosition", CallMainPanelUpdatePosition);
         CreateTrigger("SavePanel", SavePanel);
         CreateTrigger("ExitPanel", ExitPanel);
@@ -324,6 +353,19 @@ public partial class UISystem
             bool hasTrainTrack = NodeUtils.HasTrainTrack(m_EdgeInfoDictionary[m_SelectedEntity]);
             bool showOptions = patternOnly < (uint)CustomTrafficLights.Patterns.ModDefault && !hasTrainTrack;
             bool hasExclusivePedestrian = showOptions && (selectedPattern & (uint)CustomTrafficLights.Patterns.ExclusivePedestrian) != 0;
+            bool isTrafficGroupFollower = false;
+            if (EntityManager.TryGetComponent(m_SelectedEntity, out TrafficGroupMember trafficGroupMember))
+            {
+                isTrafficGroupFollower = !trafficGroupMember.m_IsGroupLeader;
+            }
+
+            TransitSignalPrioritySettings tspSettings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+                ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+                : TransitSignalPrioritySettings.CreateDefault();
+            string tspStatusLabel = isTrafficGroupFollower ? "TramSignalPriorityFollowerUnavailable" : null;
+            object tspDiagnostics = Mod.m_Setting != null && Mod.m_Setting.m_ShowTramSignalPriorityDiagnostics
+                ? GetTramSignalPriorityDiagnostics(m_SelectedEntity, tspSettings)
+                : null;
 
             var availablePatterns = new ArrayList();
             availablePatterns.Add(new { name = "Vanilla", value = (uint)CustomTrafficLights.Patterns.Vanilla });
@@ -355,7 +397,15 @@ public partial class UISystem
                 pedestrianDurationMultiplier = m_CustomTrafficLights.m_PedestrianPhaseDurationMultiplier,
                 hasLaneDirectionTool = EntityManager.HasBuffer<C2VM.CommonLibraries.LaneSystem.CustomLaneDirection>(m_SelectedEntity),
                 hasUnsavedChanges = m_ShowNotificationUnsaved,
-                isCustomPhaseMode
+                isCustomPhaseMode,
+                tramSignalPriority = new
+                {
+                    isVisible = true,
+                    isEnabled = tspSettings.m_Enabled,
+                    isEditable = !isTrafficGroupFollower,
+                    statusLabel = tspStatusLabel,
+                    diagnostics = tspDiagnostics
+                }
             };
         }
         else if (m_MainPanelState == MainPanelState.CustomPhase)
@@ -785,6 +835,576 @@ public partial class UISystem
         UpdateEntity();
         m_MainPanelBinding.Update();
     }
+
+    protected void ToggleTramSignalPriority(bool enabled)
+    {
+        if (m_SelectedEntity == Entity.Null || !EntityManager.Exists(m_SelectedEntity))
+        {
+            return;
+        }
+
+        if (EntityManager.TryGetComponent(m_SelectedEntity, out TrafficGroupMember trafficGroupMember) &&
+            !trafficGroupMember.m_IsGroupLeader)
+        {
+            return;
+        }
+
+        if (!enabled)
+        {
+            if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+            {
+                EntityManager.RemoveComponent<TransitSignalPrioritySettings>(m_SelectedEntity);
+                EntityManager.AddComponentData(m_SelectedEntity, default(Game.Common.Updated));
+            }
+
+            m_MainPanelBinding.Update();
+            return;
+        }
+
+        TransitSignalPrioritySettings settings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+            ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+            : TransitSignalPrioritySettings.CreateDefault();
+
+        settings.m_Enabled = true;
+        settings.m_AllowTrackRequests = true;
+        settings.m_AllowPublicCarRequests = false;
+        settings.m_AllowGroupPropagation = false;
+        settings.Normalize();
+
+        if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+        {
+            EntityManager.SetComponentData(m_SelectedEntity, settings);
+        }
+        else
+        {
+            EntityManager.AddComponentData(m_SelectedEntity, settings);
+        }
+
+        EntityManager.AddComponentData(m_SelectedEntity, default(Game.Common.Updated));
+        m_MainPanelBinding.Update();
+    }
+
+    private object GetTramSignalPriorityDiagnostics(Entity entity, TransitSignalPrioritySettings settings)
+    {
+        bool hasTrafficLights = EntityManager.TryGetComponent(entity, out TrafficLights trafficLights);
+        bool hasRuntimeDebug = EntityManager.TryGetComponent(entity, out TransitSignalPriorityRuntimeDebugInfo runtimeDebug);
+        bool hasDecisionTrace = EntityManager.TryGetComponent(entity, out TransitSignalPriorityDecisionTrace decisionTrace);
+        var summary = GetTspDiagnosticsSummary(
+            settings,
+            hasTrafficLights,
+            trafficLights,
+            hasRuntimeDebug,
+            runtimeDebug,
+            hasDecisionTrace,
+            decisionTrace);
+        var events = GetTspDiagnosticsEvents(
+            entity,
+            summary.value,
+            hasTrafficLights,
+            trafficLights,
+            hasRuntimeDebug,
+            runtimeDebug,
+            hasDecisionTrace,
+            decisionTrace);
+
+        var rows = new ArrayList
+        {
+            new { label = "TSPDiagnosticsEnabled", value = settings.m_Enabled ? "Yes" : "No" }
+        };
+
+        if (hasTrafficLights)
+        {
+            rows.Add(new { label = "TSPDiagnosticsSignalState", value = trafficLights.m_State.ToString() });
+            rows.Add(new { label = "TSPDiagnosticsCurrentGroup", value = FormatByteValue(trafficLights.m_CurrentSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsNextGroup", value = FormatByteValue(trafficLights.m_NextSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsTimer", value = trafficLights.m_Timer.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsSignalGroupCount", value = trafficLights.m_SignalGroupCount.ToString(CultureInfo.InvariantCulture) });
+        }
+
+        if (hasRuntimeDebug)
+        {
+            rows.Add(new { label = "TSPDiagnosticsRequest", value = GetTspRequestKindName(runtimeDebug.m_RequestKind) });
+            rows.Add(new { label = "TSPDiagnosticsSource", value = GetTspSourceName(runtimeDebug.m_SourceType) });
+            rows.Add(new { label = "TSPDiagnosticsTargetGroup", value = FormatByteValue(runtimeDebug.m_TargetSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsStrength", value = runtimeDebug.m_Strength.ToString("0.00", CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsExpiry", value = runtimeDebug.m_ExpiryTimer.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsExtend", value = runtimeDebug.m_ExtendCurrentPhase ? "Yes" : "No" });
+            rows.Add(new { label = "TSPDiagnosticsApproachRole", value = GetApproachLaneRoleName(runtimeDebug.m_ApproachLaneRole) });
+            rows.Add(new { label = "TSPDiagnosticsCandidates", value = FormatCandidates(runtimeDebug) });
+            rows.Add(new { label = "TSPDiagnosticsProbeSignaled", value = GetTrackProbeName(runtimeDebug.m_TrackSignaledLaneProbe) });
+            rows.Add(new { label = "TSPDiagnosticsCurveSignaled", value = FormatCurvePosition(runtimeDebug.m_TrackSignaledLaneProbe, runtimeDebug.m_TrackSignaledLaneCurvePosition) });
+            rows.Add(new { label = "TSPDiagnosticsProbeApproach", value = GetTrackProbeName(runtimeDebug.m_TrackApproachLaneProbe) });
+            rows.Add(new { label = "TSPDiagnosticsCurveApproach", value = FormatCurvePosition(runtimeDebug.m_TrackApproachLaneProbe, runtimeDebug.m_TrackApproachLaneCurvePosition) });
+            rows.Add(new { label = "TSPDiagnosticsProbeUpstream", value = GetTrackProbeName(runtimeDebug.m_TrackUpstreamLaneProbe) });
+            rows.Add(new { label = "TSPDiagnosticsCurveUpstream", value = FormatCurvePosition(runtimeDebug.m_TrackUpstreamLaneProbe, runtimeDebug.m_TrackUpstreamLaneCurvePosition) });
+            rows.Add(new { label = "TSPDiagnosticsIndexLanes", value = runtimeDebug.m_TramApproachIndexLaneCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsSignaledLane", value = FormatEntity(runtimeDebug.m_TrackSignaledLaneEntity) });
+            rows.Add(new { label = "TSPDiagnosticsApproachLane", value = FormatEntity(runtimeDebug.m_TrackApproachLaneEntity) });
+            rows.Add(new { label = "TSPDiagnosticsUpstreamLane", value = FormatEntity(runtimeDebug.m_TrackUpstreamLaneEntity) });
+            rows.Add(new { label = "TSPDiagnosticsSignaledOwner", value = FormatEntity(runtimeDebug.m_TrackSignaledLaneOwnerEntity) });
+            rows.Add(new { label = "TSPDiagnosticsApproachOwner", value = FormatEntity(runtimeDebug.m_TrackApproachLaneOwnerEntity) });
+            rows.Add(new { label = "TSPDiagnosticsUpstreamOwner", value = FormatEntity(runtimeDebug.m_TrackUpstreamLaneOwnerEntity) });
+            rows.Add(new { label = "TSPDiagnosticsSiblingSamples", value = FormatSiblingSamples(runtimeDebug) });
+            rows.Add(new { label = "TSPDiagnosticsMasterLanes", value = FormatMasterLanes(runtimeDebug) });
+            rows.Add(new { label = "TSPDiagnosticsFallbackEdges", value = runtimeDebug.m_FallbackConnectedEdgeCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsFallbackTramLanes", value = runtimeDebug.m_FallbackTramSublaneCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsFallbackPathMatches", value = runtimeDebug.m_FallbackPathNodeMatchCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsFallbackIndexHits", value = runtimeDebug.m_FallbackIndexHitCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsFallbackBestCurve", value = FormatFallbackCurvePosition(runtimeDebug) });
+        }
+        else
+        {
+            rows.Add(new { label = "TSPDiagnosticsRequest", value = "None" });
+        }
+
+        if (hasDecisionTrace)
+        {
+            rows.Add(new { label = "TSPDiagnosticsDecision", value = GetTspDecisionReasonName(decisionTrace.m_Reason) });
+            rows.Add(new { label = "TSPDiagnosticsBaseGroup", value = FormatByteValue(decisionTrace.m_BaseSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsSelectedGroup", value = FormatByteValue(decisionTrace.m_SelectedSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsDecisionTarget", value = FormatByteValue(decisionTrace.m_RequestTargetSignalGroup) });
+            rows.Add(new { label = "TSPDiagnosticsDecisionSource", value = GetTspSourceName(decisionTrace.m_SourceType) });
+        }
+        else
+        {
+            rows.Add(new { label = "TSPDiagnosticsDecision", value = "None" });
+        }
+
+        return new { summary, events, rows };
+    }
+
+    private (string label, string value) GetTspDiagnosticsSummary(
+        TransitSignalPrioritySettings settings,
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        bool hasRuntimeDebug,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        return ("TSPDiagnosticsSummary", GetTspDiagnosticsSummaryValue(
+            settings,
+            hasTrafficLights,
+            trafficLights,
+            hasRuntimeDebug,
+            runtimeDebug,
+            hasDecisionTrace,
+            decisionTrace));
+    }
+
+    private string GetTspDiagnosticsSummaryValue(
+        TransitSignalPrioritySettings settings,
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        bool hasRuntimeDebug,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        if (!settings.m_Enabled)
+        {
+            return "Disabled";
+        }
+
+        if (!hasRuntimeDebug)
+        {
+            return hasTrafficLights
+                ? $"No request | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
+                : "No request";
+        }
+
+        string request = GetTspRequestKindName(runtimeDebug.m_RequestKind);
+        string source = GetTspSourceName(runtimeDebug.m_SourceType);
+        string groups = hasTrafficLights
+            ? $"G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)}"
+            : "G? -> G?";
+        string action = GetTspDiagnosticsAction(
+            hasTrafficLights,
+            trafficLights,
+            runtimeDebug,
+            hasDecisionTrace,
+            decisionTrace);
+
+        return $"{request} {source} target G{FormatByteValue(runtimeDebug.m_TargetSignalGroup)} | {groups} | {action}";
+    }
+
+    private static string GetTspDiagnosticsAction(
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        if (hasDecisionTrace)
+        {
+            return GetTspDecisionReasonName(decisionTrace.m_Reason);
+        }
+
+        if (!hasTrafficLights)
+        {
+            return "Waiting for signal data";
+        }
+
+        if (runtimeDebug.m_TargetSignalGroup == trafficLights.m_CurrentSignalGroup)
+        {
+            return runtimeDebug.m_ExtendCurrentPhase ? "Holding target group" : "Target already current";
+        }
+
+        if (runtimeDebug.m_TargetSignalGroup == trafficLights.m_NextSignalGroup)
+        {
+            return "Changing to target";
+        }
+
+        if (runtimeDebug.m_ExpiryTimer == 0)
+        {
+            return "Request expired";
+        }
+
+        return "Waiting to preempt";
+    }
+
+    private ArrayList GetTspDiagnosticsEvents(
+        Entity entity,
+        string summary,
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        bool hasRuntimeDebug,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        PruneTspDiagnosticsEvents();
+
+        string signature = GetTspDiagnosticsSignature(
+            summary,
+            hasTrafficLights,
+            trafficLights,
+            hasRuntimeDebug,
+            runtimeDebug,
+            hasDecisionTrace,
+            decisionTrace);
+
+        if (!m_TspDiagnosticsEvents.TryGetValue(entity, out TspDiagnosticsHistory history))
+        {
+            history = new TspDiagnosticsHistory();
+            m_TspDiagnosticsEvents[entity] = history;
+        }
+
+        bool signatureChanged = history.LastSignature != signature;
+        if (signatureChanged)
+        {
+            history.LastSignature = signature;
+            WriteTspDiagnosticsTraceEvent(
+                entity,
+                summary,
+                hasTrafficLights,
+                trafficLights,
+                hasRuntimeDebug,
+                runtimeDebug,
+                hasDecisionTrace,
+                decisionTrace);
+            if (ShouldRecordTspDiagnosticsEvent(history, hasRuntimeDebug || hasDecisionTrace))
+            {
+                RecordTspDiagnosticsEvent(history, summary);
+            }
+        }
+
+        var events = new ArrayList();
+        foreach (TspDiagnosticsEvent diagnosticsEvent in history.Events)
+        {
+            events.Add(new
+            {
+                sequence = diagnosticsEvent.Sequence,
+                label = "TSPDiagnosticsEvent",
+                value = $"#{diagnosticsEvent.Sequence} {diagnosticsEvent.Value}"
+            });
+        }
+
+        return events;
+    }
+
+    private void PruneTspDiagnosticsEvents()
+    {
+        if (m_TspDiagnosticsEvents.Count == 0)
+        {
+            return;
+        }
+
+        foreach (Entity entity in m_TspDiagnosticsEvents.Keys.ToArray())
+        {
+            if (!EntityManager.Exists(entity))
+            {
+                m_TspDiagnosticsEvents.Remove(entity);
+            }
+        }
+    }
+
+    private static bool ShouldRecordTspDiagnosticsEvent(TspDiagnosticsHistory history, bool hasTspActivity)
+    {
+        if (hasTspActivity)
+        {
+            history.HadTspActivity = true;
+            return true;
+        }
+
+        if (history.HadTspActivity)
+        {
+            history.HadTspActivity = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string GetTspDiagnosticsSignature(
+        string summary,
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        bool hasRuntimeDebug,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        string trafficSignature = hasTrafficLights
+            ? $"{trafficLights.m_State}:{trafficLights.m_CurrentSignalGroup}:{trafficLights.m_NextSignalGroup}"
+            : "no-traffic";
+        string requestSignature = hasRuntimeDebug
+            ? $"{runtimeDebug.m_RequestKind}:{runtimeDebug.m_SourceType}:{runtimeDebug.m_TargetSignalGroup}:{runtimeDebug.m_TrackApproachLaneProbe}:{runtimeDebug.m_TrackApproachLaneCurvePosition:0.00}"
+            : "no-request";
+        string decisionSignature = hasDecisionTrace
+            ? $"{decisionTrace.m_Reason}:{decisionTrace.m_BaseSignalGroup}:{decisionTrace.m_SelectedSignalGroup}:{decisionTrace.m_RequestTargetSignalGroup}"
+            : "no-decision";
+
+        return $"{summary}|{trafficSignature}|{requestSignature}|{decisionSignature}";
+    }
+
+    private static void WriteTspDiagnosticsTraceEvent(
+        Entity entity,
+        string summary,
+        bool hasTrafficLights,
+        TrafficLights trafficLights,
+        bool hasRuntimeDebug,
+        TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasDecisionTrace,
+        TransitSignalPriorityDecisionTrace decisionTrace)
+    {
+        try
+        {
+            string path = Path.Combine(Application.persistentDataPath, TspDiagnosticsTraceFileName);
+            string line = JsonConvert.SerializeObject(new
+            {
+                timestampUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                selectedEntity = new { index = entity.Index, version = entity.Version },
+                summary,
+                trafficLights = hasTrafficLights
+                    ? new
+                    {
+                        state = trafficLights.m_State.ToString(),
+                        currentGroup = trafficLights.m_CurrentSignalGroup,
+                        nextGroup = trafficLights.m_NextSignalGroup,
+                        timer = trafficLights.m_Timer,
+                        signalGroupCount = trafficLights.m_SignalGroupCount,
+                    }
+                    : null,
+                request = hasRuntimeDebug
+                    ? new
+                    {
+                        kind = GetTspRequestKindName(runtimeDebug.m_RequestKind),
+                        source = GetTspSourceName(runtimeDebug.m_SourceType),
+                        targetGroup = runtimeDebug.m_TargetSignalGroup,
+                        strength = runtimeDebug.m_Strength,
+                        expiry = runtimeDebug.m_ExpiryTimer,
+                        extendCurrentPhase = runtimeDebug.m_ExtendCurrentPhase,
+                        approachRole = GetApproachLaneRoleName(runtimeDebug.m_ApproachLaneRole),
+                        candidates = FormatCandidates(runtimeDebug),
+                        signaledProbe = GetTrackProbeName(runtimeDebug.m_TrackSignaledLaneProbe),
+                        signaledCurve = runtimeDebug.m_TrackSignaledLaneCurvePosition,
+                        approachProbe = GetTrackProbeName(runtimeDebug.m_TrackApproachLaneProbe),
+                        approachCurve = runtimeDebug.m_TrackApproachLaneCurvePosition,
+                        upstreamProbe = GetTrackProbeName(runtimeDebug.m_TrackUpstreamLaneProbe),
+                        upstreamCurve = runtimeDebug.m_TrackUpstreamLaneCurvePosition,
+                        indexedTramLanes = runtimeDebug.m_TramApproachIndexLaneCount,
+                        signaledLane = FormatEntity(runtimeDebug.m_TrackSignaledLaneEntity),
+                        approachLane = FormatEntity(runtimeDebug.m_TrackApproachLaneEntity),
+                        upstreamLane = FormatEntity(runtimeDebug.m_TrackUpstreamLaneEntity),
+                        signaledOwner = FormatEntity(runtimeDebug.m_TrackSignaledLaneOwnerEntity),
+                        approachOwner = FormatEntity(runtimeDebug.m_TrackApproachLaneOwnerEntity),
+                        upstreamOwner = FormatEntity(runtimeDebug.m_TrackUpstreamLaneOwnerEntity),
+                        siblingSamples = FormatSiblingSamples(runtimeDebug),
+                        masterLanes = FormatMasterLanes(runtimeDebug),
+                        fallbackConnectedEdges = runtimeDebug.m_FallbackConnectedEdgeCount,
+                        fallbackTramSublanes = runtimeDebug.m_FallbackTramSublaneCount,
+                        fallbackPathNodeMatches = runtimeDebug.m_FallbackPathNodeMatchCount,
+                        fallbackIndexHits = runtimeDebug.m_FallbackIndexHitCount,
+                        fallbackBestCurve = runtimeDebug.m_FallbackBestCurvePosition,
+                    }
+                    : null,
+                decision = hasDecisionTrace
+                    ? new
+                    {
+                        reason = GetTspDecisionReasonName(decisionTrace.m_Reason),
+                        baseGroup = decisionTrace.m_BaseSignalGroup,
+                        selectedGroup = decisionTrace.m_SelectedSignalGroup,
+                        targetGroup = decisionTrace.m_RequestTargetSignalGroup,
+                        source = GetTspSourceName(decisionTrace.m_SourceType),
+                    }
+                    : null
+            });
+
+            AppendTspDiagnosticsTraceLine(path, line);
+        }
+        catch (Exception ex)
+        {
+            Mod.log.Warn($"Failed to write TSP diagnostics trace: {ex.Message}");
+        }
+    }
+
+    private static void AppendTspDiagnosticsTraceLine(string path, string line)
+    {
+        lock (TspDiagnosticsTraceFileLock)
+        {
+            RotateTspDiagnosticsTraceFileIfNeeded(path);
+            using FileStream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using StreamWriter writer = new StreamWriter(stream);
+            writer.WriteLine(line);
+        }
+    }
+
+    private static void RotateTspDiagnosticsTraceFileIfNeeded(string path)
+    {
+        var file = new FileInfo(path);
+        if (!file.Exists || file.Length < TspDiagnosticsTraceMaxBytes)
+        {
+            return;
+        }
+
+        string directory = file.DirectoryName ?? Application.persistentDataPath;
+        string rotatedPath = Path.Combine(
+            directory,
+            $"{Path.GetFileNameWithoutExtension(file.Name)}.{DateTime.UtcNow:yyyyMMddHHmmss}{file.Extension}");
+        File.Move(path, rotatedPath);
+        PruneTspDiagnosticsTraceFiles(directory, Path.GetFileNameWithoutExtension(file.Name), file.Extension);
+    }
+
+    private static void PruneTspDiagnosticsTraceFiles(string directory, string baseName, string extension)
+    {
+        DirectoryInfo directoryInfo = new DirectoryInfo(directory);
+        if (!directoryInfo.Exists)
+        {
+            return;
+        }
+
+        foreach (FileInfo rotatedFile in directoryInfo
+            .GetFiles($"{baseName}.*{extension}")
+            .OrderByDescending(file => file.LastWriteTimeUtc)
+            .Skip(TspDiagnosticsTraceMaxRotatedFiles))
+        {
+            try
+            {
+                rotatedFile.Delete();
+            }
+            catch (Exception ex)
+            {
+                Mod.log.Warn($"Failed to delete old TSP diagnostics trace file {rotatedFile.Name}: {ex.Message}");
+            }
+        }
+    }
+
+    private static void RecordTspDiagnosticsEvent(TspDiagnosticsHistory history, string value)
+    {
+        history.Sequence++;
+        history.Events.Insert(0, new TspDiagnosticsEvent(history.Sequence, value));
+        if (history.Events.Count > 10)
+        {
+            history.Events.RemoveAt(history.Events.Count - 1);
+        }
+    }
+
+    private static string FormatByteValue(byte value) => value > 0 ? value.ToString(CultureInfo.InvariantCulture) : "-";
+
+    private static string FormatCurvePosition(TransitSignalPriorityTrackProbeResult probeResult, float value)
+    {
+        return probeResult == TransitSignalPriorityTrackProbeResult.None || probeResult == TransitSignalPriorityTrackProbeResult.NoTramSamples
+            ? "-"
+            : value.ToString("0.00", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatFallbackCurvePosition(TransitSignalPriorityRuntimeDebugInfo runtimeDebug)
+    {
+        return runtimeDebug.m_FallbackIndexHitCount > 0
+            ? runtimeDebug.m_FallbackBestCurvePosition.ToString("0.00", CultureInfo.InvariantCulture)
+            : "-";
+    }
+
+    private static string FormatEntity(Entity entity) => entity != Entity.Null ? $"{entity.Index}:{entity.Version}" : "-";
+
+    private static string FormatSiblingSamples(TransitSignalPriorityRuntimeDebugInfo runtimeDebug)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "S:{0} A:{1} U:{2}",
+            runtimeDebug.m_TrackSignaledSiblingSampleCount,
+            runtimeDebug.m_TrackApproachSiblingSampleCount,
+            runtimeDebug.m_TrackUpstreamSiblingSampleCount);
+    }
+
+    private static string FormatMasterLanes(TransitSignalPriorityRuntimeDebugInfo runtimeDebug)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "S:{0} A:{1} U:{2}",
+            runtimeDebug.m_TrackSignaledLaneIsMaster ? "Y" : "N",
+            runtimeDebug.m_TrackApproachLaneIsMaster ? "Y" : "N",
+            runtimeDebug.m_TrackUpstreamLaneIsMaster ? "Y" : "N");
+    }
+
+    private static string FormatCandidates(TransitSignalPriorityRuntimeDebugInfo runtimeDebug)
+    {
+        var candidates = new List<string>();
+        if (runtimeDebug.m_HasEarlyCandidate) candidates.Add("Early");
+        if (runtimeDebug.m_HasPetitionerCandidate) candidates.Add("Petitioner");
+        if (runtimeDebug.m_HadExistingRequest) candidates.Add("Existing");
+        return candidates.Count > 0 ? string.Join(", ", candidates) : "None";
+    }
+
+    private static string GetTspRequestKindName(TransitSignalPriorityRequestKind value) => value switch
+    {
+        TransitSignalPriorityRequestKind.FreshEarly => "Early",
+        TransitSignalPriorityRequestKind.FreshPetitioner => "Petitioner",
+        TransitSignalPriorityRequestKind.LatchedExisting => "Latched",
+        _ => "None"
+    };
+
+    private static string GetApproachLaneRoleName(TransitSignalPriorityApproachLaneRole value) => value switch
+    {
+        TransitSignalPriorityApproachLaneRole.ApproachLane => "Approach lane",
+        TransitSignalPriorityApproachLaneRole.UpstreamLane => "Upstream lane",
+        _ => "None"
+    };
+
+    private static string GetTspSourceName(byte value) => ((global::TrafficLightsEnhancement.Logic.Tsp.TspSource)value) switch
+    {
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSource.Track => "Track",
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSource.PublicCar => "Public car",
+        _ => "None"
+    };
+
+    private static string GetTrackProbeName(TransitSignalPriorityTrackProbeResult value) => value switch
+    {
+        TransitSignalPriorityTrackProbeResult.NoTramSamples => "No tram samples",
+        TransitSignalPriorityTrackProbeResult.BelowThreshold => "Below threshold",
+        TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "Approach lane match",
+        TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "Upstream lane match",
+        TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "Connected approach match",
+        _ => "None"
+    };
+
+    private static string GetTspDecisionReasonName(byte value) => ((global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason)value) switch
+    {
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.ExtendedCurrentPhase => "Extended current phase",
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.SelectedTargetPhase => "Selected target phase",
+        _ => "None"
+    };
 
     protected void CallMainPanelUpdatePosition(string jsonString)
     {

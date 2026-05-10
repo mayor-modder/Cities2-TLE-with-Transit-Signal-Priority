@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "Toggle Main Panel",
     "MainPanelToggleKeyboardBindingDesc": "Open or close the main panel.",
     "ResetBindingsLabel": "Reset Key Bindings",
-    "ResetBindingsDesc": "Reset all key bindings."
+    "ResetBindingsDesc": "Reset all key bindings.",
+    "ShowTramSignalPriorityDiagnosticsLabel": "Mostrar diagnósticos de prioridade semafórica para bondes",
+    "ShowTramSignalPriorityDiagnosticsDesc": "Adiciona uma seção de Diagnósticos somente leitura abaixo da opção de prioridade semafórica para bondes no painel do cruzamento, mostrando a solicitação ativa, o grupo de sinais selecionado, o motivo da decisão, o estado da sondagem e os valores de execução relacionados."
 }

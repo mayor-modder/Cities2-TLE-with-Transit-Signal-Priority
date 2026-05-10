@@ -2,6 +2,7 @@
 using C2VM.TrafficLightsEnhancement.Components;
 using C2VM.TrafficLightsEnhancement.Utils;
 using Game.Net;
+using TrafficLightsEnhancement.Logic.Tsp;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -43,8 +44,19 @@ public struct CustomPhaseProcessor
             {
                 continue;
             }
-            var laneConnection = NodeUtils.GetLaneConnectionFromNodeSubLane(subLane, laneConnectionMap, (pedestrianLane.m_Flags & PedestrianLaneFlags.Crosswalk) != 0);
-            var sourceEdge = laneConnection.m_SourceEdge == Entity.Null && isPedestrian ? laneConnection.m_DestEdge : laneConnection.m_SourceEdge;
+            bool isPedestrianCrosswalk = (pedestrianLane.m_Flags & PedestrianLaneFlags.Crosswalk) != 0;
+            bool isTrackLane = job.m_ExtraTypeHandle.m_TrackLane.HasComponent(subLane);
+
+            var laneConnection = NodeUtils.GetLaneConnectionFromNodeSubLane(
+                subLane,
+                laneConnectionMap,
+                EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+                    isTrackLane,
+                    isPedestrianCrosswalk));
+
+            var sourceEdge = laneConnection.m_SourceEdge == Entity.Null && isPedestrian
+                ? laneConnection.m_DestEdge
+                : laneConnection.m_SourceEdge;
             var edgePosition = NodeUtils.GetEdgePosition(ref job, nodeEntity, sourceEdge);
             LaneSignal laneSignal = new LaneSignal();
             if (job.m_LaneSignalData.HasComponent(subLane))

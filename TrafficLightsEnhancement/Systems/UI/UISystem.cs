@@ -71,6 +71,8 @@ public partial class UISystem: ExtendedUISystemBase
 
     private Dictionary<Entity, NativeArray<NodeUtils.EdgeInfo>> m_EdgeInfoDictionary;
 
+    private Dictionary<Entity, TspDiagnosticsHistory> m_TspDiagnosticsEvents;
+
     private int m_DebugDisplayGroup;
 
     private Entity m_HighlightedEdge = Entity.Null;
@@ -97,6 +99,7 @@ public partial class UISystem: ExtendedUISystemBase
         m_WorldPositionList = [];
         m_EdgeInfoDictionary = [];
         m_AffectedIntersections = [];
+        m_TspDiagnosticsEvents = [];
 
         m_DebugDisplayGroup = -1;
 
@@ -143,10 +146,18 @@ public partial class UISystem: ExtendedUISystemBase
 
     public void SimulationUpdate()
     {
-        if (m_MainPanelState == MainPanelState.CustomPhase)
+        if (m_MainPanelState == MainPanelState.CustomPhase || ShouldRefreshMainPanelForDiagnostics())
         {
             m_MainPanelBinding.Update();
         }
+    }
+
+    private bool ShouldRefreshMainPanelForDiagnostics()
+    {
+        return m_MainPanelState == MainPanelState.Main
+            && m_SelectedEntity != Entity.Null
+            && Mod.m_Setting != null
+            && Mod.m_Setting.m_ShowTramSignalPriorityDiagnostics;
     }
 
     public void SetMainPanelState(MainPanelState state)

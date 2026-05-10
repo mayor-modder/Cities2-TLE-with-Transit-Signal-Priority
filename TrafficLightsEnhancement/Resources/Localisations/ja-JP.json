@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "Toggle Main Panel",
     "MainPanelToggleKeyboardBindingDesc": "Open or close the main panel.",
     "ResetBindingsLabel": "Reset Key Bindings",
-    "ResetBindingsDesc": "Reset all key bindings."
+    "ResetBindingsDesc": "Reset all key bindings.",
+    "ShowTramSignalPriorityDiagnosticsLabel": "トラム信号優先診断を表示",
+    "ShowTramSignalPriorityDiagnosticsDesc": "交差点パネルのトラム信号優先切り替えの下に読み取り専用の診断セクションを追加し、現在の要求、選択中の信号グループ、判断理由、プローブ状態、関連する実行時の値を表示します。"
 }

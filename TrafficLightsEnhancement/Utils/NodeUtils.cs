@@ -1,5 +1,6 @@
 using C2VM.TrafficLightsEnhancement.Components;
 using Game.Net;
+using TrafficLightsEnhancement.Logic.Tsp;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -69,7 +70,14 @@ public partial struct NodeUtils
             foreach (SubLane nodeSubLane in nodeSubLaneBuffer)
             {
                 pedestrianLaneLookup.TryGetComponent(nodeSubLane.m_SubLane, out var nodePedestrianLane);
-                LaneConnection laneConnection = GetLaneConnectionFromNodeSubLane(nodeSubLane.m_SubLane, laneConnectionMap, (nodePedestrianLane.m_Flags & PedestrianLaneFlags.Crosswalk) != 0);
+                bool isEdgeInfoCrosswalk = (nodePedestrianLane.m_Flags & PedestrianLaneFlags.Crosswalk) != 0;
+                bool isEdgeInfoTrackLane = trackLaneLookup.HasComponent(nodeSubLane.m_SubLane);
+                LaneConnection laneConnection = GetLaneConnectionFromNodeSubLane(
+                    nodeSubLane.m_SubLane,
+                    laneConnectionMap,
+                    EarlyApproachDetection.ShouldResolveSourceLaneRecursively(
+                        isEdgeInfoTrackLane,
+                        isEdgeInfoCrosswalk));
                 if (laneConnection.m_SourceEdge == edgeEntity)
                 {
                     if (!masterLaneLookup.HasComponent(nodeSubLane.m_SubLane) && laneConnection.m_SourceSubLane != Entity.Null)

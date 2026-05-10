@@ -14,14 +14,24 @@ export interface MainPanelCheckboxProps {
   tooltip?: string;
   onClickOverride?: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function MainPanelCheckbox(props: MainPanelCheckboxProps) {
   const { translate } = useLocalization();
   const triggerGroup = props.triggerGroup ?? mod.id;
   const triggerName = `TRIGGER:${props.triggerName}`;
+  const wrapperClassName = [props.className, props.disabled ? styles.disabled : ""]
+    .filter(Boolean)
+    .join(" ");
+  const containerClassName = [styles.container, props.disabled ? styles.disabledContainer : ""]
+    .filter(Boolean)
+    .join(" ");
 
   const clickHandler = () => {
+    if (props.disabled) {
+      return;
+    }
     if (props.onClickOverride) {
       props.onClickOverride();
       return;
@@ -30,8 +40,15 @@ export default function MainPanelCheckbox(props: MainPanelCheckboxProps) {
   };
 
   const content = (
-    <div className={props.className}>
-      <div className={styles.container} onClick={clickHandler}>
+    <div
+      className={wrapperClassName || undefined}
+      aria-disabled={props.disabled}
+    >
+      <div
+        className={containerClassName}
+        onClick={clickHandler}
+        aria-disabled={props.disabled}
+      >
         <div className={styles.titleContainer}>
           <Checkbox isChecked={props.isChecked} />
           <div className={styles.label}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${props.label}]`) ?? props.label}</div>

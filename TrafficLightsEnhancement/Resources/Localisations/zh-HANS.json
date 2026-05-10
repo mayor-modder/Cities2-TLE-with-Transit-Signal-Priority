@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "开关主面板",
     "MainPanelToggleKeyboardBindingDesc": "开启或关闭主面板。",
     "ResetBindingsLabel": "重置快捷键",
-    "ResetBindingsDesc": "重置所有快捷键。"
+    "ResetBindingsDesc": "重置所有快捷键。",
+    "ShowTramSignalPriorityDiagnosticsLabel": "显示有轨电车信号优先诊断",
+    "ShowTramSignalPriorityDiagnosticsDesc": "在路口面板的有轨电车信号优先开关下添加只读诊断区域，显示当前请求、选中的信号组、决策原因、探测状态以及相关运行时数值。"
 }

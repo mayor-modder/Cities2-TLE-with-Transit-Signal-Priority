@@ -33,5 +33,7 @@
     "TooltipConfigure": "Configure",
     "TooltipRemoveTLEConfiguration": "Remove TLE Configuration",
     "TooltipRemoveTrafficLights": "Remove Traffic Lights",
-    "TooltipSelectGroupMember":  "Select a group member"
+    "TooltipSelectGroupMember": "Select a group member",
+    "ShowTramSignalPriorityDiagnosticsLabel": "Show Tram Signal Priority Diagnostics",
+    "ShowTramSignalPriorityDiagnosticsDesc": "Adds a read-only Diagnostics section under the Tram Signal Priority toggle in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values."
 }

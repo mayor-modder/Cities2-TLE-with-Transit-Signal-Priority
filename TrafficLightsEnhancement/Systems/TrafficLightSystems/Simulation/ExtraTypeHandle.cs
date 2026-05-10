@@ -1,8 +1,16 @@
 using System.Runtime.CompilerServices;
 using C2VM.TrafficLightsEnhancement.Components;
 using Game.Net;
+using Game.Prefabs;
+using Game.Vehicles;
 using Unity.Collections;
 using Unity.Entities;
+using NetCarLane = Game.Net.CarLane;
+using NetPedestrianLane = Game.Net.PedestrianLane;
+using NetSecondaryLane = Game.Net.SecondaryLane;
+using NetTrackLane = Game.Net.TrackLane;
+using PrefabRef = Game.Prefabs.PrefabRef;
+using VehiclePublicTransport = Game.Vehicles.PublicTransport;
 
 namespace C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
 
@@ -27,15 +35,31 @@ public struct ExtraTypeHandle
     public ComponentLookup<MasterLane> m_MasterLane;
 
     [ReadOnly]
-    public ComponentLookup<CarLane> m_CarLane;
+    public ComponentLookup<NetCarLane> m_CarLane;
 
     [ReadOnly]
-    public ComponentLookup<TrackLane> m_TrackLane;
+    public ComponentLookup<NetTrackLane> m_TrackLane;
 
     [ReadOnly]
-    public ComponentLookup<PedestrianLane> m_PedestrianLane;
-    
-    public ComponentLookup<SecondaryLane> m_SecondaryLane;
+    public ComponentLookup<TrackLaneData> m_TrackLaneData;
+
+    [ReadOnly]
+    public ComponentLookup<PrefabRef> m_PrefabRef;
+
+    [ReadOnly]
+    public ComponentLookup<VehiclePublicTransport> m_PublicTransport;
+
+    [ReadOnly]
+    public ComponentLookup<TrainNavigation> m_TrainNavigation;
+
+    [ReadOnly]
+    public ComponentLookup<TrainCurrentLane> m_TrainCurrentLane;
+
+    [ReadOnly]
+    public ComponentLookup<NetPedestrianLane> m_PedestrianLane;
+
+    [ReadOnly]
+    public ComponentLookup<NetSecondaryLane> m_SecondaryLane;
 
     [ReadOnly]
     public ComponentLookup<TrafficGroupMember> m_TrafficGroupMember;
@@ -51,6 +75,18 @@ public struct ExtraTypeHandle
 
     [ReadOnly]
     public ComponentLookup<CustomTrafficLights> m_CustomTrafficLightsLookup;
+
+    [ReadOnly]
+    public ComponentLookup<TransitSignalPrioritySettings> m_TransitSignalPrioritySettingsLookup;
+
+    [ReadOnly]
+    public ComponentLookup<TransitSignalPriorityRequest> m_TransitSignalPriorityRequest;
+
+    [ReadOnly]
+    public ComponentLookup<TransitSignalPriorityRuntimeDebugInfo> m_TransitSignalPriorityRuntimeDebugInfo;
+
+    [ReadOnly]
+    public ComponentLookup<TransitSignalPriorityDecisionTrace> m_TransitSignalPriorityDecisionTrace;
 
     [ReadOnly]
     public BufferLookup<EdgeGroupMask> m_EdgeGroupMaskLookup;
@@ -69,15 +105,24 @@ public struct ExtraTypeHandle
         m_LaneFlow = state.GetComponentLookup<LaneFlow>(isReadOnly: true);
         m_LaneFlowHistory = state.GetComponentLookup<LaneFlowHistory>(isReadOnly: false);
         m_MasterLane = state.GetComponentLookup<MasterLane>(isReadOnly: true);
-        m_CarLane = state.GetComponentLookup<CarLane>(isReadOnly: true);
-        m_TrackLane = state.GetComponentLookup<TrackLane>(isReadOnly: true);
-        m_PedestrianLane = state.GetComponentLookup<PedestrianLane>(isReadOnly: true);
-        m_SecondaryLane = state.GetComponentLookup<SecondaryLane>(isReadOnly: true);
+        m_CarLane = state.GetComponentLookup<NetCarLane>(isReadOnly: true);
+        m_TrackLane = state.GetComponentLookup<NetTrackLane>(isReadOnly: true);
+        m_TrackLaneData = state.GetComponentLookup<TrackLaneData>(isReadOnly: true);
+        m_PrefabRef = state.GetComponentLookup<PrefabRef>(isReadOnly: true);
+        m_PublicTransport = state.GetComponentLookup<VehiclePublicTransport>(isReadOnly: true);
+        m_TrainNavigation = state.GetComponentLookup<TrainNavigation>(isReadOnly: true);
+        m_TrainCurrentLane = state.GetComponentLookup<TrainCurrentLane>(isReadOnly: true);
+        m_PedestrianLane = state.GetComponentLookup<NetPedestrianLane>(isReadOnly: true);
+        m_SecondaryLane = state.GetComponentLookup<NetSecondaryLane>(isReadOnly: true);
         m_TrafficGroupMember = state.GetComponentLookup<TrafficGroupMember>(isReadOnly: true);
         m_TrafficGroup = state.GetComponentLookup<TrafficGroup>(isReadOnly: true);
         m_CustomPhaseDataLookup = state.GetBufferLookup<CustomPhaseData>(isReadOnly: true);
         m_TrafficLightsLookup = state.GetComponentLookup<Game.Net.TrafficLights>(isReadOnly: true);
         m_CustomTrafficLightsLookup = state.GetComponentLookup<CustomTrafficLights>(isReadOnly: true);
+        m_TransitSignalPrioritySettingsLookup = state.GetComponentLookup<TransitSignalPrioritySettings>(isReadOnly: true);
+        m_TransitSignalPriorityRequest = state.GetComponentLookup<TransitSignalPriorityRequest>(isReadOnly: true);
+        m_TransitSignalPriorityRuntimeDebugInfo = state.GetComponentLookup<TransitSignalPriorityRuntimeDebugInfo>(isReadOnly: true);
+        m_TransitSignalPriorityDecisionTrace = state.GetComponentLookup<TransitSignalPriorityDecisionTrace>(isReadOnly: true);
         m_EdgeGroupMaskLookup = state.GetBufferLookup<EdgeGroupMask>(isReadOnly: true);
         m_SignalDelayLookup = state.GetBufferLookup<SignalDelayData>(isReadOnly: true);
     }
@@ -94,6 +139,11 @@ public struct ExtraTypeHandle
         m_MasterLane.Update(ref state);
         m_CarLane.Update(ref state);
         m_TrackLane.Update(ref state);
+        m_TrackLaneData.Update(ref state);
+        m_PrefabRef.Update(ref state);
+        m_PublicTransport.Update(ref state);
+        m_TrainNavigation.Update(ref state);
+        m_TrainCurrentLane.Update(ref state);
         m_PedestrianLane.Update(ref state);
         m_SecondaryLane.Update(ref state);
         m_TrafficGroupMember.Update(ref state);
@@ -101,6 +151,10 @@ public struct ExtraTypeHandle
         m_CustomPhaseDataLookup.Update(ref state);
         m_TrafficLightsLookup.Update(ref state);
         m_CustomTrafficLightsLookup.Update(ref state);
+        m_TransitSignalPrioritySettingsLookup.Update(ref state);
+        m_TransitSignalPriorityRequest.Update(ref state);
+        m_TransitSignalPriorityRuntimeDebugInfo.Update(ref state);
+        m_TransitSignalPriorityDecisionTrace.Update(ref state);
         m_EdgeGroupMaskLookup.Update(ref state);
         m_SignalDelayLookup.Update(ref state);
         return this;

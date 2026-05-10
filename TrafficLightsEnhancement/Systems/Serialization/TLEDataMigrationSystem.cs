@@ -22,6 +22,7 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
         private EntityQuery _edgeGroupMaskQuery;
         private EntityQuery _subLaneGroupMaskQuery;
         private EntityQuery _customPhaseDataQuery;
+        private EntityQuery _transitSignalPrioritySettingsQuery;
         private int _version;
         private bool _loaded = false;
         private Systems.UI.UISystem _uiSystem;
@@ -56,6 +57,11 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
             _customPhaseDataQuery = SystemAPI.QueryBuilder()
                 .WithAll<CustomPhaseData>()
                 .Build();
+
+            _transitSignalPrioritySettingsQuery = SystemAPI.QueryBuilder()
+                .WithAll<TransitSignalPrioritySettings>()
+                .Build();
+
             _uiSystem = World.GetOrCreateSystemManaged<Systems.UI.UISystem>();
         }
 
@@ -188,6 +194,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                 total += _subLaneGroupMaskQuery.CalculateEntityCount();
             if (!_customPhaseDataQuery.IsEmptyIgnoreFilter)
                 total += _customPhaseDataQuery.CalculateEntityCount();
+            if (!_transitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter)
+                total += _transitSignalPrioritySettingsQuery.CalculateEntityCount();
             return total;
         }
 
@@ -558,7 +566,6 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                         continue;
                         
                     EntityManager.TryGetBuffer<SignalDelayData>(entity, false, out var buffer);
-                    bool bufferModified = false;
                     
                     for (int i = buffer.Length - 1; i >= 0; i--)
                     {
@@ -569,7 +576,6 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                         {
                             buffer.RemoveAt(i);
                             removedCount++;
-                            bufferModified = true;
                             continue;
                         }
                         
@@ -578,13 +584,13 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                         
                         if (delayData.m_OpenDelay < 0 || delayData.m_OpenDelay > 300)
                         {
-                            delayData.m_OpenDelay = System.Math.Clamp(delayData.m_OpenDelay, 0, 300);
+                            delayData.m_OpenDelay = Unity.Mathematics.math.clamp(delayData.m_OpenDelay, 0, 300);
                             needsUpdate = true;
                         }
                         
                         if (delayData.m_CloseDelay < 0 || delayData.m_CloseDelay > 300)
                         {
-                            delayData.m_CloseDelay = System.Math.Clamp(delayData.m_CloseDelay, 0, 300);
+                            delayData.m_CloseDelay = Unity.Mathematics.math.clamp(delayData.m_CloseDelay, 0, 300);
                             needsUpdate = true;
                         }
                         
@@ -592,7 +598,6 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
                         {
                             buffer[i] = delayData;
                             migratedCount++;
-                            bufferModified = true;
                         }
                     }
                 }

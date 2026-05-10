@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "Toggle Main Panel",
     "MainPanelToggleKeyboardBindingDesc": "Open or close the main panel.",
     "ResetBindingsLabel": "Reset Key Bindings",
-    "ResetBindingsDesc": "Reset all key bindings."
+    "ResetBindingsDesc": "Reset all key bindings.",
+    "ShowTramSignalPriorityDiagnosticsLabel": "트램 신호 우선 진단 표시",
+    "ShowTramSignalPriorityDiagnosticsDesc": "교차로 패널의 트램 신호 우선 토글 아래에 읽기 전용 진단 섹션을 추가하여 활성 요청, 선택된 신호 그룹, 결정 이유, 프로브 상태 및 관련 런타임 값을 표시합니다."
 }

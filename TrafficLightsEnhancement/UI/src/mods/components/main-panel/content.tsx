@@ -18,6 +18,7 @@ import {
     setPattern,
     toggleOption,
     setPedestrianDuration,
+    toggleTramSignalPriority,
     savePanel,
     exitPanel,
     setPanelState,
@@ -105,6 +106,58 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                     )}
                     {mainData.isGroupMember && (
                         <Message itemType="message" message="EditPhasesFromGroupMenu" />
+                    )}
+                    {mainData.tramSignalPriority?.isVisible && (
+                        <>
+                            <Divider />
+                            <Title itemType="title" title="TramSignalPriority" />
+                            <Row
+                                hoverEffect={mainData.tramSignalPriority.isEditable}
+                                onClick={mainData.tramSignalPriority.isEditable
+                                    ? () => toggleTramSignalPriority(!mainData.tramSignalPriority!.isEnabled)
+                                    : undefined}
+                            >
+                                <Checkbox isChecked={mainData.tramSignalPriority.isEnabled} />
+                                <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]`) ?? "EnableTramSignalPriority"}</div>
+                            </Row>
+                            {mainData.tramSignalPriority.statusLabel && (
+                                <Row hoverEffect={false}>
+                                    <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.statusLabel}]`) ?? mainData.tramSignalPriority.statusLabel}</div>
+                                </Row>
+                            )}
+                            {mainData.tramSignalPriority.diagnostics && (
+                                <>
+                                    <Divider />
+                                    <Title itemType="title" title="TramSignalPriorityDiagnostics" />
+                                    {mainData.tramSignalPriority.diagnostics.summary && (
+                                        <Row hoverEffect={false}>
+                                            <div className={styles.contentLabel}>
+                                                {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.diagnostics.summary.label}]`) ?? mainData.tramSignalPriority.diagnostics.summary.label}: {mainData.tramSignalPriority.diagnostics.summary.value}
+                                            </div>
+                                        </Row>
+                                    )}
+                                    {mainData.tramSignalPriority.diagnostics.events && mainData.tramSignalPriority.diagnostics.events.length > 0 && (
+                                        <>
+                                            <Title itemType="title" title="TSPDiagnosticsEvents" />
+                                            {mainData.tramSignalPriority.diagnostics.events.map((event) => (
+                                                <Row key={`${event.sequence}-${event.value}`} hoverEffect={false}>
+                                                    <div className={styles.contentLabel}>
+                                                        {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${event.label}]`) ?? event.label}: {event.value}
+                                                    </div>
+                                                </Row>
+                                            ))}
+                                        </>
+                                    )}
+                                    {mainData.tramSignalPriority.diagnostics.rows.map((row) => (
+                                        <Row key={row.label} hoverEffect={false}>
+                                            <div className={styles.contentLabel}>
+                                                {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${row.label}]`) ?? row.label}: {row.value}
+                                            </div>
+                                        </Row>
+                                    ))}
+                                </>
+                            )}
+                        </>
                     )}
                     <Divider />
                     {mainData.hasLaneDirectionTool && (

@@ -113,6 +113,7 @@ public partial class ToolSystem : NetToolSystem
                         
                         
                         EntityManager.RemoveComponent<CustomTrafficLights>(m_RaycastResult);
+                        RemoveTransitSignalPriorityComponents(m_RaycastResult);
                         if (EntityManager.HasBuffer<CustomPhaseData>(m_RaycastResult))
                         {
                             EntityManager.RemoveComponent<CustomPhaseData>(m_RaycastResult);
@@ -236,6 +237,26 @@ public partial class ToolSystem : NetToolSystem
     public override PrefabBase GetPrefab()
     {
         return null;
+    }
+
+    private void RemoveTransitSignalPriorityComponents(Entity entity)
+    {
+        if (EntityManager.HasComponent<TransitSignalPrioritySettings>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPrioritySettings>(entity);
+        }
+        if (EntityManager.HasComponent<TransitSignalPriorityRequest>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPriorityRequest>(entity);
+        }
+        if (EntityManager.HasComponent<TransitSignalPriorityRuntimeDebugInfo>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>(entity);
+        }
+        if (EntityManager.HasComponent<TransitSignalPriorityDecisionTrace>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPriorityDecisionTrace>(entity);
+        }
     }
 
     private void UpdateTooltip(Entity entity)

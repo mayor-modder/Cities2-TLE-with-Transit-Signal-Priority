@@ -16,6 +16,8 @@ export default {
   PleaseSave: "Please save changes before selecting another junction.",
   PleaseSelectJunction: "Please Select a Junction",
   EditPhasesFromGroupMenu: "This intersection is part of a group. Edit phases from the Traffic Groups menu.",
+  TramSignalPriority: "Tram Signal Priority",
+  EnableTramSignalPriority: "Enable Tram Signal Priority",
   GiveWayToOncomingVehicles: "Give Way to Oncoming Vehicles",
   CustomPedestrianDurationMultiplier: "Pedestrian Phase Duration",
   CustomPedestrianDurationMultiplierSuffix: "x",

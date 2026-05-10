@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "Toggle Main Panel",
     "MainPanelToggleKeyboardBindingDesc": "Open or close the main panel.",
     "ResetBindingsLabel": "Reset Key Bindings",
-    "ResetBindingsDesc": "Reset all key bindings."
+    "ResetBindingsDesc": "Reset all key bindings.",
+    "ShowTramSignalPriorityDiagnosticsLabel": "Diagnose der Straßenbahn-Signalpriorität anzeigen",
+    "ShowTramSignalPriorityDiagnosticsDesc": "Fügt im Kreuzungsfenster unter dem Schalter für die Straßenbahn-Signalpriorität einen schreibgeschützten Diagnosebereich hinzu, der die aktive Anforderung, die ausgewählte Signalgruppe, den Entscheidungsgrund, den Prüfstatus und zugehörige Laufzeitwerte anzeigt."
 }

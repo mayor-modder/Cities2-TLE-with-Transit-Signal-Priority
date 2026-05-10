@@ -66,6 +66,12 @@ public struct TrafficGroup : IComponentData, ISerializable
         reader.Read(out int version);
         reader.Read(out m_IsCoordinated);
         reader.Read(out m_GreenWaveEnabled);
+        if (version >= TLEDataVersion.V2)
+        {
+            // Older TSP builds serialized group propagation here. Read and discard it;
+            // this upstream port intentionally keeps propagation inactive.
+            reader.Read(out bool _);
+        }
         reader.Read(out m_GreenWaveSpeed);
         reader.Read(out m_GreenWaveOffset);
         reader.Read(out m_MaxCoordinationDistance);

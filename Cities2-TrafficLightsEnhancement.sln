@@ -9,6 +9,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommonLibraries", "CommonLi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaneSystem", "CommonLibraries\LaneSystem\LaneSystem.csproj", "{E67F3A52-9E03-4A59-9CD8-B69A4A941E26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLightsEnhancement.Logic", "TrafficLightsEnhancement.Logic\TrafficLightsEnhancement.Logic.csproj", "{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLightsEnhancement.Tests", "TrafficLightsEnhancement.Tests\TrafficLightsEnhancement.Tests.csproj", "{F45CEB55-4180-4B7D-AC47-43B031363535}"
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +50,30 @@ Global
 		{E67F3A52-9E03-4A59-9CD8-B69A4A941E26}.Release|x64.Build.0 = Release|Any CPU
 		{E67F3A52-9E03-4A59-9CD8-B69A4A941E26}.Release|x86.ActiveCfg = Release|Any CPU
 		{E67F3A52-9E03-4A59-9CD8-B69A4A941E26}.Release|x86.Build.0 = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|x64.Build.0 = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Debug|x86.Build.0 = Debug|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|x64.ActiveCfg = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|x64.Build.0 = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|x86.ActiveCfg = Release|Any CPU
+		{188821AE-CEF1-4D81-A8D7-2B2727FC0AB0}.Release|x86.Build.0 = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|x64.Build.0 = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Debug|x86.Build.0 = Debug|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|x64.ActiveCfg = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|x64.Build.0 = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|x86.ActiveCfg = Release|Any CPU
+		{F45CEB55-4180-4B7D-AC47-43B031363535}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E67F3A52-9E03-4A59-9CD8-B69A4A941E26} = {50E84A2F-0152-411F-95C9-1BF1D47E1302}

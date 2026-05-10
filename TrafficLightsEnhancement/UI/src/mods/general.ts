@@ -16,7 +16,18 @@ export interface MainPanelMainData {
   pedestrianDurationMultiplier: number,
   hasLaneDirectionTool: boolean,
   hasUnsavedChanges: boolean,
-  isCustomPhaseMode: boolean
+  isCustomPhaseMode: boolean,
+  tramSignalPriority?: {
+    isVisible: boolean,
+    isEnabled: boolean,
+    isEditable: boolean,
+    statusLabel?: string,
+    diagnostics?: {
+      summary?: { label: string, value: string },
+      events?: Array<{ sequence: number, label: string, value: string }>,
+      rows: Array<{ label: string, value: string }>
+    }
+  }
 }
 
 export interface MainPanelEmptyData {
@@ -73,7 +84,8 @@ export interface MainPanelItemCheckbox {
   key: string,
   value: string,
   label: string,
-  engineEventName: string
+  engineEventName: string,
+  disabled?: boolean
 }
 
 export interface MainPanelItemButton {

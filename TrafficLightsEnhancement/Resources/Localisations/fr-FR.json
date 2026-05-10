@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "Toggle Main Panel",
     "MainPanelToggleKeyboardBindingDesc": "Open or close the main panel.",
     "ResetBindingsLabel": "Reset Key Bindings",
-    "ResetBindingsDesc": "Reset all key bindings."
+    "ResetBindingsDesc": "Reset all key bindings.",
+    "ShowTramSignalPriorityDiagnosticsLabel": "Afficher les diagnostics de priorité des tramways aux feux",
+    "ShowTramSignalPriorityDiagnosticsDesc": "Ajoute une section Diagnostics en lecture seule sous l'option de priorité des tramways aux feux dans le panneau d'intersection, indiquant la demande active, le groupe de feux sélectionné, la raison de la décision, l'état de la sonde et les valeurs d'exécution associées."
 }

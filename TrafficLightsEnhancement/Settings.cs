@@ -116,6 +116,9 @@ public class Settings : ModSetting
     public bool m_DefaultExclusivePedestrian { get; set; }
 
     [SettingsUISection(kTabGeneral, kGroupDefault)]
+    public bool m_ShowTramSignalPriorityDiagnostics { get; set; }
+
+    [SettingsUISection(kTabGeneral, kGroupDefault)]
     [SettingsUIButton]
     [SettingsUIConfirmation(null, null)]
     [SettingsUIDisableByCondition(typeof(Settings), "IsNotInGame")]
@@ -286,6 +289,7 @@ public class Settings : ModSetting
         m_DefaultSplitPhasing = false;
         m_DefaultAlwaysGreenKerbsideTurn = false;
         m_DefaultExclusivePedestrian = false;
+        m_ShowTramSignalPriorityDiagnostics = false;
         m_SuppressCanaryWarningVersion = "";
     }
 

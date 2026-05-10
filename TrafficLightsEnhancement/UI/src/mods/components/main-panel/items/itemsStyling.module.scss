@@ -19,6 +19,20 @@
     text-align: center;
 }
 
+.container{
+    width: 100%;
+}
+
+.disabled{
+    // Visual disabled state only; consumers must also set aria-disabled.
+    opacity: 0.5;
+    cursor: default;
+}
+
+.disabledContainer{
+    pointer-events: none;
+}
+
 
 .notice{
     border-radius: 3rem;

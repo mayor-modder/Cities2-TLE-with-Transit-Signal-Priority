@@ -26,5 +26,7 @@
     "MainPanelToggleKeyboardBindingLabel": "開關主面板",
     "MainPanelToggleKeyboardBindingDesc": "開啟或關閉主面板。",
     "ResetBindingsLabel": "重設輸入設定",
-    "ResetBindingsDesc": "重設所有輸入設定。"
+    "ResetBindingsDesc": "重設所有輸入設定。",
+    "ShowTramSignalPriorityDiagnosticsLabel": "顯示輕軌號誌優先診斷",
+    "ShowTramSignalPriorityDiagnosticsDesc": "在路口面板的輕軌號誌優先開關下方新增唯讀診斷區段，顯示目前請求、選取的號誌群組、決策原因、探測狀態與相關執行階段數值。"
 }

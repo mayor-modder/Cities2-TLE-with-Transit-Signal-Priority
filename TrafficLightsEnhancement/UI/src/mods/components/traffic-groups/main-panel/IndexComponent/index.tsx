@@ -683,9 +683,9 @@ export default function TrafficGroupsMainPanel(props: { groups: MainPanelItemTra
 									<div className={styles.dimLabel}>Enable Coordination</div>
 								</Row>
 								<Row hoverEffect={true} className={styles.hover} data={{
-								itemType: "checkbox",
-								type: "",
-								isChecked: displayedGroup.greenWaveEnabled,
+									itemType: "checkbox",
+									type: "",
+									isChecked: displayedGroup.greenWaveEnabled,
 								key: "GreenWaveEnabled",
 								value: "0",
 								label: "",
@@ -694,10 +694,6 @@ export default function TrafficGroupsMainPanel(props: { groups: MainPanelItemTra
 									<Checkbox isChecked={displayedGroup.greenWaveEnabled} />
 									<div className={styles.dimLabel}>Enable Green Wave</div>
 								</Row>
-							    
-							
-
-							
 
 							{displayedGroup.greenWaveEnabled && (
 								<>
