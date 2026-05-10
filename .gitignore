@@ -478,3 +478,7 @@ $RECYCLE.BIN/
 *.lnk
 
 Managed/
+
+# Local agent planning/specification notes. Keep these available on disk for
+# Codex/Claude sessions without publishing them as repository artifacts.
+docs/superpowers/specs/
