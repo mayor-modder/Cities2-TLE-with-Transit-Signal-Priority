@@ -39,6 +39,14 @@ public static class TspPreemptionPolicy
                 return false;
             }
 
+            if (existingRequest.HasValue
+                && IsValidLatchedRequest(existingRequest.Value, requestHorizonTicks)
+                && GetSourcePriority(existingRequest.Value.Source) > GetSourcePriority(fresh.Source))
+            {
+                request = DecrementLatchedRequest(existingRequest.Value);
+                return true;
+            }
+
             request = new TspSignalRequest(
                 fresh.TargetSignalGroup,
                 fresh.Source,
@@ -51,16 +59,9 @@ public static class TspPreemptionPolicy
         if (existingRequest.HasValue)
         {
             TspSignalRequest existing = existingRequest.Value;
-            if (IsEligibleRequest(existing)
-                && existing.ExpiryTimer > 0
-                && existing.ExpiryTimer <= requestHorizonTicks)
+            if (IsValidLatchedRequest(existing, requestHorizonTicks))
             {
-                request = new TspSignalRequest(
-                    existing.TargetSignalGroup,
-                    existing.Source,
-                    existing.Strength,
-                    existing.ExpiryTimer - 1,
-                    existing.ExtendCurrentPhase);
+                request = DecrementLatchedRequest(existing);
                 return true;
             }
         }
@@ -74,6 +75,33 @@ public static class TspPreemptionPolicy
         return request.Source is TspSource.Track or TspSource.PublicCar
             && request.TargetSignalGroup > 0
             && request.Strength > 0f;
+    }
+
+    private static bool IsValidLatchedRequest(TspSignalRequest request, ushort requestHorizonTicks)
+    {
+        return IsEligibleRequest(request)
+            && request.ExpiryTimer > 0
+            && request.ExpiryTimer <= requestHorizonTicks;
+    }
+
+    private static TspSignalRequest DecrementLatchedRequest(TspSignalRequest request)
+    {
+        return new TspSignalRequest(
+            request.TargetSignalGroup,
+            request.Source,
+            request.Strength,
+            request.ExpiryTimer - 1,
+            request.ExtendCurrentPhase);
+    }
+
+    private static int GetSourcePriority(TspSource source)
+    {
+        return source switch
+        {
+            TspSource.Track => 2,
+            TspSource.PublicCar => 1,
+            _ => 0,
+        };
     }
 
     public static bool ShouldHoldCurrentGroup(
@@ -107,6 +135,15 @@ public static class TspPreemptionPolicy
         bool protectActivePedestrianPhase = false)
     {
         return IsTrackPreemptionToDifferentGroup(currentSignalGroup, request, protectActivePedestrianPhase);
+    }
+
+    public static bool ShouldApplyTargetGroupSelection(
+        TspSignalRequest request,
+        bool protectActivePedestrianPhase = false)
+    {
+        return !protectActivePedestrianPhase
+            && IsEligibleRequest(request)
+            && request.ExpiryTimer > 0;
     }
 
     private static bool IsTrackPreemptionToDifferentGroup(

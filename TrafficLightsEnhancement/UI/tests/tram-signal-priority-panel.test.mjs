@@ -74,14 +74,22 @@ test("main panel renders separate tram and bus signal priority controls", async 
 
 test("backend exposes separate tram and bus signal priority controls", async () => {
   const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+  const toggleStart = uiBindings.indexOf("private void ToggleTransitSignalPrioritySource");
+  const toggleEnd = uiBindings.indexOf("protected void SetCustomPhase", toggleStart);
+  const toggleSource = uiBindings.slice(toggleStart, toggleEnd);
 
   assert.match(uiBindings, /tramSignalPriority\s*=\s*new/);
   assert.match(uiBindings, /busSignalPriority\s*=\s*new/);
   assert.match(uiBindings, /protected void ToggleTramSignalPriority\(bool enabled\)/);
   assert.match(uiBindings, /protected void ToggleBusSignalPriority\(bool enabled\)/);
+  assert.match(uiBindings, /tramStatusLabel\s*=\s*isTrafficGroupFollower\s*\?\s*"TramSignalPriorityFollowerUnavailable"/);
+  assert.match(uiBindings, /busStatusLabel\s*=\s*isTrafficGroupFollower\s*\?\s*"BusSignalPriorityFollowerUnavailable"/);
   assert.match(uiBindings, /settings\.m_AllowTrackRequests\s*=\s*enabled/);
   assert.match(uiBindings, /settings\.m_AllowPublicCarRequests\s*=\s*enabled/);
   assert.match(uiBindings, /settings\.m_Enabled\s*=\s*settings\.m_AllowTrackRequests\s*\|\|\s*settings\.m_AllowPublicCarRequests/);
+  assert.match(toggleSource, /hasExistingTransitSignalPrioritySettings/);
+  assert.match(toggleSource, /settings\.m_AllowTrackRequests\s*=\s*false/);
+  assert.match(toggleSource, /settings\.m_AllowPublicCarRequests\s*=\s*false/);
 });
 
 test("bus signal priority has English base labels", async () => {
@@ -89,6 +97,7 @@ test("bus signal priority has English base labels", async () => {
 
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriority]"], "Bus Signal Priority");
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]"], "Enable Bus Signal Priority");
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriorityFollowerUnavailable]"], "Bus Signal Priority is controlled by the group leader");
 });
 
 test("tram signal priority diagnostics are gated by a mod option", async () => {
@@ -382,12 +391,28 @@ test("bus priority builds bus approach index without requiring diagnostics", asy
   assert.match(patchedSystem, /shouldBuildBusApproachIndex\s*\?\s*BusApproachIndex\.Build/);
 });
 
+test("bus priority can select target group at normal transition without aggressive preemption", async () => {
+  const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
+  const getNextStart = patchedSystem.indexOf("private int GetNextSignalGroup(");
+  const getNextEnd = patchedSystem.indexOf("private static bool IsExclusivePedestrianEnabled", getNextStart);
+  const getNextSource = patchedSystem.slice(getNextStart, getNextEnd);
+
+  assert.notEqual(getNextStart, -1);
+  assert.notEqual(getNextEnd, -1);
+  assert.match(getNextSource, /ShouldApplyTargetGroupSelection/);
+  assert.match(getNextSource, /ApplySignalGroupOverride/);
+  assert.doesNotMatch(getNextSource, /if\s*\(\s*!hasTspRequest\s*\|\|\s*!TspRuntime\.ShouldAggressivelyPreemptToTargetGroup/);
+});
+
 test("bus and custom phase docs do not carry stale review notes", async () => {
   const busResearch = await repoSource("../docs/bus-signal-priority-research.md");
+  const tspArchitecture = await repoSource("../docs/tsp-architecture.md");
   const customPhaseExtraction = await repoSource("../docs/custom-phase-selection-extraction.md");
   const edgeCaseHeadings = busResearch.match(/^## Edge Cases$/gm) ?? [];
 
   assert.equal(edgeCaseHeadings.length, 1);
+  assert.doesNotMatch(tspArchitecture, /reserved for future bus|effectively track-only|only emits `TspSource\.Track`/);
+  assert.match(tspArchitecture, /soft bus/i);
   assert.doesNotMatch(customPhaseExtraction, /production selector reports `false`/);
   assert.match(customPhaseExtraction, /linked-phase\s+behavior remains in `CustomStateMachine`/);
 });

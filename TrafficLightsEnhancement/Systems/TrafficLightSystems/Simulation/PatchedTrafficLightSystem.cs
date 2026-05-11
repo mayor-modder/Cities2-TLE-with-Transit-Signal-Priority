@@ -801,8 +801,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 return pendingPedestrianGroup;
             }
 
-            if (!hasTspRequest || !TspRuntime.ShouldAggressivelyPreemptToTargetGroup(
-                    trafficLights,
+            if (!hasTspRequest || !TspRuntime.ShouldApplyTargetGroupSelection(
                     tspRequest,
                     protectActivePedestrianPhase: IsActiveExclusivePedestrianPhase(trafficLights, customTrafficLights)))
             {

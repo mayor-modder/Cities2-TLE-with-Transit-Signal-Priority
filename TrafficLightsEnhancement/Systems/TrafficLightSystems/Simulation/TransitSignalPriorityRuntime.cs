@@ -365,6 +365,15 @@ public static class TransitSignalPriorityRuntime
             protectActivePedestrianPhase);
     }
 
+    public static bool ShouldApplyTargetGroupSelection(
+        TransitSignalPriorityRequest request,
+        bool protectActivePedestrianPhase = false)
+    {
+        return TspPreemptionPolicy.ShouldApplyTargetGroupSelection(
+            ToSignalRequest(request),
+            protectActivePedestrianPhase);
+    }
+
     private static bool TryBuildFreshRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         DynamicBuffer<NetSubLane> subLanes,

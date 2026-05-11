@@ -513,6 +513,40 @@ public class TspDecisionEngineTests
         Assert.False(request.ExtendCurrentPhase);
     }
 
+    [Fact]
+    public void Existing_track_request_outranks_fresh_public_car_request()
+    {
+        bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
+            freshRequest: new TspSignalRequest(targetSignalGroup: 3, TspSource.PublicCar, strength: 1f, expiryTimer: 1, extendCurrentPhase: true),
+            existingRequest: new TspSignalRequest(targetSignalGroup: 2, TspSource.Track, strength: 1f, expiryTimer: 3, extendCurrentPhase: false),
+            requestHorizonTicks: 10,
+            currentSignalGroup: 1,
+            out var request);
+
+        Assert.True(active);
+        Assert.Equal(2, request.TargetSignalGroup);
+        Assert.Equal(TspSource.Track, request.Source);
+        Assert.Equal(2u, request.ExpiryTimer);
+        Assert.False(request.ExtendCurrentPhase);
+    }
+
+    [Fact]
+    public void Fresh_track_request_replaces_existing_public_car_request()
+    {
+        bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
+            freshRequest: new TspSignalRequest(targetSignalGroup: 2, TspSource.Track, strength: 1f, expiryTimer: 1, extendCurrentPhase: false),
+            existingRequest: new TspSignalRequest(targetSignalGroup: 3, TspSource.PublicCar, strength: 1f, expiryTimer: 3, extendCurrentPhase: true),
+            requestHorizonTicks: 10,
+            currentSignalGroup: 1,
+            out var request);
+
+        Assert.True(active);
+        Assert.Equal(2, request.TargetSignalGroup);
+        Assert.Equal(TspSource.Track, request.Source);
+        Assert.Equal(10u, request.ExpiryTimer);
+        Assert.False(request.ExtendCurrentPhase);
+    }
+
     [Theory]
     [InlineData(0u)]
     [InlineData(11u)]
@@ -722,6 +756,22 @@ public class TspDecisionEngineTests
         Assert.False(TspPreemptionPolicy.ShouldAggressivelyPreemptToConflictingGroup(
             currentSignalGroup: 1,
             request: new TspSignalRequest(targetSignalGroup: 2, TspSource.PublicCar, strength: 1f, expiryTimer: 10, extendCurrentPhase: false)));
+    }
+
+    [Fact]
+    public void Public_car_request_can_apply_target_selection_without_aggressive_preemption()
+    {
+        var request = new TspSignalRequest(
+            targetSignalGroup: 2,
+            TspSource.PublicCar,
+            strength: 1f,
+            expiryTimer: 10,
+            extendCurrentPhase: false);
+
+        Assert.True(TspPreemptionPolicy.ShouldApplyTargetGroupSelection(request));
+        Assert.False(TspPreemptionPolicy.ShouldAggressivelyPreemptToConflictingGroup(
+            currentSignalGroup: 1,
+            request));
     }
 
     [Fact]

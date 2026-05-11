@@ -359,7 +359,8 @@ public partial class UISystem
             TransitSignalPrioritySettings tspSettings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
                 ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
                 : TransitSignalPrioritySettings.CreateDefault();
-            string tspStatusLabel = isTrafficGroupFollower ? "TramSignalPriorityFollowerUnavailable" : null;
+            string tramStatusLabel = isTrafficGroupFollower ? "TramSignalPriorityFollowerUnavailable" : null;
+            string busStatusLabel = isTrafficGroupFollower ? "BusSignalPriorityFollowerUnavailable" : null;
             object tspDiagnostics = Mod.m_Setting != null && Mod.m_Setting.m_ShowTramSignalPriorityDiagnostics
                 ? GetTramSignalPriorityDiagnostics(m_SelectedEntity, tspSettings)
                 : null;
@@ -400,7 +401,7 @@ public partial class UISystem
                     isVisible = true,
                     isEnabled = tspSettings.m_Enabled && tspSettings.m_AllowTrackRequests,
                     isEditable = !isTrafficGroupFollower,
-                    statusLabel = tspStatusLabel,
+                    statusLabel = tramStatusLabel,
                     diagnostics = tspDiagnostics
                 },
                 busSignalPriority = new
@@ -408,7 +409,7 @@ public partial class UISystem
                     isVisible = true,
                     isEnabled = tspSettings.m_Enabled && tspSettings.m_AllowPublicCarRequests,
                     isEditable = !isTrafficGroupFollower,
-                    statusLabel = tspStatusLabel
+                    statusLabel = busStatusLabel
                 }
             };
         }
@@ -863,9 +864,17 @@ public partial class UISystem
             return;
         }
 
-        TransitSignalPrioritySettings settings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+        bool hasExistingTransitSignalPrioritySettings =
+            EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity);
+        TransitSignalPrioritySettings settings = hasExistingTransitSignalPrioritySettings
             ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
             : TransitSignalPrioritySettings.CreateDefault();
+
+        if (!hasExistingTransitSignalPrioritySettings)
+        {
+            settings.m_AllowTrackRequests = false;
+            settings.m_AllowPublicCarRequests = false;
+        }
 
         if (allowTrackRequests)
         {
@@ -881,7 +890,7 @@ public partial class UISystem
 
         if (!settings.m_Enabled)
         {
-            if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+            if (hasExistingTransitSignalPrioritySettings)
             {
                 EntityManager.RemoveComponent<TransitSignalPrioritySettings>(m_SelectedEntity);
                 EntityManager.AddComponentData(m_SelectedEntity, default(Game.Common.Updated));
@@ -891,7 +900,7 @@ public partial class UISystem
             return;
         }
 
-        if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
+        if (hasExistingTransitSignalPrioritySettings)
         {
             EntityManager.SetComponentData(m_SelectedEntity, settings);
         }

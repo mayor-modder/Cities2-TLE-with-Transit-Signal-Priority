@@ -11,7 +11,8 @@ This document maps the Tram Signal Priority (TSP) implementation for future main
 | Runtime ECS state | [`TransitSignalPriorityRequest.cs`](../TrafficLightsEnhancement/Components/TransitSignalPriorityRequest.cs) | Latched per-intersection request state used across simulation ticks. |
 | Runtime diagnostics | [`TransitSignalPriorityRuntimeDebugInfo.cs`](../TrafficLightsEnhancement/Components/TransitSignalPriorityRuntimeDebugInfo.cs), [`TransitSignalPriorityDecisionTrace.cs`](../TrafficLightsEnhancement/Components/TransitSignalPriorityDecisionTrace.cs) | Transient UI-facing debug and final-decision trace data. |
 | Tram indexing | [`TramApproachIndex.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TramApproachIndex.cs) | Builds a per-tick lookup from tram track lane entity to tram curve position. |
-| Request production | [`TransitSignalPriorityRuntime.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs) | Reads ECS/game state, detects approaching trams, builds or latches requests, and writes debug fields. |
+| Bus indexing | [`BusApproachIndex.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/BusApproachIndex.cs) | Builds a per-tick lookup from bus/current or change-lane entity to approach sample data when diagnostics or bus priority need it. |
+| Request production | [`TransitSignalPriorityRuntime.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs) | Reads ECS/game state, detects approaching trams and buses, builds or latches requests, and writes debug fields. |
 | Normal signal application | [`PatchedTrafficLightSystem.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs) | Resolves active TSP requests and applies them to normal traffic-light signal group selection. |
 | Custom phase application | [`CustomStateMachine.cs`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/CustomStateMachine.cs) | Applies TSP hold/override policy to custom phase state machines. |
 | UI and diagnostics | [`UISystem.UIBIndings.cs`](../TrafficLightsEnhancement/Systems/UI/UISystem.UIBIndings.cs), [`content.tsx`](../TrafficLightsEnhancement/UI/src/mods/components/main-panel/content.tsx) | Exposes selected-intersection TSP state, summary rows, recent events, and optional JSONL trace output. |
@@ -23,8 +24,8 @@ The pure logic project lives in [`TrafficLightsEnhancement.Logic/Tsp`](../Traffi
 Key files:
 
 - [`TspRequestInputs.cs`](../TrafficLightsEnhancement.Logic/Tsp/TspRequestInputs.cs) defines shared value types: `TspSource`, `PhaseScore`, `TspRequest`, and `TspDecision`.
-- [`TransitSignalPrioritySettings.cs`](../TrafficLightsEnhancement.Logic/Tsp/TransitSignalPrioritySettings.cs) defines pure settings defaults and normalization. Current defaults are tram-only: track requests allowed, public-car requests reserved but disabled, request horizon `10`, and max green extension `45`.
-- [`TransitSignalPriorityRuntime.cs`](../TrafficLightsEnhancement.Logic/Tsp/TransitSignalPriorityRuntime.cs) converts normalized settings plus lane classification into a `TspRequest`. Today it only emits `TspSource.Track` requests.
+- [`TransitSignalPrioritySettings.cs`](../TrafficLightsEnhancement.Logic/Tsp/TransitSignalPrioritySettings.cs) defines pure settings defaults and normalization. Current defaults keep the saved component disabled, allow track requests when tram priority is enabled, keep public-car/bus requests disabled until the separate bus control is enabled, use request horizon `10`, and max green extension `45`.
+- [`TransitSignalPriorityRuntime.cs`](../TrafficLightsEnhancement.Logic/Tsp/TransitSignalPriorityRuntime.cs) converts normalized settings plus lane classification into a `TspRequest`. It can emit `TspSource.Track` or `TspSource.PublicCar` when the matching source flag is enabled.
 - [`EarlyApproachDetection.cs`](../TrafficLightsEnhancement.Logic/Tsp/EarlyApproachDetection.cs) contains pure helper policy for approach-lane resolution, tram-sample probing, early-vs-petitioner selection, and connected-edge fallback diagnostics.
 - [`TspDecisionEngine.cs`](../TrafficLightsEnhancement.Logic/Tsp/TspDecisionEngine.cs) combines and scores requests. `CombineRequests()` selects the strongest track request; `SelectNextPhase()` can extend a current track-serving phase or bias selection toward track-serving phases.
 - [`TspOverrideEngine.cs`](../TrafficLightsEnhancement.Logic/Tsp/TspOverrideEngine.cs) applies a selected TSP request to a base phase or signal group choice. It owns `TspSelectionReason` and `TspOverrideSelection`.
@@ -34,7 +35,7 @@ Key files:
 Important boundary conventions:
 
 - Signal groups in game/ECS data are 1-based. Pure phase indexes are usually 0-based. `TspOverrideEngine.ApplySignalGroupOverride()` is the bridge between those conventions.
-- `TspSource.PublicCar` and `m_AllowPublicCarRequests` are reserved for future bus/public-transport work. Current runtime behavior is effectively track-only.
+- `TspSource.PublicCar` and `m_AllowPublicCarRequests` power the soft Bus Signal Priority MVP. Bus requests are off by default, have lower priority than tram requests, and do not use aggressive tram-style minimum-green shortening.
 - Request horizon value `120` is treated as a legacy default and normalized to `10`. Changing that behavior affects compatibility with previously saved TSP settings.
 
 ## Saved Settings And Runtime Components
@@ -61,8 +62,8 @@ Saved fields:
 
 The normal runtime path starts in [`PatchedTrafficLightSystem.OnUpdate()`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs).
 
-1. `OnUpdate()` checks whether any enabled, track-request-capable, runtime-eligible TSP setting exists through `TspPolicy.ShouldBuildApproachIndex(...)` and `TspPolicy.IsApproachIndexEligibleSetting(...)`.
-2. If needed, [`TramApproachIndex.Build(...)`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TramApproachIndex.cs) scans rail transit vehicles and builds a `NativeParallelHashMap<Entity, float>` from tram track lane entity to curve position.
+1. `OnUpdate()` checks whether any enabled, source-capable, runtime-eligible TSP setting exists through `TspPolicy.ShouldBuildApproachIndex(...)`, `TspPolicy.IsApproachIndexEligibleSetting(...)`, and the bus-specific eligibility helper.
+2. If needed, [`TramApproachIndex.Build(...)`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TramApproachIndex.cs) scans rail transit vehicles and builds a `NativeParallelHashMap<Entity, float>` from tram track lane entity to curve position. [`BusApproachIndex.Build(...)`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/BusApproachIndex.cs) scans bus road vehicles when diagnostics or bus priority require bus samples.
 3. `UpdateTrafficLightsJob.Execute(...)` calls `TransitSignalPriorityRuntime.TryResolveActiveLocalRequest(...)` before selecting the next signal group.
 4. The runtime reads and normalizes ECS settings, rejects unavailable or grouped-follower intersections, builds a fresh request if possible, or latches a still-valid existing request.
 5. If a request is active, the job writes `TransitSignalPriorityRequest` and `TransitSignalPriorityRuntimeDebugInfo`. If no request is active, stale request/debug components are removed.
@@ -76,10 +77,11 @@ The integration runtime lives in [`TrafficLightsEnhancement/Systems/TrafficLight
 Fresh request detection:
 
 - `TryBuildFreshRequest(...)` scans junction sublanes with `LaneSignal`.
-- For each track lane, it resolves the approach lane using `ExtraLaneSignal.m_SourceSubLane` when available.
+- For each signaled lane, it resolves the approach lane using `ExtraLaneSignal.m_SourceSubLane` when available.
 - Early approach candidates are built by `TryBuildEarlyApproachRequestForTrackLane(...)`.
 - Petitioner candidates are built by `TryBuildPetitionerRequestForLane(...)`.
-- `EarlyApproachDetection.PreferEarlyRequest(...)` prefers early approach candidates over petitioner candidates.
+- Bus approach candidates are built by `TryBuildBusApproachRequestForLane(...)` from indexed bus samples on the signaled lane, resolved approach lane, or connected approach lane.
+- Source selection prefers tram/track requests over bus/public-car requests.
 
 The tram approach index is intentionally narrow:
 
@@ -100,7 +102,8 @@ Current thresholds are implementation details in the runtime: approach-lane chec
 
 Request latching is pure policy:
 
-- Fresh eligible track requests receive the effective request horizon.
+- Fresh eligible track or bus requests receive the effective request horizon.
+- A still-valid latched track request outranks a fresh bus request; a fresh track request can replace a latched bus request.
 - Existing requests decrement while source, target, strength, and expiry remain valid.
 - Expired or invalid requests are removed from ECS state.
 
@@ -111,6 +114,7 @@ Normal signal selection is handled in [`PatchedTrafficLightSystem.cs`](../Traffi
 - `UpdateTrafficLightState(...)` receives settings and active request state.
 - `GetNextSignalGroup(...)` computes the base group through `GetNextSignalGroupWithoutTsp(...)`.
 - `TspPreemptionPolicy.ShouldAggressivelyPreemptToConflictingGroup(...)` can shorten minimum green for a conflicting track request.
+- `TspPreemptionPolicy.ShouldApplyTargetGroupSelection(...)` allows eligible tram or bus requests to select their target group at normal transition points when pedestrian protection does not block the change.
 - `TspOverrideEngine.ApplySignalGroupOverride(...)` changes the selected group or reports current-group extension.
 - `TryApplyTspCurrentGroupHold(...)` and `TspPreemptionPolicy.ShouldHoldCurrentGroup(...)` hold a compatible current group while the request remains valid and the max extension limit has not been reached.
 
@@ -182,7 +186,7 @@ UI-facing behavior also has Node tests in [`TrafficLightsEnhancement/UI/tests/tr
 
 ## Caveats For Future Work
 
-- Public-car/bus priority is deliberately not implemented yet. Existing `PublicCar` fields are reserved inputs, not active behavior.
+- Bus priority is a conservative MVP. It can hold or select bus-serving groups at normal transition points, but it still needs real-save refinement around stop relation, lane changes, queues, and grouped-intersection semantics before any more aggressive behavior is considered.
 - Grouped intersections currently reject non-leader runtime TSP requests. Group-wide TSP would need explicit leader/follower semantics.
 - Runtime diagnostics are transient ECS data, but UI code depends on their field meanings. Treat renames/removals as UI-impacting.
 - Connected-edge fallback is topology-sensitive and diagnostics-heavy. If lane-resolution rules change, update both runtime diagnostics and this document.
