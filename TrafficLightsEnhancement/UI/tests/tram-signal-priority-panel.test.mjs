@@ -343,12 +343,18 @@ test("backend exposes bus approach index details", async () => {
 
 test("runtime can build public-car requests from bus approach samples", async () => {
   const runtime = await repoSource("Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs");
+  const requestStart = runtime.indexOf("private static bool TryBuildBusApproachRequestForLane");
+  const requestEnd = runtime.indexOf("private static bool TryBuildPetitionerRequestForLane", requestStart);
+  const requestSource = runtime.slice(requestStart, requestEnd);
 
   assert.match(runtime, /TryBuildBusApproachRequestForLane/);
-  assert.match(runtime, /isPublicCarLane:\s*true/);
-  assert.match(runtime, /TspSource\.PublicCar/);
-  assert.match(runtime, /BusPrioritySuppressionPolicy\.EvaluateStopSuppression/);
-  assert.match(runtime, /BusStopRelation\.Unknown/);
+  assert.notEqual(requestStart, -1);
+  assert.notEqual(requestEnd, -1);
+  assert.match(requestSource, /isPublicCarLane:\s*true/);
+  assert.match(requestSource, /TspSource\.PublicCar/);
+  assert.match(requestSource, /BusPrioritySuppressionPolicy\.EvaluateStopSuppression/);
+  assert.match(requestSource, /BusStopRelation\.Unknown/);
+  assert.match(requestSource, /sample\.HasChangeLane\s*!=\s*0\s*\|\|\s*sample\.IsChangeLaneSample\s*!=\s*0/);
 });
 
 test("bus diagnostics include request and suppression decisions", async () => {

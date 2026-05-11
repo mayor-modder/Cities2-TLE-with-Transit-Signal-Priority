@@ -197,7 +197,7 @@ public static class TransitSignalPriorityRuntime
             return;
         }
 
-        if (sample.HasChangeLane != 0 || sample.IsChangeLaneSample != 0)
+        if (HasAmbiguousBusLaneChange(sample))
         {
             debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange;
             return;
@@ -766,7 +766,7 @@ public static class TransitSignalPriorityRuntime
             return false;
         }
 
-        if (sample.HasChangeLane != 0)
+        if (HasAmbiguousBusLaneChange(sample))
         {
             return false;
         }
@@ -781,6 +781,11 @@ public static class TransitSignalPriorityRuntime
         }
 
         return request.Source == TspSource.PublicCar;
+    }
+
+    private static bool HasAmbiguousBusLaneChange(BusApproachSample sample)
+    {
+        return sample.HasChangeLane != 0 || sample.IsChangeLaneSample != 0;
     }
 
     private static bool TryBuildPetitionerRequestForLane(
