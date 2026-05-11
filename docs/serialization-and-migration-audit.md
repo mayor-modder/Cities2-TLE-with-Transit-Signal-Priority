@@ -121,6 +121,7 @@ Track these as follow-up issues before touching inherited save behavior:
   Done in `TleMigrationPlanTests`.
 - Document a save-format contract that lists each saved component and buffer,
   its payload version, runtime-only fields, downgrade expectations, and
-  upstream-TLE compatibility assumptions.
+  upstream-TLE compatibility assumptions. Done in
+  [`save-format-contract.md`](save-format-contract.md).
 - Remove or wire up `MigrationIssuesService` after confirming ownership of
   migration issue state.
