@@ -33,9 +33,13 @@ preserve and extend:
 - Dynamic mode now documents and tests restored narrow linked-phase behavior,
   including how it interacts with TSP-selected phases.
 - Bicycle phase weight is exposed in the custom phase vehicle-weight UI.
-- Bus-priority groundwork includes pure policy tests, stop-aware suppression
-  policy, and diagnostic-only bus approach indexing. Buses still do not affect
-  signal selection.
+- Bus Signal Priority has a separate off-by-default player control and a soft
+  MVP runtime path. Bus requests can hold an already-serving green or select
+  their group at normal transition points, but trams outrank buses and buses do
+  not use aggressive tram-style preemption.
+- Bus diagnostics can identify mixed and bus-only approaches, including current
+  and change-lane samples, but bus stop and lane-change semantics still need
+  real-save playtesting and refinement.
 - Maintainer docs now cover TSP architecture, diagnostics, dynamic mode,
   save-format compatibility, localization workflow, and serialization/migration
   audit notes.
@@ -46,13 +50,11 @@ preserve and extend:
 
 These are the next bounded choices to resolve before larger feature expansion:
 
-- Playtest bus approach diagnostics in real saves and collect examples where
-  mixed lanes, bus-only lanes, lane changes, queues, and stop behavior differ
-  from the prototype assumptions.
-- Decide how much stop-relation classification is needed before buses can
-  safely create requests.
-- Decide the first player-facing bus control shape. The current preference is a
-  separate bus control rather than renaming the existing tram control.
+- Playtest Bus Signal Priority and bus approach diagnostics in real saves, with
+  special attention to mixed lanes, bus-only lanes, lane changes, queues, and
+  stop behavior.
+- Refine bus stop-relation classification and lane-change request semantics
+  before making bus priority more aggressive.
 - Extract custom phase selection into pure logic only when a behavior change or
   larger refactor needs it; the current extraction audit does not require an
   immediate rewrite.
@@ -63,21 +65,21 @@ These are the next bounded choices to resolve before larger feature expansion:
 
 ## Bus Priority Path
 
-Bus priority should build on the TSP architecture, but not by immediately
-flipping signals for buses. The first pass should be observability and policy:
+Bus priority builds on the TSP architecture with a conservative, opt-in soft
+MVP:
 
 - Pure bus-priority policy tests are in place.
-- Diagnostic-only bus approach indexing is in place behind the existing
-  off-by-default diagnostics option.
+- Bus approach diagnostics can identify mixed-lane and bus-only approaches
+  behind the existing off-by-default diagnostics option.
 - Pure stop-aware suppression rules are in place for boarding, near-side stops,
   far-side stops, unknown stop relation, and queued buses.
-- Next, use diagnostics to classify stop relation and lane-change behavior in
-  real saves before wiring bus samples into request creation.
-- Decide whether the future UI remains tram-specific, becomes a generic transit
-  priority panel, or splits tram and bus controls. The current preference is
-  split controls.
-- Only allow bus requests to affect signals after diagnostics can explain why a
-  request was or was not created.
+- A separate Bus Signal Priority control exists and is off by default.
+- Bus requests are soft: they may hold an already-serving green or select their
+  group at normal transition points, while tram requests outrank bus requests.
+- Bus priority does not use tram-style aggressive minimum-green shortening in
+  this MVP.
+- Next, use playtesting to refine stop relation, lane-change behavior, and bus
+  stop semantics before expanding bus priority behavior.
 
 ## Longer-Term Direction
 
@@ -96,5 +98,5 @@ flipping signals for buses. The first pass should be observability and policy:
 - No release dates.
 - No broad marketing page.
 - No large unrelated cleanup without an issue and a focused commit.
-- No bus signal control until bus diagnostics and suppression rules are
-  understood in real saves.
+- No aggressive bus preemption until diagnostics, stop behavior, and lane-change
+  semantics are understood in real saves.
