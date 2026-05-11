@@ -187,6 +187,10 @@ UI-facing behavior also has Node tests in [`TrafficLightsEnhancement/UI/tests/tr
 ## Caveats For Future Work
 
 - Bus priority is a conservative MVP. It can hold or select bus-serving groups at normal transition points, but it still needs real-save refinement around stop relation, lane changes, queues, and grouped-intersection semantics before any more aggressive behavior is considered.
+- Vehicle-phase fairness prevents repeated transit priority from starving the
+  same normal signal group. When TSP skips the base group, that group is
+  recorded as pending; when it comes due again, TSP defers once so the skipped
+  group can run.
 - Grouped intersections currently reject non-leader runtime TSP requests. Group-wide TSP would need explicit leader/follower semantics.
 - Runtime diagnostics are transient ECS data, but UI code depends on their field meanings. Treat renames/removals as UI-impacting.
 - Connected-edge fallback is topology-sensitive and diagnostics-heavy. If lane-resolution rules change, update both runtime diagnostics and this document.

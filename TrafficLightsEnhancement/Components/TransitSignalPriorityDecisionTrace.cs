@@ -13,4 +13,6 @@ public struct TransitSignalPriorityDecisionTrace : IComponentData
     public bool m_ActiveExclusivePedestrianPhase;
     public bool m_PendingPedestrianFairness;
     public byte m_PendingPedestrianSignalGroup;
+    public bool m_PendingVehicleFairness;
+    public byte m_PendingVehicleSignalGroup;
 }

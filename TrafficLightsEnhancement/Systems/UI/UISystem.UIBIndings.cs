@@ -1355,9 +1355,13 @@ public partial class UISystem
                         activeExclusivePedestrianPhase = decisionTrace.m_ActiveExclusivePedestrianPhase,
                         pendingPedestrianFairness = decisionTrace.m_PendingPedestrianFairness,
                         pendingPedestrianGroup = decisionTrace.m_PendingPedestrianSignalGroup,
+                        pendingVehicleFairness = decisionTrace.m_PendingVehicleFairness,
+                        pendingVehicleGroup = decisionTrace.m_PendingVehicleSignalGroup,
                         preemptionSuppressedByPedestrianPhase =
                             decisionTrace.m_Reason == (byte)global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForPedestrianFairness
                             || decisionTrace.m_ActiveExclusivePedestrianPhase,
+                        preemptionSuppressedByVehicleFairness =
+                            decisionTrace.m_Reason == (byte)global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForVehicleFairness,
                     }
                     : null
             });
@@ -1551,6 +1555,7 @@ public partial class UISystem
         global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.ExtendedCurrentPhase => "Extended current phase",
         global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.SelectedTargetPhase => "Selected target phase",
         global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForPedestrianFairness => "Deferred for pedestrian phase",
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForVehicleFairness => "Deferred for vehicle phase",
         _ => "None"
     };
 

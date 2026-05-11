@@ -266,6 +266,8 @@ test("tool removal clears tram signal priority runtime components", async () => 
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>/);
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityBusApproachDebugInfo>/);
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityDecisionTrace>/);
+  assert.match(helperSource, /RemoveComponent<TransitSignalPriorityPedestrianFairnessState>/);
+  assert.match(helperSource, /RemoveComponent<TransitSignalPriorityVehicleFairnessState>/);
 
   const removalStart = toolSystem.indexOf("EntityManager.RemoveComponent<CustomTrafficLights>(m_RaycastResult)");
   const removalEnd = toolSystem.indexOf("EntityManager.AddComponentData(m_RaycastResult", removalStart);
