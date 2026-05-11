@@ -1,39 +1,54 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report incorrect behavior, a crash, or a regression
 title: ''
-labels: ''
+labels: 'type:bug'
 assignees: ''
-
 ---
 
-**Describe the bug**
+## Summary
 
-A clear and concise description of what the bug is.
+Describe the incorrect behavior, crash, or regression.
 
-**To Reproduce**
+## Environment
 
-Steps to reproduce the behaviour.
+- TLE Extended commit/build:
+- Cities: Skylines II version:
+- Local mod, Thunderstore, or Paradox Mods build:
+- Other traffic/network mods enabled:
 
-For example:
-1. Build a road / junction as shown in the screenshot
-2. Open the Lane Direction Tool
-3. Set the direction for the left-most lane on the east road
-4. Save
-5. The lane remains in its original configuration
+## Reproduction Steps
 
-**Expected behaviour**
+1.
+2.
+3.
 
-A clear and concise description of what you expected to happen.
+## Expected Behavior
 
-**Screenshots**
+What should have happened?
 
-If applicable, add screenshots to help explain your problem.
+## Actual Behavior
 
-**Log file**
+What happened instead?
 
-Please upload your ```Player.log``` and all the files inside the ```Logs``` folder located at ```%UserProfile%\AppData\LocalLow\Colossal Order\Cities Skylines II\```.
+## Save Compatibility
 
-**Additional context**
+- Did this save previously use upstream Traffic Lights Enhancement?
+- Did this save previously use another traffic-light or lane-control mod?
+- Does the issue reproduce on a new save?
 
-Add any other context about the problem here.
+## Diagnostics and Logs
+
+Attach screenshots or short clips if the issue is visual.
+
+If available, attach `Player.log` and relevant files from:
+
+```text
+%UserProfile%\AppData\LocalLow\Colossal Order\Cities Skylines II\
+```
+
+For Tram Signal Priority issues, note whether the diagnostics option was enabled and attach the JSONL trace if relevant.
+
+## Additional Context
+
+Add anything else that would help a maintainer reproduce or reason about the issue.
