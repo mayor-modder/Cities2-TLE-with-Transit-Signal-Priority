@@ -1,0 +1,74 @@
+using TrafficLightsEnhancement.Logic.Tsp;
+using Xunit;
+
+namespace TrafficLightsEnhancement.Tests.Tsp;
+
+public class BusPrioritySuppressionPolicyTests
+{
+    [Theory]
+    [InlineData(BusStopRelation.None)]
+    [InlineData(BusStopRelation.NearSideBeforeSignal)]
+    [InlineData(BusStopRelation.FarSideAfterSignal)]
+    [InlineData(BusStopRelation.Unknown)]
+    public void Boarding_bus_is_suppressed_for_any_stop_relation(BusStopRelation stopRelation)
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            TransitApproachSuppressionFlags.Boarding,
+            stopRelation);
+
+        Assert.True(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.Boarding, decision.Reason);
+    }
+
+    [Theory]
+    [InlineData(TransitApproachSuppressionFlags.Arriving)]
+    [InlineData(TransitApproachSuppressionFlags.RequireStop)]
+    [InlineData(TransitApproachSuppressionFlags.Arriving | TransitApproachSuppressionFlags.RequireStop)]
+    public void Near_side_stop_arrival_suppresses_bus_priority(TransitApproachSuppressionFlags flags)
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            flags,
+            BusStopRelation.NearSideBeforeSignal);
+
+        Assert.True(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.NearSideStop, decision.Reason);
+    }
+
+    [Theory]
+    [InlineData(TransitApproachSuppressionFlags.Arriving)]
+    [InlineData(TransitApproachSuppressionFlags.RequireStop)]
+    [InlineData(TransitApproachSuppressionFlags.Arriving | TransitApproachSuppressionFlags.RequireStop)]
+    public void Far_side_stop_arrival_does_not_suppress_bus_priority(TransitApproachSuppressionFlags flags)
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            flags,
+            BusStopRelation.FarSideAfterSignal);
+
+        Assert.False(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.None, decision.Reason);
+    }
+
+    [Theory]
+    [InlineData(TransitApproachSuppressionFlags.Arriving)]
+    [InlineData(TransitApproachSuppressionFlags.RequireStop)]
+    public void Unknown_stop_relation_suppresses_stop_bound_bus_conservatively(TransitApproachSuppressionFlags flags)
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            flags,
+            BusStopRelation.Unknown);
+
+        Assert.True(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.UnknownStopRelation, decision.Reason);
+    }
+
+    [Fact]
+    public void Queued_bus_without_stop_flags_is_not_stop_suppressed()
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            TransitApproachSuppressionFlags.None,
+            BusStopRelation.NearSideBeforeSignal);
+
+        Assert.False(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.None, decision.Reason);
+    }
+}

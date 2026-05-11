@@ -43,6 +43,7 @@ split it.
 Likely ECS data sources to investigate:
 
 - `PublicTransport`
+- `PublicTransport.m_State` with `Boarding`, `Arriving`, and `RequireStop`
 - `PassengerTransport`
 - `CarCurrentLane`
 - `CarNavigation`
@@ -50,6 +51,10 @@ Likely ECS data sources to investigate:
 - `Moving`
 - `PrefabRef`
 - `PublicTransportVehicleData.m_TransportType == Bus`
+- `CurrentRoute`
+- route stop entities with `BusStop` and `TransportStop`
+- route/vehicle buffers such as `RouteWaypoint`, `RouteVehicle`,
+  `RouteLane`, and `VehicleTiming`
 
 The current `ExtraTypeHandle` does not expose the road-vehicle state needed for
 bus detection.
@@ -57,6 +62,57 @@ bus detection.
 Pure policy also needs source-generalization. Today request construction,
 request combination, phase scoring, latching, current-group hold, aggressive
 preemption, and overrides are effectively track-only.
+
+## Stop-Aware Suppression Policy
+
+Bus priority should be stricter than tram priority around stops. A tram with
+`Arriving` or `RequireStop` can still be worth detecting because tram stops are
+often integrated with the track approach. A bus approaching a near-side stop may
+board passengers before the signal, so requesting green before boarding would
+hold cross traffic for no benefit.
+
+Available ECS data from `Game.dll` reflection:
+
+- `Game.Vehicles.PublicTransport` has `m_State`, `m_TargetRequest`,
+  `m_DepartureFrame`, `m_PathElementTime`, `m_MaxBoardingDistance`, and
+  `m_MinWaitingDistance`.
+- `Game.Vehicles.PublicTransportFlags` includes `Boarding`, `Arriving`, and
+  `RequireStop`.
+- `Game.Prefabs.PublicTransportVehicleData.m_TransportType` identifies buses
+  with `TransportType.Bus`.
+- `Game.Vehicles.CarCurrentLane` exposes current lane, change lane, curve
+  position, lane flags, lane position, distance, and change progress.
+- `Game.Routes.TransportStop` carries stop flags/loading data, and bus stops can
+  be identified by the marker component `Game.Routes.BusStop`.
+- Route context is available through route components/buffers such as
+  `CurrentRoute`, `RouteWaypoint`, `RouteVehicle`, `RouteLane`, and
+  `VehicleTiming`.
+
+Pure stop suppression is now captured by
+`BusPrioritySuppressionPolicy.EvaluateStopSuppression(...)`:
+
+- `Boarding` always suppresses bus priority.
+- `Arriving` or `RequireStop` suppresses priority for a known near-side stop
+  before the signal.
+- `Arriving` or `RequireStop` does not suppress priority for a known far-side
+  stop after the signal; helping the bus cross the junction can still be useful.
+- `Arriving` or `RequireStop` with unknown stop relation suppresses
+  conservatively until diagnostics can classify the stop.
+- A queued bus with no stop flags is not stop-suppressed by this policy. Runtime
+  detection may still require movement/position thresholds before creating a
+  request, but queueing is not the same as boarding.
+
+Runtime implementation should classify stop relation before creating bus
+requests:
+
+- **Near-side stop:** suppress while `Arriving`, `RequireStop`, or `Boarding`.
+- **Far-side stop:** allow approach priority unless the bus is actually
+  `Boarding`.
+- **Stopped behind queue:** do not suppress solely because the bus is stopped;
+  use distance/curve thresholds and request expiry to decide whether it is close
+  enough to benefit.
+- **Unknown stop relation:** suppress stop-bound buses and report the unknown
+  relation in diagnostics.
 
 ## Edge Cases
 
