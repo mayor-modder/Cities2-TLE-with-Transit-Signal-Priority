@@ -1147,7 +1147,11 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             ComponentType.Exclude<Destroyed>(),
             ComponentType.Exclude<Temp>());
         m_TransitSignalPrioritySettingsQuery = GetEntityQuery(
-            ComponentType.ReadOnly<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>());
+            ComponentType.ReadOnly<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>(),
+            ComponentType.ReadOnly<TrafficLights>(),
+            ComponentType.Exclude<Deleted>(),
+            ComponentType.Exclude<Destroyed>(),
+            ComponentType.Exclude<Temp>());
         RequireForUpdate(m_TrafficLightQuery);
     }
 
@@ -1157,8 +1161,10 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
         m_TrafficLightQuery.ResetFilter();
         m_TrafficLightQuery.SetSharedComponentFilter(new UpdateFrame(SimulationUtils.GetUpdateFrameWithInterval(m_SimulationSystem.frameIndex, (uint)GetUpdateInterval(SystemUpdatePhase.GameSimulation), 16)));
         var updatedExtraTypeHandle = m_ExtraTypeHandle.Update(ref base.CheckedStateRef);
+        bool hasTransitSignalPrioritySettings = !m_TransitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter;
         bool shouldBuildApproachIndex = TspPolicy.ShouldBuildApproachIndex(
-            !m_TransitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter);
+            hasTransitSignalPrioritySettings,
+            hasApproachIndexEligibleTransitSignalPrioritySettings: HasApproachIndexEligibleTransitSignalPrioritySettings());
         var tramApproachIndex = shouldBuildApproachIndex
             ? TramApproachIndex.Build(
                 m_RailTransitQuery,
@@ -1199,6 +1205,32 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
         }, m_TrafficLightQuery, base.Dependency);
         base.Dependency = tramApproachIndex.Dispose(dependency);
         m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
+    }
+
+    private bool HasApproachIndexEligibleTransitSignalPrioritySettings()
+    {
+        if (m_TransitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter)
+        {
+            return false;
+        }
+
+        using NativeArray<Entity> entities = m_TransitSignalPrioritySettingsQuery.ToEntityArray(Allocator.Temp);
+        using NativeArray<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings> settings =
+            m_TransitSignalPrioritySettingsQuery.ToComponentDataArray<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>(Allocator.Temp);
+
+        for (int i = 0; i < settings.Length; i++)
+        {
+            Entity entity = entities[i];
+            bool isGroupedFollower = EntityManager.HasComponent<TrafficGroupMember>(entity)
+                && !EntityManager.GetComponentData<TrafficGroupMember>(entity).m_IsGroupLeader;
+
+            if (TspPolicy.IsApproachIndexEligibleSetting(settings[i].ToLogicSettings(), isGroupedFollower))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void SetCompatibilityMode(bool enable)

@@ -6,9 +6,9 @@ This document records the diagnostics audit for Tram Signal Priority (TSP).
 
 The selected-intersection diagnostics UI and JSONL trace writer are opt-in and
 off by default. When enabled, they are useful for live troubleshooting, but they
-also make selected-panel refresh broader than normal gameplay needs. The most
-important always-on cost is not the JSONL writer; it is the tram approach index,
-which is built whenever any TSP settings component exists.
+also make selected-panel refresh broader than normal gameplay needs. The runtime
+tram approach index is gated separately so disabled, follower-only, public-car
+only, and stale/non-traffic-light settings do not trigger rail transit scans.
 
 ## UI Diagnostics Gating
 
@@ -23,8 +23,8 @@ Defaults:
 When enabled, diagnostics are built for the selected main-panel entity. If the
 selected intersection has no TSP settings component, the UI still builds a
 disabled/default diagnostics view. That is useful when debugging why a selected
-intersection has no request, but it can also produce trace churn for non-TSP
-intersections.
+intersection has no request. The visible recent-event list and JSONL trace only
+record meaningful TSP activity, plus one transition when activity ends.
 
 ## JSONL Trace Behavior
 
@@ -36,10 +36,13 @@ The trace file is a debugging artifact, not gameplay state.
 - Rotation threshold: 5 MB
 - Retention: newest 3 rotated files plus the active file
 - Deduplication: per selected entity, based on the last summary signature
+- Event filter: same meaningful-activity filter as the visible recent-event list
 
 Trace writes are lock-protected, exception-handled, and bounded by rotation plus
 retention. They are still synchronous UI-triggered file I/O, so diagnostics
-should remain opt-in.
+should remain opt-in. A separate "write JSONL trace" setting is not needed yet;
+the current trace follows the selected diagnostics event filter instead of
+logging every selected-panel signal change.
 
 ## Runtime Debug Components
 
@@ -54,29 +57,25 @@ scope or enabling diagnostics by default.
 
 ## Tram Approach Index
 
-`PatchedTrafficLightSystem.OnUpdate()` builds `TramApproachIndex` when the
-`TransitSignalPrioritySettings` query is non-empty. The policy is intentionally
-simple:
+`PatchedTrafficLightSystem.OnUpdate()` builds `TramApproachIndex` only when the
+settings query contains at least one approach-index-eligible TSP setting. The
+query is narrowed to non-temp, non-deleted traffic-light entities, and the pure
+policy requires an enabled, track-request-capable setting that is not on a
+grouped follower.
 
 ```text
-any persisted TSP settings component -> scan rail transit lanes for the tick
+enabled track-capable leader/standalone TSP setting -> scan rail transit lanes for the tick
 ```
 
-Disabling TSP from the UI removes the settings component, which avoids the scan
-for users who have no TSP-enabled intersections. However, the query does not
-filter by `m_Enabled` or by runtime eligibility. If a disabled or stale settings
-component exists, the approach index can still be built.
+Disabling TSP from the UI removes the settings component, which still avoids the
+scan for users who have no TSP-enabled intersections. The narrower gate also
+protects against stale disabled settings and future public-car-only settings.
 
 ## Follow-Up Work
 
 Useful follow-ups:
 
-- Gate trace writes to meaningful TSP activity, or split "show diagnostics" and
-  "write JSONL trace" into separate settings.
-- Narrow selected-panel diagnostics so non-TSP intersections only trace when an
-  explicit selected-debug mode is active.
-- Optimize `ShouldBuildApproachIndex(...)` so rail transit scans require at
-  least one enabled runtime-eligible TSP setting, or document the current
-  component-existence policy as the intended behavior.
 - Profile `TransitSignalPriorityRuntimeDebugInfo` writes before adding bus
   priority or broader public transport priority.
+- Consider a separate "write JSONL trace" option only if we need deliberate deep
+  tracing for disabled/no-request selected intersections.

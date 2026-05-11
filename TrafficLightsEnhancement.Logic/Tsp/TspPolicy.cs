@@ -64,7 +64,25 @@ public static class TspPolicy
 
     public static bool ShouldBuildApproachIndex(bool hasTransitSignalPrioritySettings)
     {
-        return hasTransitSignalPrioritySettings;
+        return ShouldBuildApproachIndex(
+            hasTransitSignalPrioritySettings,
+            hasApproachIndexEligibleTransitSignalPrioritySettings: hasTransitSignalPrioritySettings);
+    }
+
+    public static bool ShouldBuildApproachIndex(
+        bool hasTransitSignalPrioritySettings,
+        bool hasApproachIndexEligibleTransitSignalPrioritySettings)
+    {
+        return hasTransitSignalPrioritySettings && hasApproachIndexEligibleTransitSignalPrioritySettings;
+    }
+
+    public static bool IsApproachIndexEligibleSetting(
+        TransitSignalPrioritySettings settings,
+        bool isGroupedFollower)
+    {
+        return settings.m_Enabled
+            && settings.m_AllowTrackRequests
+            && !isGroupedFollower;
     }
 
     public static TspAvailability GetAvailability(

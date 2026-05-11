@@ -1090,9 +1090,14 @@ public partial class UISystem
         }
 
         bool signatureChanged = history.LastSignature != signature;
+        bool shouldRecordEvent = signatureChanged && ShouldRecordTspDiagnosticsEvent(history, hasRuntimeDebug || hasDecisionTrace);
         if (signatureChanged)
         {
             history.LastSignature = signature;
+        }
+
+        if (signatureChanged && shouldRecordEvent)
+        {
             WriteTspDiagnosticsTraceEvent(
                 entity,
                 summary,
@@ -1102,10 +1107,7 @@ public partial class UISystem
                 runtimeDebug,
                 hasDecisionTrace,
                 decisionTrace);
-            if (ShouldRecordTspDiagnosticsEvent(history, hasRuntimeDebug || hasDecisionTrace))
-            {
-                RecordTspDiagnosticsEvent(history, summary);
-            }
+            RecordTspDiagnosticsEvent(history, summary);
         }
 
         var events = new ArrayList();

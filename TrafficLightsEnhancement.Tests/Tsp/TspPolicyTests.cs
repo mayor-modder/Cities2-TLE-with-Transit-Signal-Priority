@@ -197,9 +197,50 @@ public class TspPolicyTests
     }
 
     [Fact]
-    public void Approach_index_is_needed_when_transit_signal_priority_settings_exist()
+    public void Approach_index_is_not_needed_without_enabled_runtime_eligible_settings()
     {
-        Assert.True(TspPolicy.ShouldBuildApproachIndex(hasTransitSignalPrioritySettings: true));
+        Assert.False(TspPolicy.ShouldBuildApproachIndex(
+            hasTransitSignalPrioritySettings: true,
+            hasApproachIndexEligibleTransitSignalPrioritySettings: false));
+    }
+
+    [Fact]
+    public void Approach_index_is_needed_when_transit_signal_priority_settings_are_index_eligible()
+    {
+        Assert.True(TspPolicy.ShouldBuildApproachIndex(
+            hasTransitSignalPrioritySettings: true,
+            hasApproachIndexEligibleTransitSignalPrioritySettings: true));
+    }
+
+    [Fact]
+    public void Approach_index_setting_requires_enabled_track_requests()
+    {
+        var disabled = new TransitSignalPrioritySettings(enabled: false, allowTrackRequests: true);
+        var trackDisabled = new TransitSignalPrioritySettings(enabled: true, allowTrackRequests: false);
+        var publicCarOnly = new TransitSignalPrioritySettings(
+            enabled: true,
+            allowTrackRequests: false,
+            allowPublicCarRequests: true);
+
+        Assert.False(TspPolicy.IsApproachIndexEligibleSetting(disabled, isGroupedFollower: false));
+        Assert.False(TspPolicy.IsApproachIndexEligibleSetting(trackDisabled, isGroupedFollower: false));
+        Assert.False(TspPolicy.IsApproachIndexEligibleSetting(publicCarOnly, isGroupedFollower: false));
+    }
+
+    [Fact]
+    public void Approach_index_setting_rejects_grouped_followers()
+    {
+        var settings = new TransitSignalPrioritySettings(enabled: true, allowTrackRequests: true);
+
+        Assert.False(TspPolicy.IsApproachIndexEligibleSetting(settings, isGroupedFollower: true));
+    }
+
+    [Fact]
+    public void Approach_index_setting_allows_enabled_track_request_leaders_or_standalone_junctions()
+    {
+        var settings = new TransitSignalPrioritySettings(enabled: true, allowTrackRequests: true);
+
+        Assert.True(TspPolicy.IsApproachIndexEligibleSetting(settings, isGroupedFollower: false));
     }
 
     [Fact]

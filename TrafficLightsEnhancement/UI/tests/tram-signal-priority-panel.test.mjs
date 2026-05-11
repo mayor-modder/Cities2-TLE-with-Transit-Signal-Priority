@@ -92,6 +92,20 @@ test("backend writes selected tram signal priority diagnostics to a trace file",
   assert.match(uiBindings, /FileMode\.Append/);
 });
 
+test("backend trace writes follow selected diagnostics event filtering", async () => {
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+  const eventsStart = uiBindings.indexOf("private ArrayList GetTspDiagnosticsEvents");
+  const eventsEnd = uiBindings.indexOf("private void PruneTspDiagnosticsEvents", eventsStart);
+  const eventsSource = uiBindings.slice(eventsStart, eventsEnd);
+
+  assert.notEqual(eventsStart, -1);
+  assert.notEqual(eventsEnd, -1);
+  assert.match(eventsSource, /bool\s+shouldRecordEvent\s*=\s*signatureChanged\s*&&\s*ShouldRecordTspDiagnosticsEvent\(history,\s*hasRuntimeDebug\s*\|\|\s*hasDecisionTrace\)/);
+  assert.match(eventsSource, /if\s*\(\s*signatureChanged\s*&&\s*shouldRecordEvent\s*\)/);
+  assert.ok(eventsSource.indexOf("bool shouldRecordEvent") < eventsSource.indexOf("WriteTspDiagnosticsTraceEvent"));
+  assert.ok(eventsSource.indexOf("bool shouldRecordEvent") < eventsSource.indexOf("RecordTspDiagnosticsEvent"));
+});
+
 test("static locale provides descriptions for visible mod options", async () => {
   const locale = JSON.parse(await repoSource("Locale.json"));
   const optionPrefix =

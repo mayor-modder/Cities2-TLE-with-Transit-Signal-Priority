@@ -61,7 +61,7 @@ Saved fields:
 
 The normal runtime path starts in [`PatchedTrafficLightSystem.OnUpdate()`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs).
 
-1. `OnUpdate()` checks whether any `TransitSignalPrioritySettings` component exists through `TspPolicy.ShouldBuildApproachIndex(...)`.
+1. `OnUpdate()` checks whether any enabled, track-request-capable, runtime-eligible TSP setting exists through `TspPolicy.ShouldBuildApproachIndex(...)` and `TspPolicy.IsApproachIndexEligibleSetting(...)`.
 2. If needed, [`TramApproachIndex.Build(...)`](../TrafficLightsEnhancement/Systems/TrafficLightSystems/Simulation/TramApproachIndex.cs) scans rail transit vehicles and builds a `NativeParallelHashMap<Entity, float>` from tram track lane entity to curve position.
 3. `UpdateTrafficLightsJob.Execute(...)` calls `TransitSignalPriorityRuntime.TryResolveActiveLocalRequest(...)` before selecting the next signal group.
 4. The runtime reads and normalizes ECS settings, rejects unavailable or grouped-follower intersections, builds a fresh request if possible, or latches a still-valid existing request.
@@ -165,6 +165,7 @@ When diagnostics are enabled and the selected panel asks for diagnostics, `UISys
 - rotation threshold: 5 MB,
 - rotated file retention: newest 3 rotated files,
 - dedupe: `TspDiagnosticsHistory.LastSignature` suppresses repeated identical selected-entity summaries.
+- event filter: trace writes follow the same meaningful-activity filter as the visible recent-event list, so non-TSP selected intersections do not log ordinary signal changes.
 
 The trace is a debugging aid, not gameplay state. It should remain safe to disable, delete, or rotate without affecting TSP behavior.
 
@@ -182,7 +183,6 @@ UI-facing behavior also has Node tests in [`TrafficLightsEnhancement/UI/tests/tr
 ## Caveats For Future Work
 
 - Public-car/bus priority is deliberately not implemented yet. Existing `PublicCar` fields are reserved inputs, not active behavior.
-- `TramApproachIndex` is built whenever any TSP settings component exists, not only when enabled intersections exist. That is simple and safe, but broader than necessary.
 - Grouped intersections currently reject non-leader runtime TSP requests. Group-wide TSP would need explicit leader/follower semantics.
 - Runtime diagnostics are transient ECS data, but UI code depends on their field meanings. Treat renames/removals as UI-impacting.
 - Connected-edge fallback is topology-sensitive and diagnostics-heavy. If lane-resolution rules change, update both runtime diagnostics and this document.
