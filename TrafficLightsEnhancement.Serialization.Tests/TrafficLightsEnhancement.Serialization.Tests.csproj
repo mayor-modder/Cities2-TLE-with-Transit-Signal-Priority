@@ -32,6 +32,7 @@
     <Compile Include="..\TrafficLightsEnhancement\Components\SubLaneGroupMask.cs" Link="ProductSources\SubLaneGroupMask.cs" />
     <Compile Include="..\TrafficLightsEnhancement\Components\TrafficGroup.cs" Link="ProductSources\TrafficGroup.cs" />
     <Compile Include="..\TrafficLightsEnhancement\Components\TrafficGroupMember.cs" Link="ProductSources\TrafficGroupMember.cs" />
+    <Compile Include="..\TrafficLightsEnhancement\Utils\CustomPhaseDataUpdate.cs" Link="ProductSources\CustomPhaseDataUpdate.cs" />
   </ItemGroup>
 
   <ItemGroup>

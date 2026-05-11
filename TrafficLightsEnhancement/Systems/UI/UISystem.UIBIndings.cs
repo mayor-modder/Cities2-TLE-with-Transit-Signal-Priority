@@ -1666,87 +1666,7 @@ public partial class UISystem
             }
             var newValue = customPhaseDataBuffer[index];
 
-            if (input.key == "MinimumDuration")
-            {
-                newValue.m_MinimumDuration = Convert.ToUInt16(input.value);
-                if (newValue.m_MinimumDuration > newValue.m_MaximumDuration)
-                {
-                    newValue.m_MaximumDuration = newValue.m_MinimumDuration;
-                }
-            }
-            else if (input.key == "MaximumDuration")
-            {
-                newValue.m_MaximumDuration = Convert.ToUInt16(input.value);
-                if (newValue.m_MinimumDuration > newValue.m_MaximumDuration)
-                {
-                    newValue.m_MinimumDuration = newValue.m_MaximumDuration;
-                }
-            }
-            else if (input.key == "TargetDurationMultiplier")
-            {
-                newValue.m_TargetDurationMultiplier = Convert.ToSingle(input.value);
-            }
-            else if (input.key == "IntervalExponent")
-            {
-                newValue.m_IntervalExponent = Convert.ToSingle(input.value);
-            }
-            else if (input.key == "LinkedWithNextPhase")
-            {
-                newValue.m_Options ^= CustomPhaseData.Options.LinkedWithNextPhase;
-            }
-            else if (input.key == "EndPhasePrematurely")
-            {
-                newValue.m_Options ^= CustomPhaseData.Options.EndPhasePrematurely;
-            }
-            
-            else if (input.key == "carOpenDelay")
-            {
-                newValue.m_CarOpenDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "carCloseDelay")
-            {
-                newValue.m_CarCloseDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "publicCarOpenDelay")
-            {
-                newValue.m_PublicCarOpenDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "publicCarCloseDelay")
-            {
-                newValue.m_PublicCarCloseDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "trackOpenDelay")
-            {
-                newValue.m_TrackOpenDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "trackCloseDelay")
-            {
-                newValue.m_TrackCloseDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "pedestrianOpenDelay")
-            {
-                newValue.m_PedestrianOpenDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "pedestrianCloseDelay")
-            {
-                newValue.m_PedestrianCloseDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "bicycleOpenDelay")
-            {
-                newValue.m_BicycleOpenDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "bicycleCloseDelay")
-            {
-                newValue.m_BicycleCloseDelay = Convert.ToInt16(input.value);
-            }
-            else if (input.key == "ChangeMetric")
-            {
-                newValue.m_ChangeMetric = (CustomPhaseData.StepChangeMetric)Convert.ToInt32(input.value);
-            }
-            else if (input.key == "WaitFlowBalance")
-            {
-                newValue.m_WaitFlowBalance = Convert.ToSingle(input.value);
-            }
+            CustomPhaseDataUpdate.TryApply(input.key, input.value, ref newValue);
             
             customPhaseDataBuffer[index] = newValue;
 
@@ -2905,46 +2825,7 @@ public partial class UISystem
         
         var newValue = customPhaseDataBuffer[index];
         
-        if (input.key == "MinimumDuration")
-        {
-            newValue.m_MinimumDuration = Convert.ToUInt16(input.value);
-            if (newValue.m_MinimumDuration > newValue.m_MaximumDuration)
-            {
-                newValue.m_MaximumDuration = newValue.m_MinimumDuration;
-            }
-        }
-        else if (input.key == "MaximumDuration")
-        {
-            newValue.m_MaximumDuration = Convert.ToUInt16(input.value);
-            if (newValue.m_MinimumDuration > newValue.m_MaximumDuration)
-            {
-                newValue.m_MinimumDuration = newValue.m_MaximumDuration;
-            }
-        }
-        else if (input.key == "TargetDurationMultiplier")
-        {
-            newValue.m_TargetDurationMultiplier = Convert.ToSingle(input.value);
-        }
-        else if (input.key == "IntervalExponent")
-        {
-            newValue.m_IntervalExponent = Convert.ToSingle(input.value);
-        }
-        else if (input.key == "LinkedWithNextPhase")
-        {
-            newValue.m_Options ^= CustomPhaseData.Options.LinkedWithNextPhase;
-        }
-        else if (input.key == "EndPhasePrematurely")
-        {
-            newValue.m_Options ^= CustomPhaseData.Options.EndPhasePrematurely;
-        }
-        else if (input.key == "ChangeMetric")
-        {
-            newValue.m_ChangeMetric = (CustomPhaseData.StepChangeMetric)Convert.ToInt32(input.value);
-        }
-        else if (input.key == "WaitFlowBalance")
-        {
-            newValue.m_WaitFlowBalance = Convert.ToSingle(input.value);
-        }
+        CustomPhaseDataUpdate.TryApply(input.key, input.value, ref newValue);
         
         customPhaseDataBuffer[index] = newValue;
         

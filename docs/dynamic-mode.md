@@ -33,6 +33,18 @@ Eligibility:
 
 This is separate from fixed timed mode's optional smart phase selection.
 
+## Linked Phases
+
+The `LinkedWithNextPhase` flag is inherited UI/configuration state, but the
+current post-rewrite runtime does not act on it. The UI can display, toggle, and
+persist the flag; `CustomStateMachine.GetNextSignalGroup(...)` currently sets
+its `linked` output to `false` and never reads `LinkedWithNextPhase`.
+
+There is still a stale runtime hook that would reset skipped phases'
+`m_TurnsSinceLastRun` values if `linked` were true, but that branch is currently
+unreachable. Treat linked phases as inactive until the intended behavior is
+redesigned or restored.
+
 ## Phase Duration
 
 Each phase is bounded by its configured minimum and maximum duration.
@@ -41,6 +53,13 @@ Each phase is bounded by its configured minimum and maximum duration.
 - At or beyond maximum duration, the current phase ends.
 - Between those bounds, dynamic mode uses the selected phase-change metric plus
   measured flow and wait values to decide whether the phase may end.
+
+The duration fields are signal update ticks, not wall-clock seconds. The custom
+state machine increments `CustomTrafficLights.m_Timer` once when that junction's
+traffic light update runs, then compares the counter directly to
+`m_MinimumDuration`, `m_MaximumDuration`, and the computed target duration. The
+current UI labels these values with `s`, but there is no seconds conversion in
+the runtime or persistence path.
 
 The target duration calculation is:
 
@@ -86,7 +105,7 @@ The UI exposes dynamic settings for phase change mode, wait sensitivity,
 minimum duration, maximum duration, target duration multiplier, interval
 exponent, vehicle weights, smoothing factor, and live statistics.
 
-The C# update handler clearly persists:
+The C# update helper persists:
 
 - mode
 - minimum and maximum duration
@@ -95,9 +114,15 @@ The C# update handler clearly persists:
 - linked/end-prematurely flags
 - change metric
 - wait-flow balance
+- visible vehicle weight sliders
+- smoothing factor
 
 Min/max edits clamp each other so `minimum <= maximum`, and group cycle length
 is recalculated when either duration changes.
+
+The data model also contains `m_BicycleWeight`, and the shared update helper can
+apply a `BicycleWeight` key, but the current UI does not expose a visible bicycle
+weight slider.
 
 ## TSP Interaction
 
@@ -129,15 +154,8 @@ leader through `SyncSignalGroupWithLeader(...)`.
   `m_PhaseOffset` and subtract signal delay from timers.
 - The UI displays leader phase settings read-only for coordinated followers.
 
-Current TSP runtime rejects non-leader grouped intersections. Future group-wide
-TSP needs explicit leader/follower semantics.
-
-## Uncertainties
-
-Follow-up research should confirm:
-
-- whether timer fields are gameplay seconds, simulation ticks, or signal ticks
-- whether dynamic vehicle weight controls persist correctly from the UI
-- how linked phase behavior is intended to work after the rewrite
-- whether follower-local TSP requests should route to the leader or remain
-  ignored
+Current TSP runtime rejects non-leader grouped intersections. This is the
+intended short-term behavior: coordinated followers are driven by the leader, so
+a follower-local TSP request should remain ignored rather than being routed to a
+leader implicitly. Future group-wide TSP needs explicit leader/follower
+semantics.
