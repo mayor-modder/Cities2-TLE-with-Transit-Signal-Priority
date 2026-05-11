@@ -56,8 +56,10 @@ Likely ECS data sources to investigate:
 - route/vehicle buffers such as `RouteWaypoint`, `RouteVehicle`,
   `RouteLane`, and `VehicleTiming`
 
-The current `ExtraTypeHandle` does not expose the road-vehicle state needed for
-bus detection.
+`ExtraTypeHandle` now exposes the initial road-vehicle state needed for
+diagnostic-only bus detection: `PassengerTransport`, `CarCurrentLane`,
+`CarNavigation`, `CarNavigationLane`, `Moving`, and
+`PublicTransportVehicleData`.
 
 Pure policy also needs source-generalization. Today request construction,
 request combination, phase scoring, latching, current-group hold, aggressive
@@ -113,6 +115,26 @@ requests:
   enough to benefit.
 - **Unknown stop relation:** suppress stop-bound buses and report the unknown
   relation in diagnostics.
+
+## Edge Cases
+
+## Diagnostic Prototype
+
+The first runtime prototype is diagnostic-only. When the off-by-default TSP
+diagnostics option is enabled, `BusApproachIndex` scans public-transport road
+vehicles with `PublicTransportVehicleData.m_TransportType == Bus` and records
+current/change-lane samples. The selected junction diagnostics can now report:
+
+- indexed bus lane count
+- whether a hit came from the signaled lane, resolved approach lane, or
+  connected approach fallback
+- bus-only versus mixed lane structure via `CarLaneFlags.PublicOnly`
+- lane-change progress, speed, public-transport state, and vehicle lane flags
+
+This intentionally does not create `TransitSignalPriorityRequest` values,
+select signal groups, or otherwise affect traffic lights. It exists so bus
+detection can be playtested against real saves before bus priority changes
+signal behavior.
 
 ## Edge Cases
 
@@ -172,7 +194,7 @@ translation workflow handle new strings after the English UI is stable.
 
 1. Add pure policy tests for `PublicCar` eligibility and source ordering.
 2. Prototype a diagnostic-only bus approach index that reports bus lane hits but
-   does not change signals.
+   does not change signals. (Done.)
 3. Integrate bus fresh request production from car-lane bus samples.
 4. Add a separate bus settings/control surface while keeping the existing tram
    labels and saved settings stable.

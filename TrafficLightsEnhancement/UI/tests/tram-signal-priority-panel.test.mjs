@@ -100,7 +100,7 @@ test("backend trace writes follow selected diagnostics event filtering", async (
 
   assert.notEqual(eventsStart, -1);
   assert.notEqual(eventsEnd, -1);
-  assert.match(eventsSource, /bool\s+shouldRecordEvent\s*=\s*signatureChanged\s*&&\s*ShouldRecordTspDiagnosticsEvent\(history,\s*hasRuntimeDebug\s*\|\|\s*hasDecisionTrace\)/);
+  assert.match(eventsSource, /bool\s+shouldRecordEvent\s*=\s*signatureChanged\s*&&\s*ShouldRecordTspDiagnosticsEvent\(history,\s*hasRuntimeDebug\s*\|\|\s*hasBusApproachDebug\s*\|\|\s*hasDecisionTrace\)/);
   assert.match(eventsSource, /if\s*\(\s*signatureChanged\s*\)/);
   assert.match(eventsSource, /if\s*\(\s*shouldRecordEvent\s*\)/);
   assert.ok(eventsSource.indexOf("bool shouldRecordEvent") < eventsSource.indexOf("WriteTspDiagnosticsTraceEvent"));
@@ -181,6 +181,7 @@ test("tool removal clears tram signal priority runtime components", async () => 
   assert.match(helperSource, /RemoveComponent<TransitSignalPrioritySettings>/);
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityRequest>/);
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>/);
+  assert.match(helperSource, /RemoveComponent<TransitSignalPriorityBusApproachDebugInfo>/);
   assert.match(helperSource, /RemoveComponent<TransitSignalPriorityDecisionTrace>/);
 
   const removalStart = toolSystem.indexOf("EntityManager.RemoveComponent<CustomTrafficLights>(m_RaycastResult)");
@@ -210,4 +211,37 @@ test("tram signal priority settings reserve public car priority without persisti
   assert.doesNotMatch(serializeSource, /m_AllowGroupPropagation/);
   assert.match(deserializeSource, /if\s*\(version\s*==\s*1\)/);
   assert.doesNotMatch(deserializeSource, /reader\.Read\(out m_AllowGroupPropagation\)/);
+});
+
+test("backend exposes diagnostic-only bus approach index details", async () => {
+  const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
+  const extraTypeHandle = await repoSource("Systems/TrafficLightSystems/Simulation/ExtraTypeHandle.cs");
+  const busIndex = await repoSource("Systems/TrafficLightSystems/Simulation/BusApproachIndex.cs");
+  const runtime = await repoSource("Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs");
+  const components = await repoSource("Components/TransitSignalPriorityBusApproachDebugInfo.cs");
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+  const locale = JSON.parse(await repoSource("Locale.json"));
+
+  assert.match(patchedSystem, /m_BusTransitQuery/);
+  assert.match(patchedSystem, /BusApproachIndex\.Build/);
+  assert.match(patchedSystem, /m_ShowTramSignalPriorityDiagnostics/);
+  assert.match(patchedSystem, /m_BusApproachIndex\s*=/);
+  assert.match(patchedSystem, /m_BusApproachIndexLaneCount\s*=/);
+  assert.match(extraTypeHandle, /CarCurrentLane/);
+  assert.match(extraTypeHandle, /CarNavigation/);
+  assert.match(extraTypeHandle, /CarNavigationLane/);
+  assert.match(extraTypeHandle, /PublicTransportVehicleData/);
+  assert.match(busIndex, /TransportType\.Bus/);
+  assert.match(busIndex, /PublicOnly/);
+  assert.match(busIndex, /m_ChangeLane/);
+  assert.match(runtime, /BuildBusApproachDebugInfo/);
+  assert.doesNotMatch(runtime, /isPublicCarLane:\s*true/);
+  assert.match(components, /TransitSignalPriorityBusProbeResult/);
+  assert.match(uiBindings, /TransitSignalPriorityBusApproachDebugInfo/);
+  assert.match(uiBindings, /TSPDiagnosticsBusIndexLanes/);
+  assert.match(uiBindings, /TSPDiagnosticsBusLaneType/);
+  assert.match(uiBindings, /TSPDiagnosticsBusLaneChange/);
+  assert.match(uiBindings, /TSPDiagnosticsBusVehicleFlags/);
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusIndexLanes]"], "Indexed bus lanes");
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusLaneType]"], "Bus lane type");
 });

@@ -1,15 +1,21 @@
 using System.Runtime.CompilerServices;
 using C2VM.TrafficLightsEnhancement.Components;
 using Game.Net;
+using Game.Objects;
 using Game.Prefabs;
 using Game.Vehicles;
 using Unity.Collections;
 using Unity.Entities;
+using ObjectMoving = Game.Objects.Moving;
 using NetCarLane = Game.Net.CarLane;
 using NetPedestrianLane = Game.Net.PedestrianLane;
 using NetSecondaryLane = Game.Net.SecondaryLane;
 using NetTrackLane = Game.Net.TrackLane;
 using PrefabRef = Game.Prefabs.PrefabRef;
+using VehicleCarCurrentLane = Game.Vehicles.CarCurrentLane;
+using VehicleCarNavigation = Game.Vehicles.CarNavigation;
+using VehicleCarNavigationLane = Game.Vehicles.CarNavigationLane;
+using VehiclePassengerTransport = Game.Vehicles.PassengerTransport;
 using VehiclePublicTransport = Game.Vehicles.PublicTransport;
 
 namespace C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
@@ -50,6 +56,24 @@ public struct ExtraTypeHandle
     public ComponentLookup<VehiclePublicTransport> m_PublicTransport;
 
     [ReadOnly]
+    public ComponentLookup<VehiclePassengerTransport> m_PassengerTransport;
+
+    [ReadOnly]
+    public ComponentLookup<VehicleCarCurrentLane> m_CarCurrentLane;
+
+    [ReadOnly]
+    public ComponentLookup<VehicleCarNavigation> m_CarNavigation;
+
+    [ReadOnly]
+    public ComponentLookup<ObjectMoving> m_Moving;
+
+    [ReadOnly]
+    public ComponentLookup<PublicTransportVehicleData> m_PublicTransportVehicleData;
+
+    [ReadOnly]
+    public BufferLookup<VehicleCarNavigationLane> m_CarNavigationLane;
+
+    [ReadOnly]
     public ComponentLookup<TrainNavigation> m_TrainNavigation;
 
     [ReadOnly]
@@ -86,6 +110,9 @@ public struct ExtraTypeHandle
     public ComponentLookup<TransitSignalPriorityRuntimeDebugInfo> m_TransitSignalPriorityRuntimeDebugInfo;
 
     [ReadOnly]
+    public ComponentLookup<TransitSignalPriorityBusApproachDebugInfo> m_TransitSignalPriorityBusApproachDebugInfo;
+
+    [ReadOnly]
     public ComponentLookup<TransitSignalPriorityDecisionTrace> m_TransitSignalPriorityDecisionTrace;
 
     [ReadOnly]
@@ -113,6 +140,12 @@ public struct ExtraTypeHandle
         m_TrackLaneData = state.GetComponentLookup<TrackLaneData>(isReadOnly: true);
         m_PrefabRef = state.GetComponentLookup<PrefabRef>(isReadOnly: true);
         m_PublicTransport = state.GetComponentLookup<VehiclePublicTransport>(isReadOnly: true);
+        m_PassengerTransport = state.GetComponentLookup<VehiclePassengerTransport>(isReadOnly: true);
+        m_CarCurrentLane = state.GetComponentLookup<VehicleCarCurrentLane>(isReadOnly: true);
+        m_CarNavigation = state.GetComponentLookup<VehicleCarNavigation>(isReadOnly: true);
+        m_Moving = state.GetComponentLookup<ObjectMoving>(isReadOnly: true);
+        m_PublicTransportVehicleData = state.GetComponentLookup<PublicTransportVehicleData>(isReadOnly: true);
+        m_CarNavigationLane = state.GetBufferLookup<VehicleCarNavigationLane>(isReadOnly: true);
         m_TrainNavigation = state.GetComponentLookup<TrainNavigation>(isReadOnly: true);
         m_TrainCurrentLane = state.GetComponentLookup<TrainCurrentLane>(isReadOnly: true);
         m_PedestrianLane = state.GetComponentLookup<NetPedestrianLane>(isReadOnly: true);
@@ -125,6 +158,7 @@ public struct ExtraTypeHandle
         m_TransitSignalPrioritySettingsLookup = state.GetComponentLookup<TransitSignalPrioritySettings>(isReadOnly: true);
         m_TransitSignalPriorityRequest = state.GetComponentLookup<TransitSignalPriorityRequest>(isReadOnly: true);
         m_TransitSignalPriorityRuntimeDebugInfo = state.GetComponentLookup<TransitSignalPriorityRuntimeDebugInfo>(isReadOnly: true);
+        m_TransitSignalPriorityBusApproachDebugInfo = state.GetComponentLookup<TransitSignalPriorityBusApproachDebugInfo>(isReadOnly: true);
         m_TransitSignalPriorityDecisionTrace = state.GetComponentLookup<TransitSignalPriorityDecisionTrace>(isReadOnly: true);
         m_TransitSignalPriorityPedestrianFairnessState = state.GetComponentLookup<TransitSignalPriorityPedestrianFairnessState>(isReadOnly: true);
         m_EdgeGroupMaskLookup = state.GetBufferLookup<EdgeGroupMask>(isReadOnly: true);
@@ -146,6 +180,12 @@ public struct ExtraTypeHandle
         m_TrackLaneData.Update(ref state);
         m_PrefabRef.Update(ref state);
         m_PublicTransport.Update(ref state);
+        m_PassengerTransport.Update(ref state);
+        m_CarCurrentLane.Update(ref state);
+        m_CarNavigation.Update(ref state);
+        m_Moving.Update(ref state);
+        m_PublicTransportVehicleData.Update(ref state);
+        m_CarNavigationLane.Update(ref state);
         m_TrainNavigation.Update(ref state);
         m_TrainCurrentLane.Update(ref state);
         m_PedestrianLane.Update(ref state);
@@ -158,6 +198,7 @@ public struct ExtraTypeHandle
         m_TransitSignalPrioritySettingsLookup.Update(ref state);
         m_TransitSignalPriorityRequest.Update(ref state);
         m_TransitSignalPriorityRuntimeDebugInfo.Update(ref state);
+        m_TransitSignalPriorityBusApproachDebugInfo.Update(ref state);
         m_TransitSignalPriorityDecisionTrace.Update(ref state);
         m_TransitSignalPriorityPedestrianFairnessState.Update(ref state);
         m_EdgeGroupMaskLookup.Update(ref state);

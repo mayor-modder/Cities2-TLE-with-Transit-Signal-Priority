@@ -253,6 +253,10 @@ public partial class ToolSystem : NetToolSystem
         {
             EntityManager.RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>(entity);
         }
+        if (EntityManager.HasComponent<TransitSignalPriorityBusApproachDebugInfo>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPriorityBusApproachDebugInfo>(entity);
+        }
         if (EntityManager.HasComponent<TransitSignalPriorityDecisionTrace>(entity))
         {
             EntityManager.RemoveComponent<TransitSignalPriorityDecisionTrace>(entity);

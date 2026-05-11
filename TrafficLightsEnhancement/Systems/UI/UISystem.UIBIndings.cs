@@ -887,6 +887,7 @@ public partial class UISystem
     {
         bool hasTrafficLights = EntityManager.TryGetComponent(entity, out TrafficLights trafficLights);
         bool hasRuntimeDebug = EntityManager.TryGetComponent(entity, out TransitSignalPriorityRuntimeDebugInfo runtimeDebug);
+        bool hasBusApproachDebug = EntityManager.TryGetComponent(entity, out TransitSignalPriorityBusApproachDebugInfo busApproachDebug);
         bool hasDecisionTrace = EntityManager.TryGetComponent(entity, out TransitSignalPriorityDecisionTrace decisionTrace);
         var summary = GetTspDiagnosticsSummary(
             settings,
@@ -894,6 +895,8 @@ public partial class UISystem
             trafficLights,
             hasRuntimeDebug,
             runtimeDebug,
+            hasBusApproachDebug,
+            busApproachDebug,
             hasDecisionTrace,
             decisionTrace);
         var events = GetTspDiagnosticsEvents(
@@ -903,6 +906,8 @@ public partial class UISystem
             trafficLights,
             hasRuntimeDebug,
             runtimeDebug,
+            hasBusApproachDebug,
+            busApproachDebug,
             hasDecisionTrace,
             decisionTrace);
 
@@ -956,6 +961,23 @@ public partial class UISystem
             rows.Add(new { label = "TSPDiagnosticsRequest", value = "None" });
         }
 
+        if (hasBusApproachDebug)
+        {
+            rows.Add(new { label = "TSPDiagnosticsBusIndexLanes", value = busApproachDebug.m_BusApproachIndexLaneCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsBusScannedSignalLanes", value = busApproachDebug.m_ScannedSignalLaneCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsBusProbe", value = GetBusProbeName(busApproachDebug.m_BusProbe) });
+            rows.Add(new { label = "TSPDiagnosticsBusHitCount", value = busApproachDebug.m_BusHitCount.ToString(CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsBusLane", value = FormatEntity(busApproachDebug.m_BusLaneEntity) });
+            rows.Add(new { label = "TSPDiagnosticsBusVehicle", value = FormatEntity(busApproachDebug.m_BusVehicleEntity) });
+            rows.Add(new { label = "TSPDiagnosticsBusCurve", value = FormatBusCurvePosition(busApproachDebug) });
+            rows.Add(new { label = "TSPDiagnosticsBusLaneType", value = busApproachDebug.m_BusLaneIsPublicOnly ? "Bus-only" : "Mixed" });
+            rows.Add(new { label = "TSPDiagnosticsBusLaneChange", value = FormatBusLaneChange(busApproachDebug) });
+            rows.Add(new { label = "TSPDiagnosticsBusNavigationLanes", value = busApproachDebug.m_BusHasNavigation ? busApproachDebug.m_BusNavigationLaneCount.ToString(CultureInfo.InvariantCulture) : "-" });
+            rows.Add(new { label = "TSPDiagnosticsBusSpeed", value = busApproachDebug.m_BusSpeed.ToString("0.00", CultureInfo.InvariantCulture) });
+            rows.Add(new { label = "TSPDiagnosticsBusTransportState", value = busApproachDebug.m_BusPublicTransportState.ToString() });
+            rows.Add(new { label = "TSPDiagnosticsBusVehicleFlags", value = busApproachDebug.m_BusVehicleLaneFlags.ToString() });
+        }
+
         if (hasDecisionTrace)
         {
             rows.Add(new { label = "TSPDiagnosticsDecision", value = GetTspDecisionReasonName(decisionTrace.m_Reason) });
@@ -981,6 +1003,8 @@ public partial class UISystem
         TrafficLights trafficLights,
         bool hasRuntimeDebug,
         TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasBusApproachDebug,
+        TransitSignalPriorityBusApproachDebugInfo busApproachDebug,
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
@@ -990,6 +1014,8 @@ public partial class UISystem
             trafficLights,
             hasRuntimeDebug,
             runtimeDebug,
+            hasBusApproachDebug,
+            busApproachDebug,
             hasDecisionTrace,
             decisionTrace));
     }
@@ -1000,6 +1026,8 @@ public partial class UISystem
         TrafficLights trafficLights,
         bool hasRuntimeDebug,
         TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasBusApproachDebug,
+        TransitSignalPriorityBusApproachDebugInfo busApproachDebug,
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
@@ -1010,6 +1038,13 @@ public partial class UISystem
 
         if (!hasRuntimeDebug)
         {
+            if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)
+            {
+                return hasTrafficLights
+                    ? $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)} | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
+                    : $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)}";
+            }
+
             return hasTrafficLights
                 ? $"No request | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
                 : "No request";
@@ -1072,6 +1107,8 @@ public partial class UISystem
         TrafficLights trafficLights,
         bool hasRuntimeDebug,
         TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasBusApproachDebug,
+        TransitSignalPriorityBusApproachDebugInfo busApproachDebug,
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
@@ -1083,6 +1120,8 @@ public partial class UISystem
             trafficLights,
             hasRuntimeDebug,
             runtimeDebug,
+            hasBusApproachDebug,
+            busApproachDebug,
             hasDecisionTrace,
             decisionTrace);
 
@@ -1093,7 +1132,7 @@ public partial class UISystem
         }
 
         bool signatureChanged = history.LastSignature != signature;
-        bool shouldRecordEvent = signatureChanged && ShouldRecordTspDiagnosticsEvent(history, hasRuntimeDebug || hasDecisionTrace);
+        bool shouldRecordEvent = signatureChanged && ShouldRecordTspDiagnosticsEvent(history, hasRuntimeDebug || hasBusApproachDebug || hasDecisionTrace);
         if (signatureChanged)
         {
             history.LastSignature = signature;
@@ -1108,6 +1147,8 @@ public partial class UISystem
                 trafficLights,
                 hasRuntimeDebug,
                 runtimeDebug,
+                hasBusApproachDebug,
+                busApproachDebug,
                 hasDecisionTrace,
                 decisionTrace);
             RecordTspDiagnosticsEvent(history, summary);
@@ -1166,6 +1207,8 @@ public partial class UISystem
         TrafficLights trafficLights,
         bool hasRuntimeDebug,
         TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasBusApproachDebug,
+        TransitSignalPriorityBusApproachDebugInfo busApproachDebug,
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
@@ -1175,11 +1218,14 @@ public partial class UISystem
         string requestSignature = hasRuntimeDebug
             ? $"{runtimeDebug.m_RequestKind}:{runtimeDebug.m_SourceType}:{runtimeDebug.m_TargetSignalGroup}:{runtimeDebug.m_TrackApproachLaneProbe}:{runtimeDebug.m_TrackApproachLaneCurvePosition:0.00}"
             : "no-request";
+        string busSignature = hasBusApproachDebug
+            ? $"{busApproachDebug.m_BusProbe}:{busApproachDebug.m_BusHitCount}:{busApproachDebug.m_BusLaneEntity.Index}:{busApproachDebug.m_BusCurvePosition:0.00}:{busApproachDebug.m_BusIsChangingLane}:{busApproachDebug.m_BusSpeed:0.00}"
+            : "no-bus";
         string decisionSignature = hasDecisionTrace
             ? $"{decisionTrace.m_Reason}:{decisionTrace.m_BaseSignalGroup}:{decisionTrace.m_SelectedSignalGroup}:{decisionTrace.m_RequestTargetSignalGroup}:{decisionTrace.m_ExclusivePedestrianEnabled}:{decisionTrace.m_ActiveExclusivePedestrianPhase}:{decisionTrace.m_PendingPedestrianFairness}:{decisionTrace.m_PendingPedestrianSignalGroup}"
             : "no-decision";
 
-        return $"{summary}|{trafficSignature}|{requestSignature}|{decisionSignature}";
+        return $"{summary}|{trafficSignature}|{requestSignature}|{busSignature}|{decisionSignature}";
     }
 
     private static void WriteTspDiagnosticsTraceEvent(
@@ -1189,6 +1235,8 @@ public partial class UISystem
         TrafficLights trafficLights,
         bool hasRuntimeDebug,
         TransitSignalPriorityRuntimeDebugInfo runtimeDebug,
+        bool hasBusApproachDebug,
+        TransitSignalPriorityBusApproachDebugInfo busApproachDebug,
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
@@ -1241,6 +1289,24 @@ public partial class UISystem
                         fallbackPathNodeMatches = runtimeDebug.m_FallbackPathNodeMatchCount,
                         fallbackIndexHits = runtimeDebug.m_FallbackIndexHitCount,
                         fallbackBestCurve = runtimeDebug.m_FallbackBestCurvePosition,
+                    }
+                    : null,
+                busApproach = hasBusApproachDebug
+                    ? new
+                    {
+                        indexedBusLanes = busApproachDebug.m_BusApproachIndexLaneCount,
+                        scannedSignalLanes = busApproachDebug.m_ScannedSignalLaneCount,
+                        probe = GetBusProbeName(busApproachDebug.m_BusProbe),
+                        hitCount = busApproachDebug.m_BusHitCount,
+                        lane = FormatEntity(busApproachDebug.m_BusLaneEntity),
+                        vehicle = FormatEntity(busApproachDebug.m_BusVehicleEntity),
+                        curve = busApproachDebug.m_BusCurvePosition,
+                        laneType = busApproachDebug.m_BusLaneIsPublicOnly ? "Bus-only" : "Mixed",
+                        laneChange = FormatBusLaneChange(busApproachDebug),
+                        navigationLanes = busApproachDebug.m_BusHasNavigation ? (byte?)busApproachDebug.m_BusNavigationLaneCount : null,
+                        speed = busApproachDebug.m_BusSpeed,
+                        publicTransportState = busApproachDebug.m_BusPublicTransportState.ToString(),
+                        vehicleLaneFlags = busApproachDebug.m_BusVehicleLaneFlags.ToString(),
                     }
                     : null,
                 decision = hasDecisionTrace
@@ -1340,6 +1406,14 @@ public partial class UISystem
             : value.ToString("0.00", CultureInfo.InvariantCulture);
     }
 
+    private static string FormatBusCurvePosition(TransitSignalPriorityBusApproachDebugInfo busApproachDebug)
+    {
+        return busApproachDebug.m_BusProbe == TransitSignalPriorityBusProbeResult.None
+            || busApproachDebug.m_BusProbe == TransitSignalPriorityBusProbeResult.NoBusSamples
+            ? "-"
+            : busApproachDebug.m_BusCurvePosition.ToString("0.00", CultureInfo.InvariantCulture);
+    }
+
     private static string FormatFallbackCurvePosition(TransitSignalPriorityRuntimeDebugInfo runtimeDebug)
     {
         return runtimeDebug.m_FallbackIndexHitCount > 0
@@ -1378,6 +1452,13 @@ public partial class UISystem
         return candidates.Count > 0 ? string.Join(", ", candidates) : "None";
     }
 
+    private static string FormatBusLaneChange(TransitSignalPriorityBusApproachDebugInfo busApproachDebug)
+    {
+        return busApproachDebug.m_BusIsChangingLane
+            ? $"Yes ({busApproachDebug.m_BusChangeProgress.ToString("0.00", CultureInfo.InvariantCulture)})"
+            : "No";
+    }
+
     private static string GetTspRequestKindName(TransitSignalPriorityRequestKind value) => value switch
     {
         TransitSignalPriorityRequestKind.FreshEarly => "Early",
@@ -1407,6 +1488,15 @@ public partial class UISystem
         TransitSignalPriorityTrackProbeResult.MatchOnApproachLane => "Approach lane match",
         TransitSignalPriorityTrackProbeResult.MatchOnUpstreamLane => "Upstream lane match",
         TransitSignalPriorityTrackProbeResult.MatchOnConnectedApproachLane => "Connected approach match",
+        _ => "None"
+    };
+
+    private static string GetBusProbeName(TransitSignalPriorityBusProbeResult value) => value switch
+    {
+        TransitSignalPriorityBusProbeResult.NoBusSamples => "No bus samples",
+        TransitSignalPriorityBusProbeResult.MatchOnSignaledLane => "Signaled lane match",
+        TransitSignalPriorityBusProbeResult.MatchOnApproachLane => "Approach lane match",
+        TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane => "Connected approach match",
         _ => "None"
     };
 

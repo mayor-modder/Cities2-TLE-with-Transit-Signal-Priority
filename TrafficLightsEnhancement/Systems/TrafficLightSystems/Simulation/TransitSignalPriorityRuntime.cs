@@ -85,6 +85,82 @@ public static class TransitSignalPriorityRuntime
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
     private const float TramConnectedEdgeLaneCurveThreshold = 0f;
 
+    public static TransitSignalPriorityBusApproachDebugInfo BuildBusApproachDebugInfo(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        DynamicBuffer<NetSubLane> subLanes)
+    {
+        TransitSignalPriorityBusApproachDebugInfo debugInfo = new()
+        {
+            m_BusApproachIndexLaneCount = job.m_BusApproachIndexLaneCount,
+            m_BusProbe = TransitSignalPriorityBusProbeResult.NoBusSamples,
+        };
+
+        BusApproachSample bestSample = default;
+        TransitSignalPriorityBusProbeResult bestProbe = TransitSignalPriorityBusProbeResult.NoBusSamples;
+        bool hasBestSample = false;
+
+        foreach (var subLane in subLanes)
+        {
+            Entity signaledLaneEntity = subLane.m_SubLane;
+            if (!job.m_LaneSignalData.HasComponent(signaledLaneEntity))
+            {
+                continue;
+            }
+
+            debugInfo.m_ScannedSignalLaneCount = IncrementByte(debugInfo.m_ScannedSignalLaneCount);
+            if (TryProbeBusLane(job, signaledLaneEntity, out BusApproachSample signaledSample))
+            {
+                RecordBestBusSample(
+                    ref hasBestSample,
+                    ref bestSample,
+                    ref bestProbe,
+                    signaledSample,
+                    TransitSignalPriorityBusProbeResult.MatchOnSignaledLane);
+            }
+
+            Entity approachLaneEntity = ResolveApproachLane(job, signaledLaneEntity);
+            if (approachLaneEntity != signaledLaneEntity
+                && TryProbeBusLane(job, approachLaneEntity, out BusApproachSample approachSample))
+            {
+                RecordBestBusSample(
+                    ref hasBestSample,
+                    ref bestSample,
+                    ref bestProbe,
+                    approachSample,
+                    TransitSignalPriorityBusProbeResult.MatchOnApproachLane);
+            }
+            else if (TryProbeConnectedEdgeBusLane(job, approachLaneEntity, out BusApproachSample connectedSample))
+            {
+                RecordBestBusSample(
+                    ref hasBestSample,
+                    ref bestSample,
+                    ref bestProbe,
+                    connectedSample,
+                    TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane);
+            }
+        }
+
+        if (!hasBestSample)
+        {
+            return debugInfo;
+        }
+
+        debugInfo.m_BusProbe = bestProbe;
+        debugInfo.m_BusHitCount = bestSample.HitCount;
+        debugInfo.m_BusLaneEntity = bestSample.LaneEntity;
+        debugInfo.m_BusVehicleEntity = bestSample.VehicleEntity;
+        debugInfo.m_BusCurvePosition = bestSample.CurvePosition;
+        debugInfo.m_BusChangeProgress = bestSample.ChangeProgress;
+        debugInfo.m_BusSpeed = bestSample.Speed;
+        debugInfo.m_BusLaneIsPublicOnly = bestSample.IsBusOnlyLane != 0;
+        debugInfo.m_BusIsChangingLane = bestSample.HasChangeLane != 0 || bestSample.IsChangeLaneSample != 0;
+        debugInfo.m_BusHasNavigation = bestSample.HasNavigation != 0;
+        debugInfo.m_BusNavigationLaneCount = bestSample.NavigationLaneCount;
+        debugInfo.m_BusPublicTransportState = bestSample.PublicTransportState;
+        debugInfo.m_BusVehicleLaneFlags = bestSample.VehicleLaneFlags;
+        return debugInfo;
+    }
+
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         Entity junctionEntity,
@@ -415,6 +491,81 @@ public static class TransitSignalPriorityRuntime
         }
 
         return EarlyApproachDetection.ResolveApproachLane(subLaneEntity, sourceSubLane, Entity.Null);
+    }
+
+    private static bool TryProbeBusLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity laneEntity,
+        out BusApproachSample sample)
+    {
+        sample = default;
+        return laneEntity != Entity.Null && job.m_BusApproachIndex.TryGetValue(laneEntity, out sample);
+    }
+
+    private static bool TryProbeConnectedEdgeBusLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity approachLaneEntity,
+        out BusApproachSample sample)
+    {
+        sample = default;
+        if (!job.m_LaneData.TryGetComponent(approachLaneEntity, out var approachLane)
+            || !job.m_OwnerData.TryGetComponent(approachLaneEntity, out var approachOwner)
+            || !job.m_ConnectedEdges.TryGetBuffer(approachOwner.m_Owner, out var connectedEdges))
+        {
+            return false;
+        }
+
+        bool hasBestSample = false;
+        for (int i = 0; i < connectedEdges.Length; i++)
+        {
+            Entity edgeEntity = connectedEdges[i].m_Edge;
+            if (!job.m_SubLanes.TryGetBuffer(edgeEntity, out var edgeSubLanes))
+            {
+                continue;
+            }
+
+            for (int j = 0; j < edgeSubLanes.Length; j++)
+            {
+                Entity edgeLaneEntity = edgeSubLanes[j].m_SubLane;
+                if (!job.m_ExtraTypeHandle.m_CarLane.HasComponent(edgeLaneEntity)
+                    || !job.m_LaneData.TryGetComponent(edgeLaneEntity, out var edgeLane)
+                    || !edgeLane.m_EndNode.Equals(approachLane.m_StartNode)
+                    || !TryProbeBusLane(job, edgeLaneEntity, out BusApproachSample candidate))
+                {
+                    continue;
+                }
+
+                if (!hasBestSample || candidate.CurvePosition > sample.CurvePosition)
+                {
+                    hasBestSample = true;
+                    sample = candidate;
+                }
+            }
+        }
+
+        return hasBestSample;
+    }
+
+    private static void RecordBestBusSample(
+        ref bool hasBestSample,
+        ref BusApproachSample bestSample,
+        ref TransitSignalPriorityBusProbeResult bestProbe,
+        BusApproachSample candidate,
+        TransitSignalPriorityBusProbeResult probe)
+    {
+        if (hasBestSample && bestSample.CurvePosition >= candidate.CurvePosition)
+        {
+            return;
+        }
+
+        hasBestSample = true;
+        bestSample = candidate;
+        bestProbe = probe;
+    }
+
+    private static byte IncrementByte(byte value)
+    {
+        return value == byte.MaxValue ? byte.MaxValue : (byte)(value + 1);
     }
 
     private static bool TryBuildEarlyApproachRequestForLane(
