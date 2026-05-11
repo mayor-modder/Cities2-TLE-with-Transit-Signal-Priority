@@ -77,6 +77,15 @@ public static class TspOverrideEngine
 
         if (targetPhaseIndex >= 0 && targetPhaseIndex < phaseCount)
         {
+            if (targetPhaseIndex == currentPhaseIndex && !request.ExtensionEligible)
+            {
+                return new TspOverrideSelection(
+                    basePhaseIndex,
+                    basePhaseIndex,
+                    canExtendCurrent: false,
+                    TspSelectionReason.None);
+            }
+
             if (protectActivePedestrianPhase && targetPhaseIndex != currentPhaseIndex)
             {
                 return new TspOverrideSelection(basePhaseIndex, basePhaseIndex, canExtendCurrent: false, TspSelectionReason.None);

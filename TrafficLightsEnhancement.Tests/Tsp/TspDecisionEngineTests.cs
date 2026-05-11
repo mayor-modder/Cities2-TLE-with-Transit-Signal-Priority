@@ -314,6 +314,23 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void Override_selection_does_not_reselect_current_group_without_extension_eligibility()
+    {
+        var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
+            basePhaseIndex: 5,
+            currentPhaseIndex: 4,
+            phaseCount: 8,
+            targetPhaseIndex: 4,
+            new TspRequest(TspSource.Track, 1f, extensionEligible: false));
+
+        Assert.False(overrideSelection.Applied);
+        Assert.False(overrideSelection.CanExtendCurrent);
+        Assert.False(overrideSelection.ChangedBaseSelection);
+        Assert.Equal(TspSelectionReason.None, overrideSelection.Reason);
+        Assert.Equal(5, overrideSelection.SelectedPhaseIndex);
+    }
+
+    [Fact]
     public void Override_selection_protects_active_exclusive_pedestrian_phase()
     {
         var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
