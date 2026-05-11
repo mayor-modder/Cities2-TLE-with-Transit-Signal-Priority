@@ -7,18 +7,36 @@ public static class TransitSignalPriorityRuntime
         bool isTrackLane,
         out TspRequest request)
     {
+        return TryBuildRequestForLane(settings, isTrackLane, isPublicCarLane: false, out request);
+    }
+
+    public static bool TryBuildRequestForLane(
+        TransitSignalPrioritySettings? settings,
+        bool isTrackLane,
+        bool isPublicCarLane,
+        out TspRequest request)
+    {
         if (!settings.HasValue)
         {
             request = default;
             return false;
         }
 
-        return TryBuildRequestForLane(settings.Value, isTrackLane, out request);
+        return TryBuildRequestForLane(settings.Value, isTrackLane, isPublicCarLane, out request);
     }
 
     public static bool TryBuildRequestForLane(
         TransitSignalPrioritySettings settings,
         bool isTrackLane,
+        out TspRequest request)
+    {
+        return TryBuildRequestForLane(settings, isTrackLane, isPublicCarLane: false, out request);
+    }
+
+    public static bool TryBuildRequestForLane(
+        TransitSignalPrioritySettings settings,
+        bool isTrackLane,
+        bool isPublicCarLane,
         out TspRequest request)
     {
         request = default;
@@ -31,6 +49,12 @@ public static class TransitSignalPriorityRuntime
         if (isTrackLane && settings.m_AllowTrackRequests)
         {
             request = new TspRequest(source: TspSource.Track, strength: 1f, extensionEligible: true);
+            return true;
+        }
+
+        if (isPublicCarLane && settings.m_AllowPublicCarRequests)
+        {
+            request = new TspRequest(source: TspSource.PublicCar, strength: 1f, extensionEligible: true);
             return true;
         }
 

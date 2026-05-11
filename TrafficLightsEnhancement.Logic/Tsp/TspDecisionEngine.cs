@@ -16,7 +16,15 @@ public static class TspDecisionEngine
 
         foreach (TspRequest request in requests)
         {
-            if (request.Source == TspSource.Track && (!best.HasValue || request.Strength > best.Value.Strength))
+            if (request.Source == TspSource.None)
+            {
+                continue;
+            }
+
+            if (!best.HasValue
+                || GetSourcePriority(request.Source) > GetSourcePriority(best.Value.Source)
+                || (GetSourcePriority(request.Source) == GetSourcePriority(best.Value.Source)
+                    && request.Strength > best.Value.Strength))
             {
                 best = request;
             }
@@ -41,7 +49,7 @@ public static class TspDecisionEngine
         {
             PhaseScore currentPhase = phases[currentPhaseIndex];
             bool currentServesRequest =
-                request.Source == TspSource.Track && currentPhase.ServesTrack;
+                PhaseServesRequest(currentPhase, request.Source);
 
             if (currentServesRequest)
             {
@@ -56,7 +64,7 @@ public static class TspDecisionEngine
         {
             float score = phase.WeightedWaiting;
 
-            if (request.Source == TspSource.Track && phase.ServesTrack)
+            if (PhaseServesRequest(phase, request.Source))
             {
                 score += 1000f * request.Strength;
             }
@@ -69,5 +77,25 @@ public static class TspDecisionEngine
         }
 
         return new TspDecision(bestPhaseIndex, canExtendCurrent: false);
+    }
+
+    private static bool PhaseServesRequest(PhaseScore phase, TspSource source)
+    {
+        return source switch
+        {
+            TspSource.Track => phase.ServesTrack,
+            TspSource.PublicCar => phase.ServesPublicCar,
+            _ => false,
+        };
+    }
+
+    private static int GetSourcePriority(TspSource source)
+    {
+        return source switch
+        {
+            TspSource.Track => 2,
+            TspSource.PublicCar => 1,
+            _ => 0,
+        };
     }
 }

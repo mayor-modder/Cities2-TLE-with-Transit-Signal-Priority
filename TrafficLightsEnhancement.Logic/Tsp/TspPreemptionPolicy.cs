@@ -33,7 +33,7 @@ public static class TspPreemptionPolicy
         if (freshRequest.HasValue)
         {
             TspSignalRequest fresh = freshRequest.Value;
-            if (!IsEligibleTrackRequest(fresh))
+            if (!IsEligibleRequest(fresh))
             {
                 request = default;
                 return false;
@@ -51,7 +51,7 @@ public static class TspPreemptionPolicy
         if (existingRequest.HasValue)
         {
             TspSignalRequest existing = existingRequest.Value;
-            if (IsEligibleTrackRequest(existing)
+            if (IsEligibleRequest(existing)
                 && existing.ExpiryTimer > 0
                 && existing.ExpiryTimer <= requestHorizonTicks)
             {
@@ -69,9 +69,9 @@ public static class TspPreemptionPolicy
         return false;
     }
 
-    private static bool IsEligibleTrackRequest(TspSignalRequest request)
+    private static bool IsEligibleRequest(TspSignalRequest request)
     {
-        return request.Source == TspSource.Track
+        return request.Source is TspSource.Track or TspSource.PublicCar
             && request.TargetSignalGroup > 0
             && request.Strength > 0f;
     }
@@ -82,7 +82,7 @@ public static class TspPreemptionPolicy
         uint signalTimer,
         ushort maxGreenExtensionTicks)
     {
-        return request.Source == TspSource.Track
+        return request.Source is TspSource.Track or TspSource.PublicCar
             && currentSignalGroup > 0
             && request.TargetSignalGroup == currentSignalGroup
             && request.ExtendCurrentPhase

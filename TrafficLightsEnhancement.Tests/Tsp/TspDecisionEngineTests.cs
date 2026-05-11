@@ -22,7 +22,7 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Public_car_request_does_not_select_public_car_phase()
+    public void Public_car_request_selects_public_car_phase()
     {
         var phases = new[]
         {
@@ -34,11 +34,11 @@ public class TspDecisionEngineTests
 
         var decision = TspDecisionEngine.SelectNextPhase(phases, currentPhaseIndex: 0, request);
 
-        Assert.Equal(0, decision.NextPhaseIndex);
+        Assert.Equal(1, decision.NextPhaseIndex);
     }
 
     [Fact]
-    public void Public_car_request_does_not_extend_public_car_phase()
+    public void Public_car_request_extends_public_car_phase()
     {
         var phases = new[]
         {
@@ -50,7 +50,8 @@ public class TspDecisionEngineTests
 
         var decision = TspDecisionEngine.SelectNextPhase(phases, currentPhaseIndex: 0, request);
 
-        Assert.False(decision.CanExtendCurrent);
+        Assert.True(decision.CanExtendCurrent);
+        Assert.Equal(0, decision.NextPhaseIndex);
     }
 
     [Fact]
@@ -75,14 +76,15 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Public_car_only_candidates_produce_no_combined_request()
+    public void Public_car_only_candidates_produce_combined_request()
     {
         var selected = TspDecisionEngine.CombineRequests(new[]
         {
             new TspRequest(TspSource.PublicCar, 1f, extensionEligible: false),
         });
 
-        Assert.Null(selected);
+        Assert.NotNull(selected);
+        Assert.Equal(TspSource.PublicCar, selected.Value.Source);
     }
 
     [Fact]
@@ -144,6 +146,32 @@ public class TspDecisionEngineTests
 
         Assert.True(built);
         Assert.Equal(TspSource.Track, request.Source);
+        Assert.Equal(1f, request.Strength);
+        Assert.True(request.ExtensionEligible);
+    }
+
+    [Fact]
+    public void Public_car_lane_builds_bus_request_only_when_explicitly_enabled()
+    {
+        var defaultSettings = new TransitSignalPrioritySettings(enabled: true);
+        bool defaultBuilt = TransitSignalPriorityRuntime.TryBuildRequestForLane(
+            defaultSettings,
+            isTrackLane: false,
+            isPublicCarLane: true,
+            out _);
+
+        var busSettings = new TransitSignalPrioritySettings(
+            enabled: true,
+            allowPublicCarRequests: true);
+        bool busBuilt = TransitSignalPriorityRuntime.TryBuildRequestForLane(
+            busSettings,
+            isTrackLane: false,
+            isPublicCarLane: true,
+            out var request);
+
+        Assert.False(defaultBuilt);
+        Assert.True(busBuilt);
+        Assert.Equal(TspSource.PublicCar, request.Source);
         Assert.Equal(1f, request.Strength);
         Assert.True(request.ExtensionEligible);
     }
@@ -302,7 +330,7 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Override_selection_ignores_public_car_extension_request()
+    public void Override_selection_applies_public_car_extension_request()
     {
         var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
             basePhaseIndex: 1,
@@ -311,13 +339,13 @@ public class TspDecisionEngineTests
             targetPhaseIndex: 1,
             new TspRequest(TspSource.PublicCar, 1f, extensionEligible: true));
 
-        Assert.False(overrideSelection.Applied);
-        Assert.False(overrideSelection.CanExtendCurrent);
+        Assert.True(overrideSelection.Applied);
+        Assert.True(overrideSelection.CanExtendCurrent);
         Assert.Equal(1, overrideSelection.SelectedPhaseIndex);
     }
 
     [Fact]
-    public void Override_selection_ignores_public_car_target_request()
+    public void Override_selection_applies_public_car_target_request()
     {
         var overrideSelection = TspOverrideEngine.ApplyRequestOverride(
             basePhaseIndex: 0,
@@ -326,8 +354,8 @@ public class TspDecisionEngineTests
             targetPhaseIndex: 2,
             new TspRequest(TspSource.PublicCar, 1f, extensionEligible: false));
 
-        Assert.False(overrideSelection.Applied);
-        Assert.Equal(0, overrideSelection.SelectedPhaseIndex);
+        Assert.True(overrideSelection.Applied);
+        Assert.Equal(2, overrideSelection.SelectedPhaseIndex);
     }
 
     [Fact]
@@ -406,7 +434,7 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Fresh_public_car_signal_request_does_not_latch()
+    public void Fresh_public_car_signal_request_latches()
     {
         bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
             freshRequest: new TspSignalRequest(targetSignalGroup: 2, TspSource.PublicCar, strength: 1f, expiryTimer: 1, extendCurrentPhase: true),
@@ -415,8 +443,11 @@ public class TspDecisionEngineTests
             currentSignalGroup: 2,
             out var request);
 
-        Assert.False(active);
-        Assert.Equal(default, request);
+        Assert.True(active);
+        Assert.Equal(2, request.TargetSignalGroup);
+        Assert.Equal(TspSource.PublicCar, request.Source);
+        Assert.Equal(10u, request.ExpiryTimer);
+        Assert.True(request.ExtendCurrentPhase);
     }
 
     [Fact]
@@ -466,7 +497,7 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Public_car_existing_signal_request_does_not_latch()
+    public void Public_car_existing_signal_request_latches_without_fresh_refresh_when_still_valid()
     {
         bool active = TspPreemptionPolicy.TryRefreshOrLatchRequest(
             freshRequest: null,
@@ -475,8 +506,11 @@ public class TspDecisionEngineTests
             currentSignalGroup: 1,
             out var request);
 
-        Assert.False(active);
-        Assert.Equal(default, request);
+        Assert.True(active);
+        Assert.Equal(2, request.TargetSignalGroup);
+        Assert.Equal(TspSource.PublicCar, request.Source);
+        Assert.Equal(2u, request.ExpiryTimer);
+        Assert.False(request.ExtendCurrentPhase);
     }
 
     [Theory]
@@ -526,11 +560,11 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
-    public void Hold_policy_ignores_public_car_request()
+    public void Hold_policy_allows_public_car_request()
     {
         var request = new TspSignalRequest(targetSignalGroup: 2, TspSource.PublicCar, strength: 1f, expiryTimer: 30, extendCurrentPhase: true);
 
-        Assert.False(TspPreemptionPolicy.ShouldHoldCurrentGroup(
+        Assert.True(TspPreemptionPolicy.ShouldHoldCurrentGroup(
             currentSignalGroup: 2,
             request,
             signalTimer: 12,

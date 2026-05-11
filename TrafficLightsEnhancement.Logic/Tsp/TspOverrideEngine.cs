@@ -58,7 +58,7 @@ public static class TspOverrideEngine
             return new TspOverrideSelection(basePhaseIndex, basePhaseIndex, canExtendCurrent: false, TspSelectionReason.None);
         }
 
-        if (request.Source != TspSource.Track)
+        if (request.Source is not (TspSource.Track or TspSource.PublicCar))
         {
             return new TspOverrideSelection(basePhaseIndex, basePhaseIndex, canExtendCurrent: false, TspSelectionReason.None);
         }
