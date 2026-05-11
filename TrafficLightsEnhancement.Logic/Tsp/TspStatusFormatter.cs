@@ -59,6 +59,7 @@ public static class TspStatusFormatter
         {
             TspSelectionReason.ExtendedCurrentPhase => "Extending current phase",
             TspSelectionReason.SelectedTargetPhase => "Switching to requested group",
+            TspSelectionReason.DeferredForPedestrianFairness => "Deferring for pedestrian phase",
             _ => "Request active",
         };
 

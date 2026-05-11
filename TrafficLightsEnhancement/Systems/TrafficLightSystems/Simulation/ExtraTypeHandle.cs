@@ -89,6 +89,9 @@ public struct ExtraTypeHandle
     public ComponentLookup<TransitSignalPriorityDecisionTrace> m_TransitSignalPriorityDecisionTrace;
 
     [ReadOnly]
+    public ComponentLookup<TransitSignalPriorityPedestrianFairnessState> m_TransitSignalPriorityPedestrianFairnessState;
+
+    [ReadOnly]
     public BufferLookup<EdgeGroupMask> m_EdgeGroupMaskLookup;
 
     [ReadOnly]
@@ -123,6 +126,7 @@ public struct ExtraTypeHandle
         m_TransitSignalPriorityRequest = state.GetComponentLookup<TransitSignalPriorityRequest>(isReadOnly: true);
         m_TransitSignalPriorityRuntimeDebugInfo = state.GetComponentLookup<TransitSignalPriorityRuntimeDebugInfo>(isReadOnly: true);
         m_TransitSignalPriorityDecisionTrace = state.GetComponentLookup<TransitSignalPriorityDecisionTrace>(isReadOnly: true);
+        m_TransitSignalPriorityPedestrianFairnessState = state.GetComponentLookup<TransitSignalPriorityPedestrianFairnessState>(isReadOnly: true);
         m_EdgeGroupMaskLookup = state.GetBufferLookup<EdgeGroupMask>(isReadOnly: true);
         m_SignalDelayLookup = state.GetBufferLookup<SignalDelayData>(isReadOnly: true);
     }
@@ -155,6 +159,7 @@ public struct ExtraTypeHandle
         m_TransitSignalPriorityRequest.Update(ref state);
         m_TransitSignalPriorityRuntimeDebugInfo.Update(ref state);
         m_TransitSignalPriorityDecisionTrace.Update(ref state);
+        m_TransitSignalPriorityPedestrianFairnessState.Update(ref state);
         m_EdgeGroupMaskLookup.Update(ref state);
         m_SignalDelayLookup.Update(ref state);
         return this;

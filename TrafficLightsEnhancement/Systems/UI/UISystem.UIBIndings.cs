@@ -1404,6 +1404,7 @@ public partial class UISystem
     {
         global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.ExtendedCurrentPhase => "Extended current phase",
         global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.SelectedTargetPhase => "Selected target phase",
+        global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForPedestrianFairness => "Deferred for pedestrian phase",
         _ => "None"
     };
 

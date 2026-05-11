@@ -153,6 +153,10 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 bool hasActiveTspDebugInfo = false;
                 C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings activeTspSettings =
                     C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings.CreateDefault();
+                TspPedestrianFairnessState pedestrianFairnessState =
+                    m_ExtraTypeHandle.m_TransitSignalPriorityPedestrianFairnessState.TryGetComponent(currentEntity, out var pedestrianFairnessComponent)
+                        ? pedestrianFairnessComponent.ToLogicState()
+                        : TspPedestrianFairnessState.None;
 
                 if (TspRuntime.TryResolveActiveLocalRequest(
                     this,
@@ -226,6 +230,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                             activeTspSettings,
                             hasTspRequest,
                             activeTspRequest,
+                            ref pedestrianFairnessState,
                             out var tspSelection);
 
                         if (tspSelection.Applied
@@ -257,6 +262,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                         activeTspSettings,
                         hasTspRequest,
                         activeTspRequest,
+                        ref pedestrianFairnessState,
                         out var tspSelection);
 
                     if (tspSelection.Applied)
@@ -287,6 +293,13 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 {
                     m_CommandBuffer.RemoveComponent<TransitSignalPriorityDecisionTrace>(unfilteredChunkIndex, currentEntity);
                 }
+
+                pedestrianFairnessState = TspPedestrianFairnessPolicy.Refresh(
+                    pedestrianFairnessState,
+                    IsExclusivePedestrianEnabled(customTrafficLights),
+                    customTrafficLights.m_PedestrianPhaseGroupMask,
+                    trafficLights.m_CurrentSignalGroup);
+                WriteTspPedestrianFairnessState(unfilteredChunkIndex, currentEntity, pedestrianFairnessState);
 
                 if (i < customTrafficLightsArray.Length)
                 {
@@ -377,6 +390,33 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             }
         }
 
+        private void WriteTspPedestrianFairnessState(
+            int unfilteredChunkIndex,
+            Entity currentEntity,
+            TspPedestrianFairnessState pedestrianFairnessState)
+        {
+            if (!pedestrianFairnessState.HasPendingPedestrianPhase)
+            {
+                if (m_ExtraTypeHandle.m_TransitSignalPriorityPedestrianFairnessState.HasComponent(currentEntity))
+                {
+                    m_CommandBuffer.RemoveComponent<TransitSignalPriorityPedestrianFairnessState>(unfilteredChunkIndex, currentEntity);
+                }
+
+                return;
+            }
+
+            TransitSignalPriorityPedestrianFairnessState component =
+                TransitSignalPriorityPedestrianFairnessState.FromLogicState(pedestrianFairnessState);
+            if (m_ExtraTypeHandle.m_TransitSignalPriorityPedestrianFairnessState.HasComponent(currentEntity))
+            {
+                m_CommandBuffer.SetComponent(unfilteredChunkIndex, currentEntity, component);
+            }
+            else
+            {
+                m_CommandBuffer.AddComponent(unfilteredChunkIndex, currentEntity, component);
+            }
+        }
+
         private bool UpdateTrafficLightState(
             NativeList<Entity> laneSignals,
             MoveableBridgeData moveableBridgeData,
@@ -385,6 +425,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings tspSettings,
             bool hasTspRequest,
             TransitSignalPriorityRequest tspRequest,
+            ref TspPedestrianFairnessState pedestrianFairnessState,
             out TspOverrideSelection tspSelection)
         {
             tspSelection = default;
@@ -396,7 +437,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     {
                         trafficLights.m_State = Game.Net.TrafficLightState.Beginning;
                         trafficLights.m_CurrentSignalGroup = 0;
-                        trafficLights.m_NextSignalGroup = (byte)GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        trafficLights.m_NextSignalGroup = (byte)GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         trafficLights.m_Timer = 0;
                         return true;
                     }
@@ -453,7 +494,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                         }
 
                         bool canExtend2;
-                        int nextSignalGroup2 = GetNextSignalGroup(laneSignals, trafficLights, trafficLights.m_Timer >= num2, out canExtend2, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        int nextSignalGroup2 = GetNextSignalGroup(laneSignals, trafficLights, trafficLights.m_Timer >= num2, out canExtend2, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         if (nextSignalGroup2 != trafficLights.m_CurrentSignalGroup)
                         {
                             trafficLights.m_State = (canExtend2 ? Game.Net.TrafficLightState.Extending : Game.Net.TrafficLightState.Ending);
@@ -476,7 +517,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     if (trafficLights.m_Timer >= 2)
                     {
                         bool canExtend4;
-                        int nextSignalGroup4 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend4, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        int nextSignalGroup4 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend4, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         if (nextSignalGroup4 == trafficLights.m_CurrentSignalGroup)
                         {
                             trafficLights.m_State = Game.Net.TrafficLightState.Beginning;
@@ -503,7 +544,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     if (trafficLights.m_Timer >= 2)
                     {
                         bool canExtend3;
-                        int nextSignalGroup3 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend3, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        int nextSignalGroup3 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend3, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         if (nextSignalGroup3 == trafficLights.m_CurrentSignalGroup)
                         {
                             trafficLights.m_State = Game.Net.TrafficLightState.Beginning;
@@ -532,7 +573,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                             break;
                         }
 
-                        int nextSignalGroup5 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        int nextSignalGroup5 = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         if ((trafficLights.m_Flags & TrafficLightFlags.MoveableBridge) != 0 && !IsEmpty(laneSignals, nextSignalGroup5))
                         {
                             return false;
@@ -572,7 +613,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                             break;
                         }
 
-                        int nextSignalGroup = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, out tspSelection);
+                        int nextSignalGroup = GetNextSignalGroup(laneSignals, trafficLights, preferChange: true, out canExtend, ref customTrafficLights, hasTspRequest, tspRequest, ref pedestrianFairnessState, out tspSelection);
                         if (nextSignalGroup != trafficLights.m_NextSignalGroup)
                         {
                             if (RequireEnding(laneSignals, nextSignalGroup))
@@ -660,11 +701,46 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             ref CustomTrafficLights customTrafficLights,
             bool hasTspRequest,
             TransitSignalPriorityRequest tspRequest,
+            ref TspPedestrianFairnessState pedestrianFairnessState,
             out TspOverrideSelection tspSelection)
         {
             int nextSignalGroup = GetNextSignalGroupWithoutTsp(laneSignals, trafficLights, preferChange, out canExtend, ref customTrafficLights);
 
             tspSelection = default;
+            bool exclusivePedestrianEnabled = IsExclusivePedestrianEnabled(customTrafficLights);
+            pedestrianFairnessState = TspPedestrianFairnessPolicy.Refresh(
+                pedestrianFairnessState,
+                exclusivePedestrianEnabled,
+                customTrafficLights.m_PedestrianPhaseGroupMask,
+                trafficLights.m_CurrentSignalGroup);
+            if (pedestrianFairnessState.HasPendingPedestrianPhase)
+            {
+                byte pendingPedestrianGroup = pedestrianFairnessState.PendingPedestrianSignalGroup;
+                byte inFlightSignalGroup = trafficLights.m_NextSignalGroup;
+                if (!TspPedestrianFairnessPolicy.ShouldDeferToPendingPedestrianPhase(
+                        pedestrianFairnessState,
+                        exclusivePedestrianEnabled,
+                        customTrafficLights.m_PedestrianPhaseGroupMask,
+                        trafficLights.m_CurrentSignalGroup,
+                        hasTspRequest ? tspRequest.m_TargetSignalGroup : (byte)0,
+                        inFlightSignalGroup))
+                {
+                    return inFlightSignalGroup > 0 ? inFlightSignalGroup : nextSignalGroup;
+                }
+
+                if (hasTspRequest && tspRequest.m_TargetSignalGroup != pendingPedestrianGroup)
+                {
+                    tspSelection = new TspOverrideSelection(
+                        basePhaseIndex: nextSignalGroup > 0 ? nextSignalGroup - 1 : -1,
+                        selectedPhaseIndex: pendingPedestrianGroup - 1,
+                        canExtendCurrent: false,
+                        TspSelectionReason.DeferredForPedestrianFairness);
+                }
+
+                canExtend = false;
+                return pendingPedestrianGroup;
+            }
+
             if (!hasTspRequest || !TspRuntime.ShouldAggressivelyPreemptToTargetGroup(
                     trafficLights,
                     tspRequest,
@@ -687,16 +763,30 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             if (tspSelection.Applied && tspSelection.SelectedPhaseIndex >= 0)
             {
                 canExtend = tspSelection.CanExtendCurrent;
-                return tspSelection.SelectedPhaseIndex + 1;
+                byte selectedSignalGroup = (byte)(tspSelection.SelectedPhaseIndex + 1);
+                pedestrianFairnessState = TspPedestrianFairnessPolicy.UpdateAfterSelection(
+                    pedestrianFairnessState,
+                    exclusivePedestrianEnabled,
+                    customTrafficLights.m_PedestrianPhaseGroupMask,
+                    trafficLights.m_CurrentSignalGroup,
+                    (byte)nextSignalGroup,
+                    selectedSignalGroup,
+                    tspOverrideApplied: tspSelection.ChangedBaseSelection);
+                return selectedSignalGroup;
             }
 
             return nextSignalGroup;
         }
 
+        private static bool IsExclusivePedestrianEnabled(CustomTrafficLights customTrafficLights)
+        {
+            return ((uint)customTrafficLights.GetPattern() & (uint)CustomTrafficLights.Patterns.ExclusivePedestrian) != 0;
+        }
+
         private static bool IsActiveExclusivePedestrianPhase(TrafficLights trafficLights, CustomTrafficLights customTrafficLights)
         {
             return TspPreemptionPolicy.ShouldProtectActivePedestrianPhase(
-                exclusivePedestrianEnabled: ((uint)customTrafficLights.GetPattern() & (uint)CustomTrafficLights.Patterns.ExclusivePedestrian) != 0,
+                exclusivePedestrianEnabled: IsExclusivePedestrianEnabled(customTrafficLights),
                 trafficLights.m_CurrentSignalGroup,
                 customTrafficLights.m_PedestrianPhaseGroupMask,
                 isOngoing: trafficLights.m_State == Game.Net.TrafficLightState.Ongoing);

@@ -257,6 +257,11 @@ public partial class ToolSystem : NetToolSystem
         {
             EntityManager.RemoveComponent<TransitSignalPriorityDecisionTrace>(entity);
         }
+
+        if (EntityManager.HasComponent<TransitSignalPriorityPedestrianFairnessState>(entity))
+        {
+            EntityManager.RemoveComponent<TransitSignalPriorityPedestrianFairnessState>(entity);
+        }
     }
 
     private void UpdateTooltip(Entity entity)

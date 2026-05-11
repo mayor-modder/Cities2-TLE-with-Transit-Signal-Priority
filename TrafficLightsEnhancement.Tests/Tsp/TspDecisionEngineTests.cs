@@ -596,6 +596,65 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void First_tram_override_of_due_pedestrian_phase_records_pending_pedestrian()
+    {
+        var state = TspPedestrianFairnessState.None;
+
+        state = TspPedestrianFairnessPolicy.UpdateAfterSelection(
+            state,
+            exclusivePedestrianEnabled: true,
+            pedestrianPhaseGroupMask: 1 << 2,
+            currentSignalGroup: 1,
+            baseSignalGroup: 3,
+            selectedSignalGroup: 2,
+            tspOverrideApplied: true);
+
+        Assert.True(state.HasPendingPedestrianPhase);
+        Assert.Equal(3, state.PendingPedestrianSignalGroup);
+    }
+
+    [Fact]
+    public void Pending_pedestrian_phase_blocks_next_conflicting_tsp_override()
+    {
+        var state = new TspPedestrianFairnessState(pendingPedestrianSignalGroup: 3);
+
+        Assert.True(TspPedestrianFairnessPolicy.ShouldDeferToPendingPedestrianPhase(
+            state,
+            exclusivePedestrianEnabled: true,
+            pedestrianPhaseGroupMask: 1 << 2,
+            currentSignalGroup: 2,
+            requestedSignalGroup: 1));
+    }
+
+    [Fact]
+    public void Pending_pedestrian_phase_allows_in_flight_skipped_tram_phase_to_start()
+    {
+        var state = new TspPedestrianFairnessState(pendingPedestrianSignalGroup: 3);
+
+        Assert.False(TspPedestrianFairnessPolicy.ShouldDeferToPendingPedestrianPhase(
+            state,
+            exclusivePedestrianEnabled: true,
+            pedestrianPhaseGroupMask: 1 << 2,
+            currentSignalGroup: 1,
+            requestedSignalGroup: 2,
+            inFlightSignalGroup: 2));
+    }
+
+    [Fact]
+    public void Running_pending_pedestrian_phase_clears_fairness_state()
+    {
+        var state = new TspPedestrianFairnessState(pendingPedestrianSignalGroup: 3);
+
+        state = TspPedestrianFairnessPolicy.Refresh(
+            state,
+            exclusivePedestrianEnabled: true,
+            pedestrianPhaseGroupMask: 1 << 2,
+            currentSignalGroup: 3);
+
+        Assert.False(state.HasPendingPedestrianPhase);
+    }
+
+    [Fact]
     public void Exclusive_pedestrian_phase_is_protected_only_while_current_and_ongoing()
     {
         Assert.True(TspPreemptionPolicy.ShouldProtectActivePedestrianPhase(

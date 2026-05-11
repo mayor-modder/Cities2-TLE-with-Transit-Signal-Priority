@@ -5,6 +5,7 @@ public enum TspSelectionReason : byte
     None = 0,
     ExtendedCurrentPhase = 1,
     SelectedTargetPhase = 2,
+    DeferredForPedestrianFairness = 3,
 }
 
 public readonly struct TspOverrideSelection
