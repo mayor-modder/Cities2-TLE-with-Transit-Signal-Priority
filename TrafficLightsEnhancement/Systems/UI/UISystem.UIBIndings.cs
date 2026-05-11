@@ -76,8 +76,6 @@ public partial class UISystem
 
     public List<Entity> AffectedIntersections => m_AffectedIntersections;
 
-    private bool HasLoadingErrors => m_AffectedIntersections.Count > 0;
-
     private void AddUIBindings()
     {
         m_MainPanelBinding = CreateBinding("GetMainPanel", GetMainPanel, autoUpdate: false);
@@ -175,8 +173,6 @@ public partial class UISystem
         m_UncoveredConnectionsBinding = CreateBinding("GetUncoveredConnections", GetUncoveredConnections, autoUpdate: false);
         var affectedEntitiesBindingKey = UseKeyPrefixes ? "BINDING:GetAffectedEntities" : "GetAffectedEntities";
         AddUpdateBinding(m_AffectedEntitiesBinding = new GetterValueBinding<List<Entity>>(Mod.modName, affectedEntitiesBindingKey, () => AffectedIntersections, new ListWriter<Entity>()));
-        var hasMigrationIssuesBindingKey = UseKeyPrefixes ? "BINDING:HasMigrationIssues" : "HasMigrationIssues";
-        AddUpdateBinding(new GetterValueBinding<bool>(Mod.modName, hasMigrationIssuesBindingKey, () => HasLoadingErrors));
         CreateTrigger<string>("NavigateToEntity", CallNavigateToEntity);
         CreateTrigger<int>("RemoveAffectedEntity", RemoveAffectedEntity);
     }

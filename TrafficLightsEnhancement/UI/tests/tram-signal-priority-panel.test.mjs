@@ -25,6 +25,18 @@ test("bindings exposes the tram signal priority toggle trigger", async () => {
   assert.match(bindings, /toggleTramSignalPriority\s*=\s*triggers\.create<\[boolean\]>\("ToggleTramSignalPriority"\)/);
 });
 
+test("migration issue UI derives boolean state from affected entities", async () => {
+  const bindings = await source("src/bindings.ts");
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+  const content = await source("src/mods/components/main-panel/content.tsx");
+
+  assert.match(bindings, /affectedEntities\s*=\s*new OneWayBinding<any\[\]>\("GetAffectedEntities",\s*\[\]\)/);
+  assert.match(content, /const hasMigrationIssues\s*=\s*migrationEntities\s*&&\s*migrationEntities\.length\s*>\s*0/);
+  assert.doesNotMatch(bindings, /hasMigrationIssues\s*=\s*new OneWayBinding/);
+  assert.doesNotMatch(uiBindings, /HasMigrationIssues/);
+  assert.doesNotMatch(uiBindings, /HasLoadingErrors/);
+});
+
 test("main panel renders only tram signal priority controls", async () => {
   const content = await source("src/mods/components/main-panel/content.tsx");
   const panelStart = content.indexOf("TramSignalPriority");

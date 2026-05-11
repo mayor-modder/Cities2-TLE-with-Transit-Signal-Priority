@@ -69,7 +69,6 @@ export const callUpdateUserPreset = triggers.create<[string]>("CallUpdateUserPre
 
 // Migration issues bindings
 export const affectedEntities = new OneWayBinding<any[]>("GetAffectedEntities", []);
-export const hasMigrationIssues = new OneWayBinding<boolean>("HasMigrationIssues", false);
 export const callNavigateToEntity = (entity: {index: number, version: number}) => {
 	triggers.create<[string]>("NavigateToEntity")(JSON.stringify(entity));
 };
