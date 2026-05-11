@@ -27,4 +27,18 @@ public class TleMigrationPlanTests
 
         Assert.Empty(plan);
     }
+
+    [Fact]
+    public void Negative_versions_conservatively_run_all_known_migrations()
+    {
+        var plan = TleMigrationPlan.GetSteps(-1);
+
+        Assert.Equal(
+            [
+                TleMigrationStep.SignalDelayData,
+                TleMigrationStep.TrafficGroupMembers,
+                TleMigrationStep.CustomTrafficLights
+            ],
+            plan);
+    }
 }
