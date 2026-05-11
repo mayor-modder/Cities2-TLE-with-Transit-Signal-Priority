@@ -84,6 +84,13 @@ test("backend exposes separate tram and bus signal priority controls", async () 
   assert.match(uiBindings, /settings\.m_Enabled\s*=\s*settings\.m_AllowTrackRequests\s*\|\|\s*settings\.m_AllowPublicCarRequests/);
 });
 
+test("bus signal priority has English base labels", async () => {
+  const locale = JSON.parse(await repoSource("Locale.json"));
+
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriority]"], "Bus Signal Priority");
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]"], "Enable Bus Signal Priority");
+});
+
 test("tram signal priority diagnostics are gated by a mod option", async () => {
   const settings = await repoSource("Settings.cs");
   const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
