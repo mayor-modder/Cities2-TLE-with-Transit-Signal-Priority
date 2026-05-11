@@ -725,6 +725,16 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void Public_car_request_can_hold_current_serving_group()
+    {
+        Assert.True(TspPreemptionPolicy.ShouldHoldCurrentGroup(
+            currentSignalGroup: 2,
+            request: new TspSignalRequest(targetSignalGroup: 2, TspSource.PublicCar, strength: 1f, expiryTimer: 10, extendCurrentPhase: true),
+            signalTimer: 4,
+            maxGreenExtensionTicks: 10));
+    }
+
+    [Fact]
     public void Same_group_or_expired_request_does_not_allow_aggressive_preemption()
     {
         Assert.False(TspPreemptionPolicy.ShouldAggressivelyPreemptToConflictingGroup(
