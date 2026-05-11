@@ -963,6 +963,9 @@ public partial class UISystem
             rows.Add(new { label = "TSPDiagnosticsSelectedGroup", value = FormatByteValue(decisionTrace.m_SelectedSignalGroup) });
             rows.Add(new { label = "TSPDiagnosticsDecisionTarget", value = FormatByteValue(decisionTrace.m_RequestTargetSignalGroup) });
             rows.Add(new { label = "TSPDiagnosticsDecisionSource", value = GetTspSourceName(decisionTrace.m_SourceType) });
+            rows.Add(new { label = "TSPDiagnosticsExclusivePedestrian", value = decisionTrace.m_ExclusivePedestrianEnabled ? "Yes" : "No" });
+            rows.Add(new { label = "TSPDiagnosticsActivePedestrianProtection", value = decisionTrace.m_ActiveExclusivePedestrianPhase ? "Yes" : "No" });
+            rows.Add(new { label = "TSPDiagnosticsPendingPedestrianFairness", value = decisionTrace.m_PendingPedestrianFairness ? $"G{FormatByteValue(decisionTrace.m_PendingPedestrianSignalGroup)}" : "No" });
         }
         else
         {
@@ -1173,7 +1176,7 @@ public partial class UISystem
             ? $"{runtimeDebug.m_RequestKind}:{runtimeDebug.m_SourceType}:{runtimeDebug.m_TargetSignalGroup}:{runtimeDebug.m_TrackApproachLaneProbe}:{runtimeDebug.m_TrackApproachLaneCurvePosition:0.00}"
             : "no-request";
         string decisionSignature = hasDecisionTrace
-            ? $"{decisionTrace.m_Reason}:{decisionTrace.m_BaseSignalGroup}:{decisionTrace.m_SelectedSignalGroup}:{decisionTrace.m_RequestTargetSignalGroup}"
+            ? $"{decisionTrace.m_Reason}:{decisionTrace.m_BaseSignalGroup}:{decisionTrace.m_SelectedSignalGroup}:{decisionTrace.m_RequestTargetSignalGroup}:{decisionTrace.m_ExclusivePedestrianEnabled}:{decisionTrace.m_ActiveExclusivePedestrianPhase}:{decisionTrace.m_PendingPedestrianFairness}:{decisionTrace.m_PendingPedestrianSignalGroup}"
             : "no-decision";
 
         return $"{summary}|{trafficSignature}|{requestSignature}|{decisionSignature}";
@@ -1248,6 +1251,13 @@ public partial class UISystem
                         selectedGroup = decisionTrace.m_SelectedSignalGroup,
                         targetGroup = decisionTrace.m_RequestTargetSignalGroup,
                         source = GetTspSourceName(decisionTrace.m_SourceType),
+                        exclusivePedestrianEnabled = decisionTrace.m_ExclusivePedestrianEnabled,
+                        activeExclusivePedestrianPhase = decisionTrace.m_ActiveExclusivePedestrianPhase,
+                        pendingPedestrianFairness = decisionTrace.m_PendingPedestrianFairness,
+                        pendingPedestrianGroup = decisionTrace.m_PendingPedestrianSignalGroup,
+                        preemptionSuppressedByPedestrianPhase =
+                            decisionTrace.m_Reason == (byte)global::TrafficLightsEnhancement.Logic.Tsp.TspSelectionReason.DeferredForPedestrianFairness
+                            || decisionTrace.m_ActiveExclusivePedestrianPhase,
                     }
                     : null
             });

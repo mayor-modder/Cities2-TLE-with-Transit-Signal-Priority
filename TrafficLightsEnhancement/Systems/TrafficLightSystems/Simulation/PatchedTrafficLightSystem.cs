@@ -241,7 +241,9 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                                 currentEntity,
                                 trafficLights,
                                 activeTspRequest,
-                                tspSelection);
+                                tspSelection,
+                                customTrafficLights,
+                                pedestrianFairnessState);
                             tspTraceWritten = true;
                         }
 
@@ -272,7 +274,9 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                             currentEntity,
                             trafficLights,
                             activeTspRequest,
-                            tspSelection);
+                            tspSelection,
+                            customTrafficLights,
+                            pedestrianFairnessState);
                         tspTraceWritten = true;
                     }
 
@@ -365,8 +369,11 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             Entity currentEntity,
             TrafficLights trafficLights,
             TransitSignalPriorityRequest activeTspRequest,
-            TspOverrideSelection tspSelection)
+            TspOverrideSelection tspSelection,
+            CustomTrafficLights customTrafficLights,
+            TspPedestrianFairnessState pedestrianFairnessState)
         {
+            bool exclusivePedestrianEnabled = IsExclusivePedestrianEnabled(customTrafficLights);
             var trace = new TransitSignalPriorityDecisionTrace
             {
                 m_RequestTargetSignalGroup = activeTspRequest.m_TargetSignalGroup,
@@ -378,6 +385,14 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     : (byte)0,
                 m_SourceType = activeTspRequest.m_SourceType,
                 m_Reason = (byte)tspSelection.Reason,
+                m_ExclusivePedestrianEnabled = exclusivePedestrianEnabled,
+                m_ActiveExclusivePedestrianPhase = TspPreemptionPolicy.ShouldProtectActivePedestrianPhase(
+                    exclusivePedestrianEnabled,
+                    trafficLights.m_CurrentSignalGroup,
+                    customTrafficLights.m_PedestrianPhaseGroupMask,
+                    isOngoing: trafficLights.m_State == Game.Net.TrafficLightState.Ongoing),
+                m_PendingPedestrianFairness = pedestrianFairnessState.HasPendingPedestrianPhase,
+                m_PendingPedestrianSignalGroup = pedestrianFairnessState.PendingPedestrianSignalGroup,
             };
 
             if (m_ExtraTypeHandle.m_TransitSignalPriorityDecisionTrace.HasComponent(currentEntity))
