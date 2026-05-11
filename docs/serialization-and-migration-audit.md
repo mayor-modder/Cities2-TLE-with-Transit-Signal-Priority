@@ -49,27 +49,28 @@ round-trip tested before compatibility-affecting edits:
 - `CustomPhaseData`
 - `SignalDelayData`
 
-The current repository documents TSP save fields well, but the inherited payload
-layouts are still implicit in component code.
+`TrafficLightsEnhancement.Serialization.Tests` now covers current serializer
+round trips for these inherited components, plus practical legacy payload
+fixtures for older `CustomTrafficLights`, `TrafficGroup`, `TrafficGroupMember`,
+`EdgeGroupMask`, `CustomPhaseData`, and `GroupMask.Signal` layouts.
 
-## Risk: SignalDelayData Layout
+## Fixed: SignalDelayData Layout
 
 `SignalDelayData.Serialize(...)` writes:
 
 ```text
 TLEDataVersion.V1
 m_Edge
-left-hand delay
-right-hand delay
-left-hand enabled
-right-hand enabled
+m_OpenDelay
+m_CloseDelay
+m_IsEnabled
 ```
 
-`SignalDelayData.Deserialize(...)` appears to read the first two integers as the
-serialized `Entity` index/version. If `writer.Write(Entity)` writes index and
-version after the leading payload version, a current round trip would shift the
-fields. This needs a serializer test or an explicit legacy-layout explanation
-before changing the implementation.
+`SignalDelayData.Deserialize(...)` previously read the leading payload version as
+the serialized entity index, shifting the rest of the stream. The current reader
+now consumes the payload version first, then reads `m_Edge` through
+`reader.Read(out Entity)`. The regression is covered by
+`Signal_delay_data_round_trips_current_payload`.
 
 ## Risk: Migration Version Sequencing
 
@@ -106,7 +107,7 @@ be dead code or an unfinished ownership abstraction.
 Track these as follow-up issues before touching inherited save behavior:
 
 - Add serializer round-trip tests for inherited save components, starting with
-  `SignalDelayData`.
+  `SignalDelayData`. Done in `TrafficLightsEnhancement.Serialization.Tests`.
 - Clarify and test migration version sequencing for loaded versions 0 through 5.
 - Document a save-format contract that lists each saved component and buffer,
   its payload version, runtime-only fields, downgrade expectations, and

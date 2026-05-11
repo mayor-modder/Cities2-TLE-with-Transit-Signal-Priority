@@ -115,7 +115,7 @@
         <ProjectReference Include="..\TrafficLightsEnhancement.Logic\TrafficLightsEnhancement.Logic.csproj" />
     </ItemGroup>
 
-    <Target Name="InstallUI" AfterTargets="AfterBuild">
+    <Target Name="InstallUI" AfterTargets="AfterBuild" Condition="'$(DisablePostProcessors)' != 'true'">
 		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)/UI" />
 	</Target>
 

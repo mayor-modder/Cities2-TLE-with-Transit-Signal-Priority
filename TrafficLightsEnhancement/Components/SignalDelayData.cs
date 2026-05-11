@@ -22,9 +22,8 @@ public struct SignalDelayData : IBufferElementData, ISerializable
 
     public void Deserialize<TReader>(TReader reader) where TReader : IReader
     {
-        reader.Read(out int version);
-        reader.Read(out int entityVersion);
-        m_Edge = new Entity { Index = version, Version = entityVersion };
+        reader.Read(out int _);
+        reader.Read(out m_Edge);
         reader.Read(out m_OpenDelay);
         reader.Read(out m_CloseDelay);
         reader.Read(out m_IsEnabled);
