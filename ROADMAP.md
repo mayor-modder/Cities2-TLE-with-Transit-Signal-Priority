@@ -30,6 +30,12 @@ preserve and extend:
 - Tram Signal Priority is implemented as an opt-in, per-junction feature.
 - TSP has pure policy tests, UI source tests, serialization coverage, and a
   custom state-machine regression harness for TSP-off behavior.
+- Dynamic mode now documents and tests restored narrow linked-phase behavior,
+  including how it interacts with TSP-selected phases.
+- Bicycle phase weight is exposed in the custom phase vehicle-weight UI.
+- Bus-priority groundwork includes pure policy tests, stop-aware suppression
+  policy, and diagnostic-only bus approach indexing. Buses still do not affect
+  signal selection.
 - Maintainer docs now cover TSP architecture, diagnostics, dynamic mode,
   save-format compatibility, localization workflow, and serialization/migration
   audit notes.
@@ -40,12 +46,16 @@ preserve and extend:
 
 These are the next bounded choices to resolve before larger feature expansion:
 
-- Decide whether linked phases should be restored, redesigned, or removed from
-  the UI.
-- Decide whether bicycle weight should get a visible control, stay data-only, or
-  be folded into another phase-priority model.
-- Evaluate whether custom phase selection should be extracted into pure,
-  testable logic.
+- Playtest bus approach diagnostics in real saves and collect examples where
+  mixed lanes, bus-only lanes, lane changes, queues, and stop behavior differ
+  from the prototype assumptions.
+- Decide how much stop-relation classification is needed before buses can
+  safely create requests.
+- Decide the first player-facing bus control shape. The current preference is a
+  separate bus control rather than renaming the existing tram control.
+- Extract custom phase selection into pure logic only when a behavior change or
+  larger refactor needs it; the current extraction audit does not require an
+  immediate rewrite.
 - Remove or retire unused inherited localization paths only after supported game
   version checks confirm they are safe to remove.
 - Keep the save-format contract and localization workflow current whenever
@@ -56,12 +66,16 @@ These are the next bounded choices to resolve before larger feature expansion:
 Bus priority should build on the TSP architecture, but not by immediately
 flipping signals for buses. The first pass should be observability and policy:
 
-- Add pure bus-priority policy tests before runtime behavior.
-- Prototype bus approach diagnostics so real city behavior can be inspected.
-- Define stop-aware suppression rules for buses that are stopped, boarding,
-  approaching a stop, leaving a stop, or near a terminus.
-- Decide whether the UI remains tram-specific, becomes a generic transit
-  priority panel, or splits tram and bus controls.
+- Pure bus-priority policy tests are in place.
+- Diagnostic-only bus approach indexing is in place behind the existing
+  off-by-default diagnostics option.
+- Pure stop-aware suppression rules are in place for boarding, near-side stops,
+  far-side stops, unknown stop relation, and queued buses.
+- Next, use diagnostics to classify stop relation and lane-change behavior in
+  real saves before wiring bus samples into request creation.
+- Decide whether the future UI remains tram-specific, becomes a generic transit
+  priority panel, or splits tram and bus controls. The current preference is
+  split controls.
 - Only allow bus requests to affect signals after diagnostics can explain why a
   request was or was not created.
 
