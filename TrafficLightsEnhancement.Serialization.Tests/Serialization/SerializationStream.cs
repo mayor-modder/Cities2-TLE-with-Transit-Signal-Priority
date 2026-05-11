@@ -11,6 +11,10 @@ using ColossalHash128 = Colossal.Hash128;
 
 namespace TrafficLightsEnhancement.Serialization.Tests.Serialization;
 
+// This shim verifies the logical read/write order and value types used by our
+// ISerializable components. It is not a byte-for-byte implementation of
+// Colossal's save stream, so exact binary compatibility still needs game-runtime
+// validation when the on-disk format itself is in question.
 internal sealed class SerializationWriter : IWriter
 {
     private readonly List<object> _values = [];
