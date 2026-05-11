@@ -12,18 +12,23 @@
     "Options.GROUP[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.GroupKeyBindingReset]": "Reset",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_LocaleOption]": "Language",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_LocaleOption]": "Set the language for this mod. If you choose \"Auto\", it will automatically select a language based on your in-game settings and system locale.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_LocaleOption].tooltip": "Set the language for this mod. If you choose \"Auto\", it will automatically select a language based on your in-game settings and system locale.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_CompatibilityModeOption]": "Compatibility Mode",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_CompatibilityModeOption]": "Allows this mod to coexist with other mods that control traffic lights.\nNote: TLE cannot apply city-wide default traffic light settings when compatibility mode is on.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_CompatibilityModeOption].tooltip": "Allows this mod to coexist with other mods that control traffic lights.\nNote: TLE cannot apply city-wide default traffic light settings when compatibility mode is on.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultSplitPhasing]": "Split Phasing",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultSplitPhasing]": "Set all traffic lights without custom configurations to split phasing mode. It applies to newly built roads and will apply to existing roads upon a game state update.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultSplitPhasing].tooltip": "Set all traffic lights without custom configurations to split phasing mode. It applies to newly built roads and will apply to existing roads upon a game state update.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultAlwaysGreenKerbsideTurn]": "Turning on Red",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultAlwaysGreenKerbsideTurn]": "Set all traffic lights without custom configurations to allow turning on red. It applies to newly built roads and will apply to existing roads upon a game state update.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultAlwaysGreenKerbsideTurn].tooltip": "Set all traffic lights without custom configurations to allow turning on red. It applies to newly built roads and will apply to existing roads upon a game state update.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian]": "Exclusive Pedestrian Phase",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian]": "Add an exclusive pedestrian phase at all traffic lights without custom configurations. It applies to newly built roads and will apply to existing roads upon a game state update.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian].tooltip": "Add an exclusive pedestrian phase at all traffic lights without custom configurations. It applies to newly built roads and will apply to existing roads upon a game state update.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Show Tram Signal Priority Diagnostics",
@@ -31,21 +36,28 @@
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics].tooltip": "Adds a read-only Diagnostics section under the Tram Signal Priority toggle in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate]": "Force All Nodes to Update",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate]": "Force all nodes (road junctions) to update, applying the default settings in this mod to all traffic lights without custom configurations. This feature is only available after a city is loaded.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate].tooltip": "Force all nodes (road junctions) to update, applying the default settings in this mod to all traffic lights without custom configurations. This feature is only available after a city is loaded.",
     "Options.WARNING[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate]": "All nodes will be updated. The default settings in this mod will apply to all traffic lights without custom configurations.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ComponentTypeToClear]": "Component Type to Clear",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ComponentTypeToClear]": "Select which TLE component type to remove from all entities. Use this to fix corrupted save data.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ComponentTypeToClear].tooltip": "Select which TLE component type to remove from all entities. Use this to fix corrupted save data.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ClearSelectedComponent]": "Clear Selected Component",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ClearSelectedComponent]": "Remove the selected component type from all entities. Save the game after clearing to persist changes.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ClearSelectedComponent].tooltip": "Remove the selected component type from all entities. Save the game after clearing to persist changes.",
     "Options.WARNING[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ClearSelectedComponent]": "This will remove the selected TLE component from all entities. You will lose data for that component type.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ReleaseChannel]": "Release Channel",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ReleaseChannel]": "Shows whether this build is stable or beta.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_TleVersion]": "TLE Version",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_TleVersion]": "Shows the installed Traffic Lights Enhancement Extended assembly version.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_LaneSystemVersion]": "Lane System Version",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_LaneSystemVersion]": "Shows the bundled Lane System library version used by this mod.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_SuppressCanaryWarning]": "Suppress Canary Warning",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_SuppressCanaryWarning]": "Temporarily suppress the canary warning. It will be re-enabled when the mod is updated.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_SuppressCanaryWarning].tooltip": "Temporarily suppress the canary warning. It will be re-enabled when the mod is updated.",
     "Options.WARNING[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_SuppressCanaryWarning]": "Temporarily suppress the canary warning. It will be re-enabled when the mod is updated.",
 
@@ -54,10 +66,13 @@
     "Common.ACTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod/KeyboardBindingMultiSelectEntity]": "Multi-Select Entity",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_MainPanelToggleKeyboardBinding]": "Toggle Main Panel",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_MainPanelToggleKeyboardBinding]": "Open or close the main panel.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_MainPanelToggleKeyboardBinding].tooltip": "Open or close the main panel.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_MultiSelectEntityKeyboardBinding]": "Multi-Select Entity",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_MultiSelectEntityKeyboardBinding]": "Configure the keyboard shortcut used to add another entity to the current selection.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ResetBindings]": "Reset Key Bindings",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ResetBindings]": "Reset all key bindings.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ResetBindings].tooltip": "Reset all key bindings.",
     "Options.WARNING[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ResetBindings]": "Reset all key bindings.",
 

@@ -92,15 +92,40 @@ test("backend writes selected tram signal priority diagnostics to a trace file",
   assert.match(uiBindings, /FileMode\.Append/);
 });
 
-test("static locale provides the tram priority diagnostics option description", async () => {
+test("static locale provides descriptions for visible mod options", async () => {
   const locale = JSON.parse(await repoSource("Locale.json"));
-  const optionKey =
-    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]";
-  const descriptionKey =
-    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]";
+  const optionPrefix =
+    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.";
+  const descriptionPrefix =
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.";
+  const visibleOptions = [
+    "m_LocaleOption",
+    "m_CompatibilityModeOption",
+    "m_DefaultSplitPhasing",
+    "m_DefaultAlwaysGreenKerbsideTurn",
+    "m_DefaultExclusivePedestrian",
+    "m_ShowTramSignalPriorityDiagnostics",
+    "m_ForceNodeUpdate",
+    "m_ComponentTypeToClear",
+    "m_ClearSelectedComponent",
+    "m_ReleaseChannel",
+    "m_TleVersion",
+    "m_LaneSystemVersion",
+    "m_SuppressCanaryWarning",
+    "m_MainPanelToggleKeyboardBinding",
+    "m_MultiSelectEntityKeyboardBinding",
+    "m_ResetBindings",
+  ];
 
-  assert.equal(locale[optionKey], "Show Tram Signal Priority Diagnostics");
-  assert.equal(locale[descriptionKey], locale[`${optionKey}.tooltip`]);
+  for (const option of visibleOptions) {
+    const optionKey = `${optionPrefix}${option}]`;
+    const descriptionKey = `${descriptionPrefix}${option}]`;
+
+    assert.equal(typeof locale[optionKey], "string", `${option} needs a label`);
+    assert.equal(typeof locale[descriptionKey], "string", `${option} needs a description`);
+    assert.notEqual(locale[descriptionKey].trim(), "", `${option} description cannot be empty`);
+    assert.doesNotMatch(locale[descriptionKey], /^Options\.OPTION_DESCRIPTION/, `${option} description cannot be a raw localization key`);
+  }
 });
 
 test("backend toggle removes tram signal priority settings when disabled", async () => {
