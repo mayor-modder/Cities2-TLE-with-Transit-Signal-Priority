@@ -85,6 +85,7 @@ public static class TransitSignalPriorityRuntime
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
     private const float TramConnectedEdgeLaneCurveThreshold = 0f;
     private const float BusApproachLaneCurveThreshold = 0.2f;
+    private const float MovingBusSpeedThreshold = 0.5f;
 
     public static TransitSignalPriorityBusApproachDebugInfo BuildBusApproachDebugInfo(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
@@ -188,7 +189,9 @@ public static class TransitSignalPriorityRuntime
         BusPrioritySuppressionDecision stopSuppression =
             BusPrioritySuppressionPolicy.EvaluateStopSuppression(
                 GetSuppressionFlags(sample.PublicTransportState),
-                BusStopRelation.Unknown);
+                BusStopRelation.Unknown,
+                sample.IsBusOnlyLane != 0,
+                sample.Speed > MovingBusSpeedThreshold);
         if (stopSuppression.IsSuppressed)
         {
             debugInfo.m_BusDecision = stopSuppression.Reason == BusPrioritySuppressionReason.Boarding
@@ -768,7 +771,9 @@ public static class TransitSignalPriorityRuntime
         BusPrioritySuppressionDecision stopSuppression =
             BusPrioritySuppressionPolicy.EvaluateStopSuppression(
                 GetSuppressionFlags(sample.PublicTransportState),
-                BusStopRelation.Unknown);
+                BusStopRelation.Unknown,
+                sample.IsBusOnlyLane != 0,
+                sample.Speed > MovingBusSpeedThreshold);
         if (stopSuppression.IsSuppressed)
         {
             suppressionReason = stopSuppression.Reason;

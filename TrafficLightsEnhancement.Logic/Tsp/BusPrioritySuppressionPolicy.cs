@@ -32,16 +32,25 @@ public static class BusPrioritySuppressionPolicy
 {
     public static BusPrioritySuppressionDecision EvaluateStopSuppression(
         TransitApproachSuppressionFlags flags,
-        BusStopRelation stopRelation)
+        BusStopRelation stopRelation,
+        bool isDedicatedBusApproach = false,
+        bool isVehicleMoving = false)
     {
         if ((flags & TransitApproachSuppressionFlags.Boarding) != 0)
         {
             return new BusPrioritySuppressionDecision(true, BusPrioritySuppressionReason.Boarding);
         }
 
-        bool isStopBound =
-            (flags & (TransitApproachSuppressionFlags.Arriving | TransitApproachSuppressionFlags.RequireStop)) != 0;
-        if (!isStopBound)
+        bool isArriving = (flags & TransitApproachSuppressionFlags.Arriving) != 0;
+        bool requiresStop = (flags & TransitApproachSuppressionFlags.RequireStop) != 0;
+        if (!isArriving && !requiresStop)
+        {
+            return new BusPrioritySuppressionDecision(false, BusPrioritySuppressionReason.None);
+        }
+
+        bool isMovingBusOnlyRequireStopSample =
+            !isArriving && requiresStop && isDedicatedBusApproach && isVehicleMoving;
+        if (stopRelation == BusStopRelation.Unknown && isMovingBusOnlyRequireStopSample)
         {
             return new BusPrioritySuppressionDecision(false, BusPrioritySuppressionReason.None);
         }

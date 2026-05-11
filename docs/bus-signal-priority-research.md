@@ -102,8 +102,14 @@ Pure stop suppression is now captured by
   before the signal.
 - `Arriving` or `RequireStop` does not suppress priority for a known far-side
   stop after the signal; helping the bus cross the junction can still be useful.
-- `Arriving` or `RequireStop` with unknown stop relation suppresses
-  conservatively until diagnostics can classify the stop.
+- `Arriving` with unknown stop relation suppresses conservatively until
+  diagnostics can classify the stop.
+- `RequireStop` alone does not suppress a moving bus on a dedicated bus-only
+  approach. Live diagnostics showed this flag on buses at a junction that is
+  not near any stop, so treating it as a near-side-stop signal blocked the
+  easiest useful bus-priority case.
+- `RequireStop` with unknown stop relation still suppresses mixed-lane buses
+  and stopped bus-only samples until diagnostics can classify the stop.
 - A queued bus with no stop flags is not stop-suppressed by this policy. Runtime
   detection may still require movement/position thresholds before creating a
   request, but queueing is not the same as boarding.
@@ -117,8 +123,10 @@ bus request behavior:
 - **Stopped behind queue:** do not suppress solely because the bus is stopped;
   use distance/curve thresholds and request expiry to decide whether it is close
   enough to benefit.
-- **Unknown stop relation:** suppress stop-bound buses and report the unknown
-  relation in diagnostics.
+- **Unknown stop relation:** allow moving `RequireStop` buses only on dedicated
+  bus-only approaches; suppress `Arriving`, mixed-lane `RequireStop`, and
+  stopped `RequireStop` samples, then report the unknown relation in
+  diagnostics.
 
 ## Diagnostics and Soft MVP
 

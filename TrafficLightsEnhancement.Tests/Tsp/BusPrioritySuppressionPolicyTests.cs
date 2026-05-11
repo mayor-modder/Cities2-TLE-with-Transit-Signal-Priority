@@ -55,7 +55,48 @@ public class BusPrioritySuppressionPolicyTests
     {
         BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
             flags,
-            BusStopRelation.Unknown);
+            BusStopRelation.Unknown,
+            isDedicatedBusApproach: false,
+            isVehicleMoving: true);
+
+        Assert.True(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.UnknownStopRelation, decision.Reason);
+    }
+
+    [Fact]
+    public void Unknown_stop_relation_allows_moving_bus_only_require_stop()
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            TransitApproachSuppressionFlags.RequireStop,
+            BusStopRelation.Unknown,
+            isDedicatedBusApproach: true,
+            isVehicleMoving: true);
+
+        Assert.False(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.None, decision.Reason);
+    }
+
+    [Fact]
+    public void Unknown_stop_relation_still_suppresses_stopped_bus_only_require_stop()
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            TransitApproachSuppressionFlags.RequireStop,
+            BusStopRelation.Unknown,
+            isDedicatedBusApproach: true,
+            isVehicleMoving: false);
+
+        Assert.True(decision.IsSuppressed);
+        Assert.Equal(BusPrioritySuppressionReason.UnknownStopRelation, decision.Reason);
+    }
+
+    [Fact]
+    public void Unknown_stop_relation_still_suppresses_arriving_bus_only_sample()
+    {
+        BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+            TransitApproachSuppressionFlags.Arriving,
+            BusStopRelation.Unknown,
+            isDedicatedBusApproach: true,
+            isVehicleMoving: true);
 
         Assert.True(decision.IsSuppressed);
         Assert.Equal(BusPrioritySuppressionReason.UnknownStopRelation, decision.Reason);
