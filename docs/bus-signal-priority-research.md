@@ -91,14 +91,35 @@ Use a soft bus-priority MVP:
 That keeps bus priority useful while avoiding the most disruptive cases until
 stop and lane-change behavior is better understood.
 
+## Naming Decision
+
+Keep the current user-facing UI as **Tram Signal Priority** until bus priority
+is actually wired into runtime detection and settings.
+
+The code can keep internal `TransitSignalPriority*` names because the saved
+component shape and pure policy layer are intended to support more than one
+transit source over time. The visible panel, diagnostics headings, and mod
+option labels should remain tram-specific while only trams can affect signals.
+This avoids promising bus behavior before it exists and preserves existing
+tram-only saved settings compatibility.
+
+When bus priority is ready for player testing, prefer separate tram and bus
+controls over a single renamed "Transit Signal Priority" toggle. Separate
+controls make the behavior easier to explain, keep existing tram settings
+stable, and let buses stay disabled by default while diagnostics mature.
+
+Localization impact: keep new base strings in `Locale.json` first. Do not
+rewrite non-English locale files by hand for this rename/split; let the normal
+translation workflow handle new strings after the English UI is stable.
+
 ## Staged Plan
 
 1. Add pure policy tests for `PublicCar` eligibility and source ordering.
 2. Prototype a diagnostic-only bus approach index that reports bus lane hits but
    does not change signals.
 3. Integrate bus fresh request production from car-lane bus samples.
-4. Add UI/settings surface, either by renaming the feature to broader "Transit
-   Signal Priority" or by adding separate tram and bus toggles.
+4. Add a separate bus settings/control surface while keeping the existing tram
+   labels and saved settings stable.
 5. Add stop-aware suppression, lane-change handling, mixed-lane regression
    cases, and grouped-intersection semantics.
 
