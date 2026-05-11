@@ -118,6 +118,7 @@ test("tram signal priority diagnostics are gated by a mod option", async () => {
   assert.match(content, /mainData\.tramSignalPriority\.diagnostics/);
   assert.match(content, /mainData\.tramSignalPriority\.diagnostics\.summary/);
   assert.match(content, /mainData\.tramSignalPriority\.diagnostics\.events/);
+  assert.match(locale, /Show Transit Signal Priority Diagnostics/);
   assert.match(locale, /TSPDiagnosticsRequest/);
   assert.match(locale, /TSPDiagnosticsCurrentGroup/);
   assert.match(locale, /TSPDiagnosticsCurveApproach/);

@@ -31,7 +31,7 @@
     "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian]": "Add an exclusive pedestrian phase at all traffic lights without custom configurations. It applies to newly built roads and will apply to existing roads upon a game state update.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian].tooltip": "Add an exclusive pedestrian phase at all traffic lights without custom configurations. It applies to newly built roads and will apply to existing roads upon a game state update.",
 
-    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Show Tram Signal Priority Diagnostics",
+    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Show Transit Signal Priority Diagnostics",
     "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Adds a read-only Diagnostics section under Transit Signal Priority in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics].tooltip": "Adds a read-only Diagnostics section under Transit Signal Priority in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
 
