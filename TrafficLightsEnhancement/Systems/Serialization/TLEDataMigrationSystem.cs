@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -11,6 +13,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using C2VM.TrafficLightsEnhancement.Systems;
+using TrafficLightsEnhancement.Logic.Compatibility;
+
 namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
 {
     public partial class TLEDataMigrationSystem : GameSystemBase, IDefaultSerializable, ISerializable
@@ -75,23 +79,13 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
             Mod.log.Info($"{nameof(TLEDataMigrationSystem)} migrating data version {_version}...");
             _loaded = false;
 
-            bool regularValidationOnly = true;
+            IReadOnlyList<TleMigrationStep> migrationSteps = TleMigrationPlan.GetSteps(_version);
+            bool regularValidationOnly = migrationSteps.Count == 0;
             int totalEntities = CountTotalEntities();
 
-            if (_version < TLEDataVersion.V1)
+            foreach (TleMigrationStep step in migrationSteps)
             {
-                regularValidationOnly = false;
-                MigrateToV1();
-            }
-            else if (_version < TLEDataVersion.V2)
-            {
-                regularValidationOnly = false;
-                MigrateToV2();
-            }
-            else if (_version < TLEDataVersion.V5)
-            {
-                regularValidationOnly = false;
-                MigrateToV5();
+                RunMigrationStep(step);
             }
             
 
@@ -100,11 +94,6 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
             if (orphanedCount > 0)
             {
                 Mod.log.Warn($"{nameof(TLEDataMigrationSystem)} detected {orphanedCount} intersections with orphaned data (deserialization failure)");
-            }
-
-            if (!regularValidationOnly)
-            {
-                MigrateCustomTrafficLights(_uiSystem);
             }
 
             var (affectedCount, subLaneGroupMaskCount, customTrafficLightsCount) = ValidateLoadedData(_uiSystem);
@@ -420,6 +409,24 @@ namespace C2VM.TrafficLightsEnhancement.Systems.Serialization
         {
             Mod.log.Info($"{nameof(TLEDataMigrationSystem)} preparing migration to V5, data version: {_version}");
             MigrateCustomTrafficLights(_uiSystem);
+        }
+
+        private void RunMigrationStep(TleMigrationStep step)
+        {
+            switch (step)
+            {
+                case TleMigrationStep.SignalDelayData:
+                    MigrateToV1();
+                    break;
+                case TleMigrationStep.TrafficGroupMembers:
+                    MigrateToV2();
+                    break;
+                case TleMigrationStep.CustomTrafficLights:
+                    MigrateToV5();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(step), step, null);
+            }
         }
 
         private void MigrateTrafficGroupMembers()

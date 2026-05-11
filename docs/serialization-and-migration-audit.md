@@ -72,16 +72,25 @@ now consumes the payload version first, then reads `m_Edge` through
 `reader.Read(out Entity)`. The regression is covered by
 `Signal_delay_data_round_trips_current_payload`.
 
-## Risk: Migration Version Sequencing
+## Migration Version Sequencing
 
-`TLEDataMigrationSystem.OnUpdate()` currently uses an `if / else if` ladder for
-version migration. That means a version `0` save appears to run only the V1
-migration, not V1 plus V2 plus V5. Versions `2` through `4` also appear to reach
-V5 migration and then run `MigrateCustomTrafficLights()` through a shared
-non-current migration block.
+`TLEDataMigrationSystem.OnUpdate()` uses the pure `TleMigrationPlan` helper to
+choose versioned migration steps before running the regular validation pass.
+The expected path is:
 
-This may be intentional if each migration routine is a broad validation pass,
-but the sequencing is not obvious and is not covered by tests.
+| Loaded version | Versioned migration steps |
+| --- | --- |
+| `0` or missing defaults | `SignalDelayData`, `TrafficGroupMembers`, `CustomTrafficLights` |
+| `1` | `TrafficGroupMembers`, `CustomTrafficLights` |
+| `2` | `CustomTrafficLights` |
+| `3` | `CustomTrafficLights` |
+| `4` | `CustomTrafficLights` |
+| `5` or newer | none; validation only |
+
+The custom traffic-light migration is intentionally part of the versioned plan
+for every pre-current save, but it runs only once per load. This preserves the
+old broad validation behavior without the duplicate `MigrateCustomTrafficLights`
+call that occurred for versions `2` through `4`.
 
 ## Versioning Ambiguity
 
@@ -109,6 +118,7 @@ Track these as follow-up issues before touching inherited save behavior:
 - Add serializer round-trip tests for inherited save components, starting with
   `SignalDelayData`. Done in `TrafficLightsEnhancement.Serialization.Tests`.
 - Clarify and test migration version sequencing for loaded versions 0 through 5.
+  Done in `TleMigrationPlanTests`.
 - Document a save-format contract that lists each saved component and buffer,
   its payload version, runtime-only fields, downgrade expectations, and
   upstream-TLE compatibility assumptions.
