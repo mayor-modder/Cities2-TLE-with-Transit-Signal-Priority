@@ -15,11 +15,11 @@ The regression to prove is:
 new overload called with hasTspRequest=false == legacy overload
 ```
 
-## Current Limitation
+## Harness
 
-The existing xUnit project targets `net8.0` and references only the pure
-`TrafficLightsEnhancement.Logic` project. `CustomStateMachine` lives in the
-`net48` mod assembly and depends on Cities II / Unity ECS types, including:
+`TrafficLightsEnhancement.Ecs.Tests` is a `net48` xUnit project that references
+the built mod assembly and the Cities II / Unity assemblies needed by
+`CustomStateMachine`, including:
 
 - `Game.Net.TrafficLights`
 - `Unity.Entities.DynamicBuffer<T>`
@@ -27,9 +27,13 @@ The existing xUnit project targets `net8.0` and references only the pure
 - `CustomPhaseData`
 - the local Cities II modding toolchain and game assemblies
 
-That makes a direct regression test unsuitable for the current pure logic test
-project. It should be covered by a Unity/ECS-capable harness instead of forcing
-game assemblies into the pure test suite.
+The harness deliberately stays separate from the pure `TrafficLightsEnhancement.Tests`
+project so the pure logic suite remains Unity-free.
+
+The tests use a small unmanaged `DynamicBuffer<CustomPhaseData>` fixture instead
+of creating a Unity `World`. That keeps the tests executable under normal
+`dotnet test`; `World` allocation calls Unity runtime ECalls that are not
+available outside the game process.
 
 ## Regression Oracle
 
@@ -103,7 +107,7 @@ Expected:
 
 ## Scenario Matrix
 
-The harness should cover:
+The harness covers:
 
 - empty phase buffer returns group `0`
 - manual signal group overrides selection
@@ -135,18 +139,29 @@ The code currently preserves the no-TSP path through delegation:
 The harness above is still needed because the behavior depends on Unity ECS
 state and mutable buffers that are not covered by the pure xUnit project.
 
-## Recommended Command Shape
+## Commands
 
-Run from a machine with Cities II and the local modding toolchain installed:
+Run from a machine with Cities II and the local modding toolchain installed. The
+test project resolves managed game assemblies from `CSII_MANAGEDPATH` when set,
+then falls back to the default Steam and Xbox install paths.
 
 ```powershell
-dotnet build TrafficLightsEnhancement\TrafficLightsEnhancement.csproj --no-restore
-dotnet test <UnityEcsHarnessProject>.csproj --no-restore
+dotnet test TrafficLightsEnhancement.Ecs.Tests\TrafficLightsEnhancement.Ecs.Tests.csproj
 ```
+
+After restore has run once, this is sufficient for repeat local checks:
+
+```powershell
+dotnet test TrafficLightsEnhancement.Ecs.Tests\TrafficLightsEnhancement.Ecs.Tests.csproj --no-restore
+```
+
+CI can run the harness only on a Windows runner that has access to the Cities II
+managed assemblies or receives them through a private cache/artifact. Public CI
+without those assemblies should skip this project and still run the pure logic,
+serialization, and UI tests.
 
 ## Follow-Up Work
 
-Track the harness as implementation work rather than merging it into the pure
-logic project. A separate follow-up should also evaluate whether the base custom
-phase selection logic can be extracted into pure DTOs without creating churn in
-the production state machine.
+A separate follow-up should evaluate whether the base custom phase selection
+logic can be extracted into pure DTOs without creating churn in the production
+state machine.

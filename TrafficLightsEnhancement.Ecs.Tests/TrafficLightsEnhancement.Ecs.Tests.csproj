@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <DisablePostProcessors>true</DisablePostProcessors>
+    <DefaultManagedPath>$([System.Environment]::GetEnvironmentVariable('CSII_MANAGEDPATH', 'EnvironmentVariableTarget.User'))</DefaultManagedPath>
+    <SteamDefaultManagedPath>C:\Program Files (x86)\Steam\steamapps\common\Cities Skylines II\Cities2_Data\Managed</SteamDefaultManagedPath>
+    <XboxDefaultManagedPath>C:\XboxGames\Cities- Skylines II - PC Edition\Content\Cities2_Data\Managed</XboxDefaultManagedPath>
+    <ManagedPath Condition="'$(ManagedPath)' == '' AND Exists('$(DefaultManagedPath)\Game.dll')">$(DefaultManagedPath)</ManagedPath>
+    <ManagedPath Condition="'$(ManagedPath)' == '' AND Exists('$(SteamDefaultManagedPath)\Game.dll')">$(SteamDefaultManagedPath)</ManagedPath>
+    <ManagedPath Condition="'$(ManagedPath)' == '' AND Exists('$(XboxDefaultManagedPath)\Game.dll')">$(XboxDefaultManagedPath)</ManagedPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrafficLightsEnhancement\TrafficLightsEnhancement.csproj" AdditionalProperties="DisablePostProcessors=true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Colossal.Core" HintPath="$(ManagedPath)\Colossal.Core.dll" />
+    <Reference Include="Game" HintPath="$(ManagedPath)\Game.dll" />
+    <Reference Include="Unity.Collections" HintPath="$(ManagedPath)\Unity.Collections.dll" />
+    <Reference Include="Unity.Entities" HintPath="$(ManagedPath)\Unity.Entities.dll" />
+    <Reference Include="Unity.Mathematics" HintPath="$(ManagedPath)\Unity.Mathematics.dll" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedPath)\UnityEngine.CoreModule.dll" />
+  </ItemGroup>
+</Project>

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLightsEnhancement.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLightsEnhancement.Serialization.Tests", "TrafficLightsEnhancement.Serialization.Tests\TrafficLightsEnhancement.Serialization.Tests.csproj", "{9E9ED4F2-42F3-44FA-9C8E-15FDD436F4BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLightsEnhancement.Ecs.Tests", "TrafficLightsEnhancement.Ecs.Tests\TrafficLightsEnhancement.Ecs.Tests.csproj", "{4EAED13B-30D7-474C-929D-C62D4EAE305F}"
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -88,6 +90,18 @@ Global
 		{9E9ED4F2-42F3-44FA-9C8E-15FDD436F4BE}.Release|x64.Build.0 = Release|Any CPU
 		{9E9ED4F2-42F3-44FA-9C8E-15FDD436F4BE}.Release|x86.ActiveCfg = Release|Any CPU
 		{9E9ED4F2-42F3-44FA-9C8E-15FDD436F4BE}.Release|x86.Build.0 = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|x64.Build.0 = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Debug|x86.Build.0 = Debug|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|x64.ActiveCfg = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|x64.Build.0 = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|x86.ActiveCfg = Release|Any CPU
+		{4EAED13B-30D7-474C-929D-C62D4EAE305F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E67F3A52-9E03-4A59-9CD8-B69A4A941E26} = {50E84A2F-0152-411F-95C9-1BF1D47E1302}
