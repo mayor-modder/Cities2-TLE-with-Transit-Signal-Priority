@@ -445,7 +445,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                     nextGroup = (byte)(nextStep + 1);
                 }
 
-                return ApplyTspOverride(
+                nextGroup = ApplyLinkedPhaseAdjustment(currentGroup, customPhaseDataBuffer, nextGroup, out linked);
+                byte selectedGroup = ApplyTspOverride(
                     currentGroup,
                     customPhaseDataBuffer.Length,
                     nextGroup,
@@ -455,6 +456,12 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                     ref pedestrianFairnessState,
                     protectActivePedestrianPhase,
                     out tspSelection);
+                if (tspSelection.Applied && selectedGroup != nextGroup)
+                {
+                    linked = false;
+                }
+
+                return selectedGroup;
             }
             // Dynamic mode: cycle sequentially, skip phases with min=0 and no demand
             byte dynamicNextGroup = 0;
@@ -485,7 +492,8 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 dynamicNextGroup = (byte)(fallbackStep + 1);
             }
 
-            return ApplyTspOverride(
+            dynamicNextGroup = ApplyLinkedPhaseAdjustment(currentGroup, customPhaseDataBuffer, dynamicNextGroup, out linked);
+            byte dynamicSelectedGroup = ApplyTspOverride(
                 currentGroup,
                 customPhaseDataBuffer.Length,
                 dynamicNextGroup,
@@ -495,6 +503,72 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 ref pedestrianFairnessState,
                 protectActivePedestrianPhase,
                 out tspSelection);
+            if (tspSelection.Applied && dynamicSelectedGroup != dynamicNextGroup)
+            {
+                linked = false;
+            }
+
+            return dynamicSelectedGroup;
+        }
+
+        private static byte ApplyLinkedPhaseAdjustment(
+            byte currentGroup,
+            DynamicBuffer<CustomPhaseData> customPhaseDataBuffer,
+            byte baseNextGroup,
+            out bool linked)
+        {
+            linked = false;
+            if (baseNextGroup <= 0 || baseNextGroup > customPhaseDataBuffer.Length)
+            {
+                return baseNextGroup;
+            }
+
+            int currentStep = currentGroup - 1;
+            if (currentStep >= 0 && currentStep < customPhaseDataBuffer.Length)
+            {
+                int chainStep = currentStep;
+                while (chainStep < customPhaseDataBuffer.Length - 1 && IsLinkedWithNext(customPhaseDataBuffer[chainStep]))
+                {
+                    int candidateStep = chainStep + 1;
+                    if (HasLinkedPhaseDemand(customPhaseDataBuffer[candidateStep]))
+                    {
+                        linked = true;
+                        return (byte)(candidateStep + 1);
+                    }
+
+                    chainStep = candidateStep;
+                }
+            }
+
+            int baseStep = baseNextGroup - 1;
+            int linkedPredecessorStep = -1;
+            for (int candidateStep = baseStep - 1;
+                 candidateStep >= 0 && IsLinkedWithNext(customPhaseDataBuffer[candidateStep]);
+                 candidateStep--)
+            {
+                if (HasLinkedPhaseDemand(customPhaseDataBuffer[candidateStep]))
+                {
+                    linkedPredecessorStep = candidateStep;
+                }
+            }
+
+            if (linkedPredecessorStep >= 0)
+            {
+                linked = true;
+                return (byte)(linkedPredecessorStep + 1);
+            }
+
+            return baseNextGroup;
+        }
+
+        private static bool IsLinkedWithNext(CustomPhaseData phase)
+        {
+            return (phase.m_Options & CustomPhaseData.Options.LinkedWithNextPhase) != 0;
+        }
+
+        private static bool HasLinkedPhaseDemand(CustomPhaseData phase)
+        {
+            return phase.m_Priority > 0 || phase.WeightedLaneOccupied() > 0f;
         }
 
         private static byte ApplyTspOverride(

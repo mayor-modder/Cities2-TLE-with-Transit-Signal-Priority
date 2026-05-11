@@ -5,8 +5,10 @@ using C2VM.TrafficLightsEnhancement.Components;
 using C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
 using Game.Net;
 using Unity.Entities;
+using Unity.Mathematics;
 using Xunit;
 using TspOverrideSelection = TrafficLightsEnhancement.Logic.Tsp.TspOverrideSelection;
+using TspSource = TrafficLightsEnhancement.Logic.Tsp.TspSource;
 
 namespace TrafficLightsEnhancement.Ecs.Tests;
 
@@ -99,6 +101,97 @@ public sealed class CustomStateMachineNoTspRegressionTests
             Phase(minimumDuration: 2),
             Phase(minimumDuration: 0, carLaneOccupied: 1),
             Phase(minimumDuration: 3));
+    }
+
+    [Fact]
+    public void Linked_chain_advances_to_prioritized_later_linked_phase()
+    {
+        var custom = new CustomTrafficLights(CustomTrafficLights.Patterns.CustomPhase, CustomTrafficLights.TrafficMode.FixedTimed);
+        custom.SetOptions(CustomTrafficLights.TrafficOptions.None);
+        using var phases = new PhaseBufferScope(
+            Phase(options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, priority: 1));
+
+        byte nextGroup = CustomStateMachine.GetNextSignalGroup(
+            currentGroup: 1,
+            phases.Buffer,
+            custom,
+            out bool linked);
+
+        Assert.Equal(3, nextGroup);
+        Assert.True(linked);
+    }
+
+    [Fact]
+    public void Linked_predecessor_rewinds_base_selection_to_start_linked_block()
+    {
+        using var phases = new PhaseBufferScope(
+            Phase(carFlow: 0),
+            Phase(minimumDuration: 0, carLaneOccupied: 1, carFlow: 1, options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, carLaneOccupied: 3, carFlow: 3));
+
+        byte nextGroup = CustomStateMachine.GetNextSignalGroup(
+            currentGroup: 1,
+            phases.Buffer,
+            new CustomTrafficLights(CustomTrafficLights.Patterns.CustomPhase, CustomTrafficLights.TrafficMode.FixedTimed),
+            out bool linked);
+
+        Assert.Equal(2, nextGroup);
+        Assert.True(linked);
+    }
+
+    [Fact]
+    public void Tsp_override_clears_linked_flag_when_it_changes_linked_base_selection()
+    {
+        var custom = new CustomTrafficLights(CustomTrafficLights.Patterns.CustomPhase, CustomTrafficLights.TrafficMode.FixedTimed);
+        custom.SetOptions(CustomTrafficLights.TrafficOptions.None);
+        using var phases = new PhaseBufferScope(
+            Phase(options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, priority: 1));
+
+        byte nextGroup = CustomStateMachine.GetNextSignalGroup(
+            currentGroup: 1,
+            phases.Buffer,
+            custom,
+            out bool linked,
+            out TspOverrideSelection tspSelection,
+            hasTspRequest: true,
+            tspRequest: new TransitSignalPriorityRequest
+            {
+                m_TargetSignalGroup = 2,
+                m_SourceType = (byte)TspSource.Track,
+                m_Strength = 1f,
+                m_ExpiryTimer = 10
+            });
+
+        Assert.Equal(2, nextGroup);
+        Assert.True(tspSelection.Applied);
+        Assert.False(linked);
+    }
+
+    [Fact]
+    public void Linked_phase_transition_resets_skipped_unprioritized_linked_phase_counter()
+    {
+        var trafficLights = TrafficLights(TrafficLightState.Ongoing, currentGroup: 1, nextGroup: 0);
+        var custom = new CustomTrafficLights(CustomTrafficLights.Patterns.CustomPhase, CustomTrafficLights.TrafficMode.FixedTimed);
+        custom.SetOptions(CustomTrafficLights.TrafficOptions.None);
+        using var phases = new PhaseBufferScope(
+            Phase(options: CustomPhaseData.Options.LinkedWithNextPhase | CustomPhaseData.Options.EndPhasePrematurely),
+            Phase(minimumDuration: 0, turnsSinceLastRun: 5, options: CustomPhaseData.Options.LinkedWithNextPhase),
+            Phase(minimumDuration: 0, priority: 1, turnsSinceLastRun: 7));
+
+        bool updated = CustomStateMachine.UpdateTrafficLightState(
+            ref trafficLights,
+            ref custom,
+            phases.Buffer);
+
+        Assert.True(updated);
+        Assert.Equal(TrafficLightState.Ending, trafficLights.m_State);
+        Assert.Equal(3, trafficLights.m_NextSignalGroup);
+        Assert.Equal(0, phases.Buffer[1].m_TurnsSinceLastRun);
+        Assert.Equal(7, phases.Buffer[2].m_TurnsSinceLastRun);
     }
 
     [Theory]
@@ -207,6 +300,11 @@ public sealed class CustomStateMachineNoTspRegressionTests
         ushort minimumDuration = 2,
         ushort maximumDuration = 20,
         ushort carLaneOccupied = 0,
+        int priority = 0,
+        ushort turnsSinceLastRun = 0,
+        float currentFlow = 0f,
+        float currentWait = 0f,
+        float carFlow = 0f,
         CustomPhaseData.Options options = CustomPhaseData.Options.PrioritiseTrack)
     {
         return new CustomPhaseData
@@ -214,6 +312,11 @@ public sealed class CustomStateMachineNoTspRegressionTests
             m_MinimumDuration = minimumDuration,
             m_MaximumDuration = maximumDuration,
             m_CarLaneOccupied = carLaneOccupied,
+            m_Priority = priority,
+            m_TurnsSinceLastRun = turnsSinceLastRun,
+            m_CurrentFlow = currentFlow,
+            m_CurrentWait = currentWait,
+            m_CarFlow = new float3(carFlow, carFlow, carFlow),
             m_Options = options
         };
     }
@@ -245,7 +348,7 @@ public sealed class CustomStateMachineNoTspRegressionTests
         private readonly IntPtr _header;
         private readonly IntPtr _data;
 
-        public PhaseBufferScope(CustomPhaseData[] phases)
+        public PhaseBufferScope(params CustomPhaseData[] phases)
         {
             AssertLayoutCompatible();
 

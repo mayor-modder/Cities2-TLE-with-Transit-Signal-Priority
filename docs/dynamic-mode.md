@@ -35,15 +35,22 @@ This is separate from fixed timed mode's optional smart phase selection.
 
 ## Linked Phases
 
-The `LinkedWithNextPhase` flag is inherited UI/configuration state, but the
-current post-rewrite runtime does not act on it. The UI can display, toggle, and
-persist the flag; `CustomStateMachine.GetNextSignalGroup(...)` currently sets
-its `linked` output to `false` and never reads `LinkedWithNextPhase`.
+The `LinkedWithNextPhase` flag links a phase to the phase immediately after it.
+The restored runtime behavior is intentionally narrow:
 
-There is still a stale runtime hook that would reset skipped phases'
-`m_TurnsSinceLastRun` values if `linked` were true, but that branch is currently
-unreachable. Treat linked phases as inactive until the intended behavior is
-redesigned or restored.
+- fixed and dynamic mode first compute their normal base next phase
+- if the current phase starts a linked chain, the selector can advance through
+  that chain to the first later linked phase with priority or waiting demand
+- if normal selection lands after a linked predecessor that has priority or
+  waiting demand, the selector rewinds to that predecessor so the linked block
+  starts at the front
+- linked adjustment does not wrap around the end of the phase list
+- if TSP changes the linked base selection, the `linked` flag is cleared so
+  linked-phase counter resets do not run for the TSP-selected phase
+
+When a linked transition skips an unprioritized phase inside the linked block,
+that skipped phase's `m_TurnsSinceLastRun` value is reset. This preserves the
+inherited fairness hook without reintroducing the old pre-rewrite selector.
 
 ## Phase Duration
 
