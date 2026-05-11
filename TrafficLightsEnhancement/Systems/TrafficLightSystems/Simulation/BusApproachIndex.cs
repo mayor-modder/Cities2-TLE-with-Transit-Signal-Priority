@@ -2,6 +2,7 @@ using Game.Net;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Vehicles;
+using TrafficLightsEnhancement.Logic.Tsp;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -56,7 +57,7 @@ internal static class BusApproachIndex
             bool hasChangeLane = carCurrentLane.m_ChangeLane != Entity.Null;
             bool hasNavigation = extraTypeHandle.m_CarNavigation.HasComponent(vehicleEntity);
             byte navigationLaneCount = extraTypeHandle.m_CarNavigationLane.TryGetBuffer(vehicleEntity, out var navigationLanes)
-                ? ToByteCount(navigationLanes.Length)
+                ? BusApproachSampleSelectionPolicy.ToByteCount(navigationLanes.Length)
                 : (byte)0;
 
             TryRecordLaneSample(
@@ -139,17 +140,19 @@ internal static class BusApproachIndex
             return;
         }
 
-        sample.HitCount = existing.HitCount == byte.MaxValue ? byte.MaxValue : (byte)(existing.HitCount + 1);
-        if (existing.CurvePosition > curvePosition)
+        bool keepExistingSample = existing.CurvePosition > sample.CurvePosition;
+        BusApproachSampleSelectionState selection = BusApproachSampleSelectionPolicy.RecordSample(
+            ToSelectionState(existing),
+            ToSelectionInput(sample));
+
+        if (keepExistingSample)
         {
-            existing.HitCount = sample.HitCount;
-            existing.HasChangeLane = existing.HasChangeLane != 0 || hasChangeLane ? (byte)1 : (byte)0;
-            existing.HasNavigation = existing.HasNavigation != 0 || hasNavigation ? (byte)1 : (byte)0;
-            existing.NavigationLaneCount = existing.NavigationLaneCount > navigationLaneCount ? existing.NavigationLaneCount : navigationLaneCount;
+            ApplySelection(ref existing, selection);
             index[laneEntity] = existing;
             return;
         }
 
+        ApplySelection(ref sample, selection);
         index[laneEntity] = sample;
     }
 
@@ -159,8 +162,38 @@ internal static class BusApproachIndex
             && (carLane.m_Flags & Game.Net.CarLaneFlags.PublicOnly) != 0;
     }
 
-    private static byte ToByteCount(int value)
+    private static BusApproachSampleSelectionInput ToSelectionInput(BusApproachSample sample)
     {
-        return value >= byte.MaxValue ? byte.MaxValue : (byte)value;
+        return new BusApproachSampleSelectionInput(
+            sample.CurvePosition,
+            sample.IsBusOnlyLane != 0,
+            sample.HasChangeLane != 0,
+            sample.IsChangeLaneSample != 0,
+            sample.HasNavigation != 0,
+            sample.NavigationLaneCount);
+    }
+
+    private static BusApproachSampleSelectionState ToSelectionState(BusApproachSample sample)
+    {
+        return new BusApproachSampleSelectionState(
+            hasSample: true,
+            curvePosition: sample.CurvePosition,
+            hitCount: sample.HitCount,
+            isBusOnlyLane: sample.IsBusOnlyLane != 0,
+            hasChangeLane: sample.HasChangeLane != 0,
+            isChangeLaneSample: sample.IsChangeLaneSample != 0,
+            hasNavigation: sample.HasNavigation != 0,
+            navigationLaneCount: sample.NavigationLaneCount);
+    }
+
+    private static void ApplySelection(ref BusApproachSample sample, BusApproachSampleSelectionState selection)
+    {
+        sample.CurvePosition = selection.CurvePosition;
+        sample.HitCount = selection.HitCount;
+        sample.IsBusOnlyLane = selection.IsBusOnlyLane ? (byte)1 : (byte)0;
+        sample.HasChangeLane = selection.HasChangeLane ? (byte)1 : (byte)0;
+        sample.IsChangeLaneSample = selection.IsChangeLaneSample ? (byte)1 : (byte)0;
+        sample.HasNavigation = selection.HasNavigation ? (byte)1 : (byte)0;
+        sample.NavigationLaneCount = selection.NavigationLaneCount;
     }
 }
