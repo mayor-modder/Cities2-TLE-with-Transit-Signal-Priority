@@ -479,6 +479,21 @@ export default function SubPanel(props: {
                             />
                             <MainPanelRange
                                 className={styles.hover}
+                                keyName="BicycleWeight"
+                                label="BicycleWeight"
+                                value={data.bicycleWeight}
+                                valueSuffix="x"
+                                min={0.1}
+                                max={10}
+                                step={0.1}
+                                defaultValue={1}
+                                enableTextField
+                                textFieldRegExp="^\d{0,2}(\.\d{0,1})?$"
+                                triggerName="CallUpdateCustomPhaseData"
+                                tooltip={translate("Tooltip.LABEL[C2VM.TrafficLightsEnhancement.BicycleWeight]") ?? "Weight multiplier for bicycle lanes."}
+                            />
+                            <MainPanelRange
+                                className={styles.hover}
                                 keyName="SmoothingFactor"
                                 label="SmoothingFactor"
                                 value={data.smoothingFactor}

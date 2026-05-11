@@ -101,7 +101,8 @@ test("backend trace writes follow selected diagnostics event filtering", async (
   assert.notEqual(eventsStart, -1);
   assert.notEqual(eventsEnd, -1);
   assert.match(eventsSource, /bool\s+shouldRecordEvent\s*=\s*signatureChanged\s*&&\s*ShouldRecordTspDiagnosticsEvent\(history,\s*hasRuntimeDebug\s*\|\|\s*hasDecisionTrace\)/);
-  assert.match(eventsSource, /if\s*\(\s*signatureChanged\s*&&\s*shouldRecordEvent\s*\)/);
+  assert.match(eventsSource, /if\s*\(\s*signatureChanged\s*\)/);
+  assert.match(eventsSource, /if\s*\(\s*shouldRecordEvent\s*\)/);
   assert.ok(eventsSource.indexOf("bool shouldRecordEvent") < eventsSource.indexOf("WriteTspDiagnosticsTraceEvent"));
   assert.ok(eventsSource.indexOf("bool shouldRecordEvent") < eventsSource.indexOf("RecordTspDiagnosticsEvent"));
 });
@@ -140,6 +141,20 @@ test("static locale provides descriptions for visible mod options", async () => 
     assert.notEqual(locale[descriptionKey].trim(), "", `${option} description cannot be empty`);
     assert.doesNotMatch(locale[descriptionKey], /^Options\.OPTION_DESCRIPTION/, `${option} description cannot be a raw localization key`);
   }
+});
+
+test("custom phase vehicle weights expose bicycle weight control", async () => {
+  const subPanel = await source("src/mods/components/custom-phase-tool/main-panel/sub-panel.tsx");
+  const locale = JSON.parse(await repoSource("Locale.json"));
+
+  assert.match(subPanel, /keyName="BicycleWeight"/);
+  assert.match(subPanel, /label="BicycleWeight"/);
+  assert.match(subPanel, /value=\{data\.bicycleWeight\}/);
+  assert.match(subPanel, /Tooltip\.LABEL\[C2VM\.TrafficLightsEnhancement\.BicycleWeight\]/);
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.BicycleWeight]"], "Bicycle Weight");
+  assert.equal(
+    typeof locale["Tooltip.LABEL[C2VM.TrafficLightsEnhancement.BicycleWeight]"],
+    "string");
 });
 
 test("backend toggle removes tram signal priority settings when disabled", async () => {

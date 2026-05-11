@@ -120,9 +120,9 @@ The C# update helper persists:
 Min/max edits clamp each other so `minimum <= maximum`, and group cycle length
 is recalculated when either duration changes.
 
-The data model also contains `m_BicycleWeight`, and the shared update helper can
-apply a `BicycleWeight` key, but the current UI does not expose a visible bicycle
-weight slider.
+The data model also contains `m_BicycleWeight`, the shared update helper applies
+the `BicycleWeight` key, and the dynamic-mode vehicle-weight foldout exposes a
+visible Bicycle Weight slider.
 
 ## TSP Interaction
 
