@@ -8,10 +8,13 @@ The live options UI localization path is `Locale.json`, loaded from `Mod.OnLoad`
 through `LocaleHelper(modName + ".Locale.json")`.
 
 The older `Resources/Localisations/*.json` plus `LocalisationUtils` path still
-exists in the repository, but it is not the path used by `Mod.OnLoad`.
-Translation work should therefore target `Locale.json` and any future sibling
-`Locale/*.json` files unless the localization system is intentionally
-refactored.
+exists in the repository, but code search shows no production caller and it is
+not the path used by `Mod.OnLoad`.
+
+The source-of-truth workflow is now documented in
+[`localization-workflow.md`](localization-workflow.md). Translation work should
+target `Locale.json` and any future sibling `Locale/*.json` files unless the
+localization system is intentionally refactored.
 
 ## Description Key Convention
 
@@ -67,7 +70,7 @@ non-English strings.
 
 Useful follow-ups:
 
-- decide whether to remove legacy `.tooltip` keys after verifying no supported
-  game version reads them
-- reconcile the duplicate `Locale.json` and `Resources/Localisations` systems
-- document the Crowdin/source-of-truth workflow for future localization edits
+- remove the unused `Resources/Localisations` / `LocalisationUtils` path in a
+  focused cleanup after supported-game-version checks
+- remove legacy `.tooltip` keys only after verifying no supported game version
+  reads them

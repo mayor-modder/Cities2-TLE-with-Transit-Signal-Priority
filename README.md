@@ -36,7 +36,7 @@ Build instructions are available in [BUILD.md](BUILD.md).
 
 ## Translations
 
-This fork inherits Traffic Lights Enhancement's localization structure and Crowdin workflow. Some inherited strings intentionally use English fallback text until translations are available. New or changed user-facing strings should follow the existing localization files and avoid ad-hoc translation churn.
+This fork inherits Traffic Lights Enhancement's localization structure and Crowdin workflow. Some inherited strings intentionally use English fallback text until translations are available. New or changed user-facing strings should follow the [localization workflow](docs/localization-workflow.md) and avoid ad-hoc translation churn.
 
 ## Acknowledgements
 

@@ -16,16 +16,15 @@ This roadmap is maintainer-facing. The repository is public, but these notes are
 ## Short Term
 
 - Stabilize and harden Tram Signal Priority.
-- Add regression coverage for TSP-off custom signal behavior.
-- Document TSP architecture and data flow.
-- Audit diagnostics cost and trace-file behavior.
+- Maintain regression coverage for TSP-off custom signal behavior.
+- Keep TSP architecture, diagnostics, localization, and save-format docs current as the implementation changes.
 - Rename and document the fork as TLE Extended while preserving compatibility.
 - Track repeated review findings as issues instead of chat-only notes.
 
 ## Medium Term
 
-- Add in-game descriptions for inherited mod options.
-- Improve maintainer documentation for serialization, migrations, dynamic mode, custom phases, and traffic groups.
+- Remove or retire unused inherited localization paths after supported-version checks.
+- Improve maintainer documentation for migrations, dynamic mode, custom phases, and traffic groups.
 - Research bus signal priority using the TSP architecture as the starting point.
 - Improve test coverage around pure logic, UI bindings, and save-format behavior.
 
