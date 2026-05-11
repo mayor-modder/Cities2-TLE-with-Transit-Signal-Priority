@@ -105,11 +105,16 @@ For example, some components write `TLEDataVersion.Current`, while
 field. Future save changes should document whether a new version is a global
 migration step, a component payload step, or both.
 
-## Low-Risk Cleanup Candidate
+## Fixed: Migration Issue State Ownership
 
-`MigrationIssuesService` appears to keep a static affected-entity list, while
-current migration UI paths use `UISystem.AffectedIntersections` directly. It may
-be dead code or an unfinished ownership abstraction.
+Migration issue state is owned by `UISystem.AffectedIntersections`. The
+migration system records affected entities through
+`UISystem.AddToAffectedIntersections(...)`, UI bindings expose the same list via
+`GetAffectedEntities`, and the migration issues modal dismisses entries through
+`RemoveAffectedEntity(...)`.
+
+The unused `MigrationIssuesService` static list was removed so there is only one
+owner for affected-intersection state.
 
 ## Follow-Up Work
 
@@ -124,4 +129,5 @@ Track these as follow-up issues before touching inherited save behavior:
   upstream-TLE compatibility assumptions. Done in
   [`save-format-contract.md`](save-format-contract.md).
 - Remove or wire up `MigrationIssuesService` after confirming ownership of
-  migration issue state.
+  migration issue state. Done; affected-intersection state is owned by
+  `UISystem`.
