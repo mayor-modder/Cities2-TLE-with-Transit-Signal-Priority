@@ -42,6 +42,8 @@ This fork inherits Traffic Lights Enhancement's localization structure and Crowd
 
 TLE Extended builds on Traffic Lights Enhancement and the work of its original contributors. This mod would not have reached its current stage without help from the following people and projects:
 
+[bruceyboy24804](https://github.com/bruceyboy24804), maintainer of Traffic Lights Enhancement, whose current codebase this fork builds on.
+
 [Cities2Modding](https://github.com/optimus-code/Cities2Modding): An example mod for starting modding in Cities: Skylines II **(BepInEx-based template, now obsolete)**
 
 [Harmony](https://github.com/pardeike/Harmony): A library for patching, replacing and decorating .NET and Mono methods during runtime
