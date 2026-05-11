@@ -15,7 +15,6 @@ using PrefabRef = Game.Prefabs.PrefabRef;
 using VehicleCarCurrentLane = Game.Vehicles.CarCurrentLane;
 using VehicleCarNavigation = Game.Vehicles.CarNavigation;
 using VehicleCarNavigationLane = Game.Vehicles.CarNavigationLane;
-using VehiclePassengerTransport = Game.Vehicles.PassengerTransport;
 using VehiclePublicTransport = Game.Vehicles.PublicTransport;
 
 namespace C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation;
@@ -54,9 +53,6 @@ public struct ExtraTypeHandle
 
     [ReadOnly]
     public ComponentLookup<VehiclePublicTransport> m_PublicTransport;
-
-    [ReadOnly]
-    public ComponentLookup<VehiclePassengerTransport> m_PassengerTransport;
 
     [ReadOnly]
     public ComponentLookup<VehicleCarCurrentLane> m_CarCurrentLane;
@@ -140,7 +136,6 @@ public struct ExtraTypeHandle
         m_TrackLaneData = state.GetComponentLookup<TrackLaneData>(isReadOnly: true);
         m_PrefabRef = state.GetComponentLookup<PrefabRef>(isReadOnly: true);
         m_PublicTransport = state.GetComponentLookup<VehiclePublicTransport>(isReadOnly: true);
-        m_PassengerTransport = state.GetComponentLookup<VehiclePassengerTransport>(isReadOnly: true);
         m_CarCurrentLane = state.GetComponentLookup<VehicleCarCurrentLane>(isReadOnly: true);
         m_CarNavigation = state.GetComponentLookup<VehicleCarNavigation>(isReadOnly: true);
         m_Moving = state.GetComponentLookup<ObjectMoving>(isReadOnly: true);
@@ -180,7 +175,6 @@ public struct ExtraTypeHandle
         m_TrackLaneData.Update(ref state);
         m_PrefabRef.Update(ref state);
         m_PublicTransport.Update(ref state);
-        m_PassengerTransport.Update(ref state);
         m_CarCurrentLane.Update(ref state);
         m_CarNavigation.Update(ref state);
         m_Moving.Update(ref state);

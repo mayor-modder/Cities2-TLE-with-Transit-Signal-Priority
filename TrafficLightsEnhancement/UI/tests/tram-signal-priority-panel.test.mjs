@@ -256,6 +256,7 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   const locale = JSON.parse(await repoSource("Locale.json"));
 
   assert.match(patchedSystem, /m_BusTransitQuery/);
+  assert.match(patchedSystem, /ComponentType\.ReadOnly<PassengerTransport>\(\)/);
   assert.match(patchedSystem, /BusApproachIndex\.Build/);
   assert.match(patchedSystem, /m_ShowTramSignalPriorityDiagnostics/);
   assert.match(patchedSystem, /m_BusApproachIndex\s*=/);
@@ -263,6 +264,7 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(extraTypeHandle, /CarCurrentLane/);
   assert.match(extraTypeHandle, /CarNavigation/);
   assert.match(extraTypeHandle, /CarNavigationLane/);
+  assert.doesNotMatch(extraTypeHandle, /m_PassengerTransport/);
   assert.match(extraTypeHandle, /PublicTransportVehicleData/);
   assert.match(busIndex, /TransportType\.Bus/);
   assert.match(busIndex, /PublicOnly/);
