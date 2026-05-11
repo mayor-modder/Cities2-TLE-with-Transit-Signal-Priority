@@ -111,7 +111,7 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                     {mainData.tramSignalPriority?.isVisible && (
                         <>
                             <Divider />
-                            <Title itemType="title" title="TramSignalPriority" />
+                            <Title itemType="title" title="TransitSignalPriority" />
                             <Row
                                 hoverEffect={mainData.tramSignalPriority.isEditable}
                                 onClick={mainData.tramSignalPriority.isEditable
@@ -128,7 +128,6 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                             )}
                             {mainData.busSignalPriority?.isVisible && (
                                 <>
-                                    <Title itemType="title" title="BusSignalPriority" />
                                     <Row
                                         hoverEffect={mainData.busSignalPriority.isEditable}
                                         onClick={mainData.busSignalPriority.isEditable

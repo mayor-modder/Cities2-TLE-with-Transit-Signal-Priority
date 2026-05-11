@@ -32,8 +32,8 @@
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_DefaultExclusivePedestrian].tooltip": "Add an exclusive pedestrian phase at all traffic lights without custom configurations. It applies to newly built roads and will apply to existing roads upon a game state update.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Show Tram Signal Priority Diagnostics",
-    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Adds a read-only Diagnostics section under the Tram Signal Priority toggle in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
-    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics].tooltip": "Adds a read-only Diagnostics section under the Tram Signal Priority toggle in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
+    "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics]": "Adds a read-only Diagnostics section under Transit Signal Priority in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
+    "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ShowTramSignalPriorityDiagnostics].tooltip": "Adds a read-only Diagnostics section under Transit Signal Priority in the junction panel, showing the active request, selected signal group, decision reason, probe state, and related runtime values.",
 
     "Options.OPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate]": "Force All Nodes to Update",
     "Options.OPTION_DESCRIPTION[C2VM.TrafficLightsEnhancement.C2VM.TrafficLightsEnhancement.Mod.Settings.m_ForceNodeUpdate]": "Force all nodes (road junctions) to update, applying the default settings in this mod to all traffic lights without custom configurations. This feature is only available after a city is loaded.",
@@ -103,9 +103,10 @@
     "UI.LABEL[C2VM.TrafficLightsEnhancement.CustomPedestrianDurationMultiplier]": "Pedestrian Phase Duration",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.CustomPedestrianDurationMultiplierSuffix]": "x",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriority]": "Tram Signal Priority",
-    "UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]": "Enable Tram Signal Priority",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.TransitSignalPriority]": "Transit Signal Priority",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]": "Enable for trams",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriority]": "Bus Signal Priority",
-    "UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]": "Enable Bus Signal Priority",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]": "Enable for buses",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriorityFollowerUnavailable]": "Tram Signal Priority is controlled by the group leader",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriorityFollowerUnavailable]": "Bus Signal Priority is controlled by the group leader",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriorityDiagnostics]": "Diagnostics",
