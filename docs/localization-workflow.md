@@ -90,17 +90,17 @@ Removing it should be a focused PR that deletes the unused class/resources,
 updates build resources, and verifies mod options plus in-game UI labels in a
 supported game build.
 
-## TypeScript Localisation Files
+## Removed TypeScript Localisation Files
 
-`TrafficLightsEnhancement/UI/src/mods/localisations/*.ts` contains inherited
-fallback dictionaries and a `getString()` helper. Current UI components mostly
-translate through Cities II's localization manager instead, using keys supplied
-by `Locale.json`.
+The inherited `TrafficLightsEnhancement/UI/src/mods/localisations/*.ts`
+fallback dictionaries and `getString()` helper were removed because production
+UI code did not import them. Current UI components translate through Cities II's
+localization manager, using keys supplied by `Locale.json`.
 
-Do not add new user-facing strings only to the TypeScript locale files. Add live
-keys to `Locale.json` first. If a future UI path intentionally returns to the
-TypeScript dictionaries, document that decision and add tests that prove those
-files are used.
+Do not add a new UI-only localization dictionary for user-facing text. Add live
+keys to `Locale.json` first. If a future UI path intentionally needs a separate
+fallback dictionary, document that decision and add tests that prove those files
+are used.
 
 ## Translation Workflow
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -153,6 +153,13 @@ test("static locale provides descriptions for visible mod options", async () => 
     assert.notEqual(locale[descriptionKey].trim(), "", `${option} description cannot be empty`);
     assert.doesNotMatch(locale[descriptionKey], /^Options\.OPTION_DESCRIPTION/, `${option} description cannot be a raw localization key`);
   }
+});
+
+test("UI does not carry unused TypeScript localization fallback dictionaries", async () => {
+  const sourceFiles = await readdir(new URL("../src/mods", import.meta.url), { recursive: true });
+  const localizationFallbackFiles = sourceFiles.filter((file) => file === "localisations" || file.startsWith("localisations/") || file.startsWith("localisations\\"));
+
+  assert.deepEqual(localizationFallbackFiles, []);
 });
 
 test("custom phase vehicle weights expose bicycle weight control", async () => {

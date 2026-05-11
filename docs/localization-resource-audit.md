@@ -33,7 +33,7 @@ therefore be added to `Locale.json` first.
 | `TrafficLightsEnhancement/Locale/*.json` | `LocaleHelper` resource scan | Supported but currently absent | This is the expected place for embedded sibling dictionaries if the translation pipeline emits them. |
 | `TrafficLightsEnhancement/Resources/Localisations/*.json` | `LocalisationUtils` | Embedded, but no production call site found | These inherited dictionaries are still packaged by `EmbeddedResource Include="Resources\**\*"`. Treat as legacy until a focused removal proves the package and Crowdin workflow do not need them. |
 | `TrafficLightsEnhancement/Utils/LocalisationUtils.cs` | Direct construction only | No production caller found | Code search found the class and methods only in their own file. It can populate a `LocalizationDictionary`, but `Mod.OnLoad()` does not use it. |
-| `TrafficLightsEnhancement/UI/src/mods/localisations/*.ts` | `mods/localisations/index.ts` | Bundled fallback dictionaries, no current consumer found outside the index | Current UI components use `useLocalization()`, not the TypeScript `getString()` helper. Do not add new strings only here. |
+| `TrafficLightsEnhancement/UI/src/mods/localisations/*.ts` | removed | Removed unused fallback dictionaries | Current UI components use `useLocalization()`, not the old TypeScript `getString()` helper. Do not reintroduce a parallel UI-only string source without tests and docs. |
 | `crowdin.yml` | Crowdin | Needs confirmation before broad translation work | The source pattern is `Locale*.json`; verify generated output lands where the project embeds it before relying on automated translation import/export. |
 
 ## Cleanup Opportunities
@@ -44,9 +44,9 @@ deletions:
 - Retire `LocalisationUtils` and `Resources/Localisations/*.json` after a
   focused build/package check confirms no runtime path, reflection hook, or
   translation workflow still depends on them.
-- Either remove the unused TypeScript `getString()` dictionaries or give them a
-  documented purpose. The current UI uses the game localization manager, so
-  dual-maintaining these files is likely stale-work risk.
+- Keep the removed TypeScript `getString()` dictionaries out of the UI unless a
+  future feature intentionally needs a separate fallback source and adds tests
+  proving that source is used.
 - Consolidate supported-locale lists. Locale identifiers are currently repeated
   in `LocaleHelper`, `LocalisationUtils`, and the TypeScript localization index.
 - Add a source test that flags accidental reintroduction of UI text paths that
