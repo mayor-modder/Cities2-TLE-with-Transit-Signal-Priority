@@ -1231,6 +1231,45 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
 
     public TimeSystem m_TimeSystem;
 
+    private struct HasApproachIndexEligibleTransitSignalPrioritySettingsJob : IJobChunk
+    {
+        [ReadOnly]
+        public EntityTypeHandle m_EntityType;
+
+        [ReadOnly]
+        public ComponentTypeHandle<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings> m_TransitSignalPrioritySettingsType;
+
+        [ReadOnly]
+        public ComponentLookup<TrafficGroupMember> m_TrafficGroupMemberLookup;
+
+        public NativeArray<int> m_Result;
+
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+        {
+            if (m_Result[0] != 0)
+            {
+                return;
+            }
+
+            NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityType);
+            NativeArray<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings> settings =
+                chunk.GetNativeArray(ref m_TransitSignalPrioritySettingsType);
+
+            for (int i = 0; i < settings.Length; i++)
+            {
+                Entity entity = entities[i];
+                bool isGroupedFollower = m_TrafficGroupMemberLookup.HasComponent(entity)
+                    && !m_TrafficGroupMemberLookup[entity].m_IsGroupLeader;
+
+                if (TspPolicy.IsApproachIndexEligibleSetting(settings[i].ToLogicSettings(), isGroupedFollower))
+                {
+                    m_Result[0] = 1;
+                    return;
+                }
+            }
+        }
+    }
+
     public override int GetUpdateInterval(SystemUpdatePhase phase)
     {
         return 4;
@@ -1319,23 +1358,18 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             return false;
         }
 
-        using NativeArray<Entity> entities = m_TransitSignalPrioritySettingsQuery.ToEntityArray(Allocator.Temp);
-        using NativeArray<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings> settings =
-            m_TransitSignalPrioritySettingsQuery.ToComponentDataArray<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>(Allocator.Temp);
-
-        for (int i = 0; i < settings.Length; i++)
+        using NativeArray<int> result = new NativeArray<int>(1, Allocator.TempJob);
+        var job = new HasApproachIndexEligibleTransitSignalPrioritySettingsJob
         {
-            Entity entity = entities[i];
-            bool isGroupedFollower = EntityManager.HasComponent<TrafficGroupMember>(entity)
-                && !EntityManager.GetComponentData<TrafficGroupMember>(entity).m_IsGroupLeader;
+            m_EntityType = GetEntityTypeHandle(),
+            m_TransitSignalPrioritySettingsType =
+                GetComponentTypeHandle<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>(isReadOnly: true),
+            m_TrafficGroupMemberLookup = GetComponentLookup<TrafficGroupMember>(isReadOnly: true),
+            m_Result = result
+        };
+        job.Run(m_TransitSignalPrioritySettingsQuery);
 
-            if (TspPolicy.IsApproachIndexEligibleSetting(settings[i].ToLogicSettings(), isGroupedFollower))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return result[0] != 0;
     }
 
     public void SetCompatibilityMode(bool enable)
