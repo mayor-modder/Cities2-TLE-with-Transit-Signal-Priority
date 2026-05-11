@@ -48,9 +48,9 @@ expanding that unsafe harness.
 - `LinkedWithNextPhase`
 - `ShouldRestartCurrent`
 
-`LinkedWithNextPhase` should remain available for parity even though the
-current production selector reports `false`. It should not be redesigned as
-part of this extraction.
+`LinkedWithNextPhase` should remain available for parity because linked-phase
+behavior remains in `CustomStateMachine`. It should not be redesigned as part
+of this extraction.
 
 ## Extraction Boundary
 

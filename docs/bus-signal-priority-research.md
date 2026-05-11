@@ -116,8 +116,6 @@ requests:
 - **Unknown stop relation:** suppress stop-bound buses and report the unknown
   relation in diagnostics.
 
-## Edge Cases
-
 ## Diagnostic Prototype
 
 The first runtime prototype is diagnostic-only. When the off-by-default TSP

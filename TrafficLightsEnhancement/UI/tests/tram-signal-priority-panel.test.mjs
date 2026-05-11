@@ -278,3 +278,13 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusIndexLanes]"], "Indexed bus lanes");
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusLaneType]"], "Bus lane type");
 });
+
+test("bus and custom phase docs do not carry stale review notes", async () => {
+  const busResearch = await repoSource("../docs/bus-signal-priority-research.md");
+  const customPhaseExtraction = await repoSource("../docs/custom-phase-selection-extraction.md");
+  const edgeCaseHeadings = busResearch.match(/^## Edge Cases$/gm) ?? [];
+
+  assert.equal(edgeCaseHeadings.length, 1);
+  assert.doesNotMatch(customPhaseExtraction, /production selector reports `false`/);
+  assert.match(customPhaseExtraction, /linked-phase\s+behavior remains in `CustomStateMachine`/);
+});
