@@ -1,6 +1,8 @@
 ﻿
 
 
+#nullable enable
+
 namespace C2VM.TrafficLightsEnhancement.Extensions
 {
     using System;
