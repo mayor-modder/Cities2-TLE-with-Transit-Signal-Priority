@@ -287,7 +287,7 @@ test("tram signal priority settings reserve public car priority without persisti
   assert.doesNotMatch(deserializeSource, /reader\.Read\(out m_AllowGroupPropagation\)/);
 });
 
-test("backend exposes diagnostic-only bus approach index details", async () => {
+test("backend exposes bus approach index details", async () => {
   const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
   const extraTypeHandle = await repoSource("Systems/TrafficLightSystems/Simulation/ExtraTypeHandle.cs");
   const busIndex = await repoSource("Systems/TrafficLightSystems/Simulation/BusApproachIndex.cs");
@@ -302,8 +302,8 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(patchedSystem, /BusApproachIndex\.Build/);
   assert.match(patchedSystem, /m_ShowTramSignalPriorityDiagnostics/);
   assert.ok(busBuildCondition, "bus approach index should have an explicit build condition");
-  assert.match(busBuildCondition[1], /showTransitSignalPriorityDiagnostics/);
-  assert.doesNotMatch(busBuildCondition[1], /shouldBuildApproachIndex/);
+  assert.match(busBuildCondition[1], /shouldBuildBusApproachIndex/);
+  assert.doesNotMatch(busBuildCondition[1], /shouldBuildTramApproachIndex/);
   assert.match(patchedSystem, /m_BusApproachIndex\s*=/);
   assert.match(patchedSystem, /m_BusApproachIndexLaneCount\s*=/);
   const busDebugStart = patchedSystem.indexOf("if (m_TransitSignalPriorityDiagnosticsEnabled");
@@ -324,8 +324,6 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(busIndex, /PublicOnly/);
   assert.match(busIndex, /m_ChangeLane/);
   assert.match(runtime, /BuildBusApproachDebugInfo/);
-  assert.match(runtime, /if\s*\(!isTrackLane\s*\|\|\s*laneSignal\.m_Petitioner\s*==\s*Entity\.Null\)\s*\{\s*return false;\s*\}/);
-  assert.doesNotMatch(runtime, /isPublicCarLane:\s*true/);
   assert.match(uiBindings, /if\s*\(\s*hasBusApproachDebug\s*&&\s*busApproachDebug\.m_BusHitCount\s*>\s*0\s*\)/);
   const summaryStart = uiBindings.indexOf("private string GetTspDiagnosticsSummaryValue");
   const summaryEnd = uiBindings.indexOf("private ArrayList GetTspDiagnosticsEvents", summaryStart);
@@ -341,6 +339,24 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(uiBindings, /TSPDiagnosticsBusVehicleFlags/);
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusIndexLanes]"], "Indexed bus lanes");
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusLaneType]"], "Bus lane type");
+});
+
+test("runtime can build public-car requests from bus approach samples", async () => {
+  const runtime = await repoSource("Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs");
+
+  assert.match(runtime, /TryBuildBusApproachRequestForLane/);
+  assert.match(runtime, /isPublicCarLane:\s*true/);
+  assert.match(runtime, /TspSource\.PublicCar/);
+  assert.match(runtime, /BusPrioritySuppressionPolicy\.EvaluateStopSuppression/);
+  assert.match(runtime, /BusStopRelation\.Unknown/);
+});
+
+test("bus priority builds bus approach index without requiring diagnostics", async () => {
+  const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
+
+  assert.match(patchedSystem, /bool\s+shouldBuildBusApproachIndex\s*=/);
+  assert.match(patchedSystem, /showTransitSignalPriorityDiagnostics\s*\|\|\s*HasApproachIndexEligibleTransitSignalPrioritySettings\(requirePublicCarRequests:\s*true\)/);
+  assert.match(patchedSystem, /shouldBuildBusApproachIndex\s*\?\s*BusApproachIndex\.Build/);
 });
 
 test("bus and custom phase docs do not carry stale review notes", async () => {

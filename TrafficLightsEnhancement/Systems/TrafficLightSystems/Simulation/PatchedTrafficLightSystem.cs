@@ -1277,6 +1277,8 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
         [ReadOnly]
         public ComponentLookup<TrafficGroupMember> m_TrafficGroupMemberLookup;
 
+        public bool m_RequirePublicCarRequests;
+
         public NativeArray<int> m_Result;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -1296,7 +1298,12 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 bool isGroupedFollower = m_TrafficGroupMemberLookup.HasComponent(entity)
                     && !m_TrafficGroupMemberLookup[entity].m_IsGroupLeader;
 
-                if (TspPolicy.IsApproachIndexEligibleSetting(settings[i].ToLogicSettings(), isGroupedFollower))
+                var logicSettings = settings[i].ToLogicSettings();
+                bool isEligible = m_RequirePublicCarRequests
+                    ? TspPolicy.IsBusApproachIndexEligibleSetting(logicSettings, isGroupedFollower)
+                    : TspPolicy.IsApproachIndexEligibleSetting(logicSettings, isGroupedFollower);
+
+                if (isEligible)
                 {
                     m_Result[0] = 1;
                     return;
@@ -1349,18 +1356,21 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
         m_TrafficLightQuery.SetSharedComponentFilter(new UpdateFrame(SimulationUtils.GetUpdateFrameWithInterval(m_SimulationSystem.frameIndex, (uint)GetUpdateInterval(SystemUpdatePhase.GameSimulation), 16)));
         var updatedExtraTypeHandle = m_ExtraTypeHandle.Update(ref base.CheckedStateRef);
         bool hasTransitSignalPrioritySettings = !m_TransitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter;
-        bool shouldBuildApproachIndex = TspPolicy.ShouldBuildApproachIndex(
+        bool shouldBuildTramApproachIndex = TspPolicy.ShouldBuildApproachIndex(
             hasTransitSignalPrioritySettings,
-            hasApproachIndexEligibleTransitSignalPrioritySettings: HasApproachIndexEligibleTransitSignalPrioritySettings());
+            hasApproachIndexEligibleTransitSignalPrioritySettings:
+                HasApproachIndexEligibleTransitSignalPrioritySettings(requirePublicCarRequests: false));
         bool showTransitSignalPriorityDiagnostics = Mod.m_Setting != null && Mod.m_Setting.m_ShowTramSignalPriorityDiagnostics;
-        var tramApproachIndex = shouldBuildApproachIndex
+        bool shouldBuildBusApproachIndex = showTransitSignalPriorityDiagnostics
+            || HasApproachIndexEligibleTransitSignalPrioritySettings(requirePublicCarRequests: true);
+        var tramApproachIndex = shouldBuildTramApproachIndex
             ? TramApproachIndex.Build(
                 m_RailTransitQuery,
                 updatedExtraTypeHandle,
                 Allocator.TempJob)
             : new NativeParallelHashMap<Entity, float>(1, Allocator.TempJob);
         int tramApproachIndexLaneCount = tramApproachIndex.Count();
-        var busApproachIndex = showTransitSignalPriorityDiagnostics
+        var busApproachIndex = shouldBuildBusApproachIndex
             ? BusApproachIndex.Build(
                 m_BusTransitQuery,
                 updatedExtraTypeHandle,
@@ -1407,7 +1417,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
         m_EndFrameBarrier.AddJobHandleForProducer(base.Dependency);
     }
 
-    private bool HasApproachIndexEligibleTransitSignalPrioritySettings()
+    private bool HasApproachIndexEligibleTransitSignalPrioritySettings(bool requirePublicCarRequests)
     {
         if (m_TransitSignalPrioritySettingsQuery.IsEmptyIgnoreFilter)
         {
@@ -1421,6 +1431,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             m_TransitSignalPrioritySettingsType =
                 GetComponentTypeHandle<C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings>(isReadOnly: true),
             m_TrafficGroupMemberLookup = GetComponentLookup<TrafficGroupMember>(isReadOnly: true),
+            m_RequirePublicCarRequests = requirePublicCarRequests,
             m_Result = result
         };
         job.Run(m_TransitSignalPrioritySettingsQuery);

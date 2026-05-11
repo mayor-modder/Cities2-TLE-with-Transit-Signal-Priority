@@ -244,6 +244,28 @@ public class TspPolicyTests
     }
 
     [Fact]
+    public void Bus_approach_index_setting_requires_enabled_public_car_requests()
+    {
+        var disabled = new TransitSignalPrioritySettings(
+            enabled: false,
+            allowTrackRequests: false,
+            allowPublicCarRequests: true);
+        var busDisabled = new TransitSignalPrioritySettings(
+            enabled: true,
+            allowTrackRequests: false,
+            allowPublicCarRequests: false);
+        var busEnabled = new TransitSignalPrioritySettings(
+            enabled: true,
+            allowTrackRequests: false,
+            allowPublicCarRequests: true);
+
+        Assert.False(TspPolicy.IsBusApproachIndexEligibleSetting(disabled, isGroupedFollower: false));
+        Assert.False(TspPolicy.IsBusApproachIndexEligibleSetting(busDisabled, isGroupedFollower: false));
+        Assert.False(TspPolicy.IsBusApproachIndexEligibleSetting(busEnabled, isGroupedFollower: true));
+        Assert.True(TspPolicy.IsBusApproachIndexEligibleSetting(busEnabled, isGroupedFollower: false));
+    }
+
+    [Fact]
     public void Pedestrian_phase_protection_ignores_out_of_range_signal_groups()
     {
         Assert.False(TspPreemptionPolicy.ShouldProtectActivePedestrianPhase(

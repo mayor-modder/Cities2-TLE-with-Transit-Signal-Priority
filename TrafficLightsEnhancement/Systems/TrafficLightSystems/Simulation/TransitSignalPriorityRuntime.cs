@@ -84,6 +84,7 @@ public static class TransitSignalPriorityRuntime
     private const float TramApproachLaneCurveThreshold = 0.2f;
     private const float TramUpstreamLaneCurveThreshold = 0.9f;
     private const float TramConnectedEdgeLaneCurveThreshold = 0f;
+    private const float BusApproachLaneCurveThreshold = 0.2f;
 
     public static TransitSignalPriorityBusApproachDebugInfo BuildBusApproachDebugInfo(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
@@ -108,35 +109,20 @@ public static class TransitSignalPriorityRuntime
             }
 
             debugInfo.m_ScannedSignalLaneCount = IncrementByte(debugInfo.m_ScannedSignalLaneCount);
-            if (TryProbeBusLane(job, signaledLaneEntity, out BusApproachSample signaledSample))
-            {
-                RecordBestBusSample(
-                    ref hasBestSample,
-                    ref bestSample,
-                    ref bestProbe,
-                    signaledSample,
-                    TransitSignalPriorityBusProbeResult.MatchOnSignaledLane);
-            }
-
             Entity approachLaneEntity = ResolveApproachLane(job, signaledLaneEntity);
-            if (approachLaneEntity != signaledLaneEntity
-                && TryProbeBusLane(job, approachLaneEntity, out BusApproachSample approachSample))
+            if (TryFindBestBusApproachSampleForLane(
+                    job,
+                    signaledLaneEntity,
+                    approachLaneEntity,
+                    out BusApproachSample candidate,
+                    out TransitSignalPriorityBusProbeResult probe))
             {
                 RecordBestBusSample(
                     ref hasBestSample,
                     ref bestSample,
                     ref bestProbe,
-                    approachSample,
-                    TransitSignalPriorityBusProbeResult.MatchOnApproachLane);
-            }
-            else if (TryProbeConnectedEdgeBusLane(job, approachLaneEntity, out BusApproachSample connectedSample))
-            {
-                RecordBestBusSample(
-                    ref hasBestSample,
-                    ref bestSample,
-                    ref bestProbe,
-                    connectedSample,
-                    TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane);
+                    candidate,
+                    probe);
             }
         }
 
@@ -376,6 +362,20 @@ public static class TransitSignalPriorityRuntime
                 earlyRequest = detectedEarlyRequest;
             }
 
+            if (TryBuildBusApproachRequestForLane(
+                    job,
+                    subLaneEntity,
+                    approachLaneEntity,
+                    logicSettings,
+                    out var detectedBusRequest,
+                    out _,
+                    out _,
+                    out _))
+            {
+                earlyRequest = SelectPreferredRequest(earlyRequest, detectedBusRequest);
+                detectedLaneRole = TransitSignalPriorityApproachLaneRole.ApproachLane;
+            }
+
             TspRequest? petitionerRequest = null;
             if (TryBuildPetitionerRequestForLane(
                     job,
@@ -399,11 +399,13 @@ public static class TransitSignalPriorityRuntime
                 continue;
             }
 
-            scanState = EarlyApproachDetection.RecordLaneRequests(scanState, earlyRequest, petitionerRequest);
+            scanState = new TransitApproachScanState(
+                SelectPreferredRequest(scanState.EarlyRequest, earlyRequest),
+                SelectPreferredRequest(scanState.PetitionerRequest, petitionerRequest));
 
-            if (earlyRequest.HasValue && !earlyCandidate.HasValue)
+            if (earlyRequest.HasValue)
             {
-                earlyCandidate = new TransitApproachCandidate
+                TransitApproachCandidate candidate = new()
                 {
                     Request = earlyRequest.Value,
                     LaneSignal = laneSignal,
@@ -414,11 +416,16 @@ public static class TransitSignalPriorityRuntime
                     TrackUpstreamLaneProbe = trackUpstreamLaneProbe,
                     TrackLaneDebugInfo = trackDebugInfo,
                 };
+
+                if (ShouldReplaceCandidate(candidate.Request, earlyCandidate))
+                {
+                    earlyCandidate = candidate;
+                }
             }
 
-            if (petitionerRequest.HasValue && !petitionerCandidate.HasValue)
+            if (petitionerRequest.HasValue)
             {
-                petitionerCandidate = new TransitApproachCandidate
+                TransitApproachCandidate candidate = new()
                 {
                     Request = petitionerRequest.Value,
                     LaneSignal = laneSignal,
@@ -428,6 +435,11 @@ public static class TransitSignalPriorityRuntime
                     TrackUpstreamLaneProbe = trackUpstreamLaneProbe,
                     TrackLaneDebugInfo = trackDebugInfo,
                 };
+
+                if (ShouldReplaceCandidate(candidate.Request, petitionerCandidate))
+                {
+                    petitionerCandidate = candidate;
+                }
             }
         }
 
@@ -546,6 +558,50 @@ public static class TransitSignalPriorityRuntime
         return hasBestSample;
     }
 
+    private static bool TryFindBestBusApproachSampleForLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity signaledLaneEntity,
+        Entity approachLaneEntity,
+        out BusApproachSample sample,
+        out TransitSignalPriorityBusProbeResult probe)
+    {
+        sample = default;
+        probe = TransitSignalPriorityBusProbeResult.NoBusSamples;
+        bool hasSample = false;
+
+        if (TryProbeBusLane(job, signaledLaneEntity, out BusApproachSample signaledSample))
+        {
+            RecordBestBusSample(
+                ref hasSample,
+                ref sample,
+                ref probe,
+                signaledSample,
+                TransitSignalPriorityBusProbeResult.MatchOnSignaledLane);
+        }
+
+        if (approachLaneEntity != signaledLaneEntity
+            && TryProbeBusLane(job, approachLaneEntity, out BusApproachSample approachSample))
+        {
+            RecordBestBusSample(
+                ref hasSample,
+                ref sample,
+                ref probe,
+                approachSample,
+                TransitSignalPriorityBusProbeResult.MatchOnApproachLane);
+        }
+        else if (TryProbeConnectedEdgeBusLane(job, approachLaneEntity, out BusApproachSample connectedSample))
+        {
+            RecordBestBusSample(
+                ref hasSample,
+                ref sample,
+                ref probe,
+                connectedSample,
+                TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane);
+        }
+
+        return hasSample;
+    }
+
     private static void RecordBestBusSample(
         ref bool hasBestSample,
         ref BusApproachSample bestSample,
@@ -606,6 +662,68 @@ public static class TransitSignalPriorityRuntime
         return false;
     }
 
+    private static bool TryBuildBusApproachRequestForLane(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        Entity signaledLaneEntity,
+        Entity approachLaneEntity,
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings,
+        out TspRequest request,
+        out BusApproachSample sample,
+        out TransitSignalPriorityBusProbeResult busProbe,
+        out BusPrioritySuppressionReason suppressionReason)
+    {
+        request = default;
+        sample = default;
+        busProbe = TransitSignalPriorityBusProbeResult.NoBusSamples;
+        suppressionReason = BusPrioritySuppressionReason.None;
+
+        if (!logicSettings.m_AllowPublicCarRequests)
+        {
+            return false;
+        }
+
+        if (!TryFindBestBusApproachSampleForLane(
+                job,
+                signaledLaneEntity,
+                approachLaneEntity,
+                out sample,
+                out busProbe))
+        {
+            return false;
+        }
+
+        if (sample.CurvePosition < BusApproachLaneCurveThreshold)
+        {
+            return false;
+        }
+
+        BusPrioritySuppressionDecision stopSuppression =
+            BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+                GetSuppressionFlags(sample.PublicTransportState),
+                BusStopRelation.Unknown);
+        if (stopSuppression.IsSuppressed)
+        {
+            suppressionReason = stopSuppression.Reason;
+            return false;
+        }
+
+        if (sample.HasChangeLane != 0)
+        {
+            return false;
+        }
+
+        if (!global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPriorityRuntime.TryBuildRequestForLane(
+                logicSettings,
+                isTrackLane: false,
+                isPublicCarLane: true,
+                out request))
+        {
+            return false;
+        }
+
+        return request.Source == TspSource.PublicCar;
+    }
+
     private static bool TryBuildPetitionerRequestForLane(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         LaneSignal laneSignal,
@@ -631,6 +749,47 @@ public static class TransitSignalPriorityRuntime
         return true;
     }
 
+    private static TspRequest? SelectPreferredRequest(TspRequest? existingRequest, TspRequest candidateRequest)
+    {
+        if (!existingRequest.HasValue || IsPreferredRequest(candidateRequest, existingRequest.Value))
+        {
+            return candidateRequest;
+        }
+
+        return existingRequest;
+    }
+
+    private static TspRequest? SelectPreferredRequest(TspRequest? existingRequest, TspRequest? candidateRequest)
+    {
+        return candidateRequest.HasValue
+            ? SelectPreferredRequest(existingRequest, candidateRequest.Value)
+            : existingRequest;
+    }
+
+    private static bool ShouldReplaceCandidate(TspRequest request, TransitApproachCandidate? existingCandidate)
+    {
+        return !existingCandidate.HasValue || IsPreferredRequest(request, existingCandidate.Value.Request);
+    }
+
+    private static bool IsPreferredRequest(TspRequest candidateRequest, TspRequest existingRequest)
+    {
+        int candidatePriority = GetSourcePriority(candidateRequest.Source);
+        int existingPriority = GetSourcePriority(existingRequest.Source);
+
+        return candidatePriority > existingPriority
+            || (candidatePriority == existingPriority && candidateRequest.Strength > existingRequest.Strength);
+    }
+
+    private static int GetSourcePriority(TspSource source)
+    {
+        return source switch
+        {
+            TspSource.Track => 2,
+            TspSource.PublicCar => 1,
+            _ => 0,
+        };
+    }
+
     private static bool IsTramTrackLane(PatchedTrafficLightSystem.UpdateTrafficLightsJob job, Entity approachLaneEntity)
     {
         if (!job.m_ExtraTypeHandle.m_TrackLane.HasComponent(approachLaneEntity))
@@ -649,6 +808,17 @@ public static class TransitSignalPriorityRuntime
         }
 
         return (trackLaneData.m_TrackTypes & TrackTypes.Tram) != 0;
+    }
+
+    private static TransitApproachSuppressionFlags GetSuppressionFlags(PublicTransportFlags state)
+    {
+        TransitApproachSuppressionFlags flags = TransitApproachSuppressionFlags.None;
+
+        if ((state & PublicTransportFlags.Boarding) != 0) flags |= TransitApproachSuppressionFlags.Boarding;
+        if ((state & PublicTransportFlags.Arriving) != 0) flags |= TransitApproachSuppressionFlags.Arriving;
+        if ((state & PublicTransportFlags.RequireStop) != 0) flags |= TransitApproachSuppressionFlags.RequireStop;
+
+        return flags;
     }
 
     private static bool TryBuildEarlyApproachRequestForTrackLane(
