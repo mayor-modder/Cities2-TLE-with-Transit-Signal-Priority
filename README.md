@@ -1,27 +1,46 @@
-## Traffic Lights Enhancement
+## TLE Extended
 
-* Set traffic lights to various predefined signal modes
-* Guide available [here](https://github.com/slyh/Cities2-TrafficLightsEnhancement/tree/master/GUIDE.md)
-* Compatible with version 1.5.3f1
+TLE Extended is a compatible extended fork of Traffic Lights Enhancement for Cities: Skylines II. It starts from the rewritten TLE codebase and adds Tram Signal Priority, with a longer-term focus on compatibility, maintainability, documentation, diagnostics, and broader transit-priority work.
 
-This mod stores extra data in your saves to provide additional functionality. Once the mod is removed, traffic lights and junctions should revert to default settings when a road update is triggered, but this cannot be guaranteed.
+Current capabilities include:
 
-You cannot downgrade this mod to an older version. Cities saved with the new version are not compatible with previous versions.
+* Set traffic lights to predefined signal modes.
+* Configure custom traffic-light phases at supported junctions.
+* Enable optional Tram Signal Priority on selected intersections.
+* Use opt-in diagnostics when investigating Tram Signal Priority behavior.
+
+See the [guide](GUIDE.md) and [roadmap](ROADMAP.md) for the current direction of the project.
+
+## Status
+
+This repository is public, but TLE Extended is not currently being publicized or published on Paradox Mods. For now, treat it as a source-built local mod for testing and development.
+
+Compatibility with the current Cities: Skylines II version should be verified before any public release.
+
+## Compatibility
+
+TLE Extended is intended to be a drop-in replacement for Traffic Lights Enhancement. A city with intersections already configured in TLE should continue to load and preserve those intersection settings when switching to TLE Extended.
+
+The mod stores extra data in saves to provide additional functionality. If the mod is removed, traffic lights and junctions should usually revert to default settings when a road update is triggered, but this cannot be guaranteed.
+
+You should not downgrade a save from TLE Extended to an older TLE build after saving with this fork. Cities saved with newer data may not be compatible with previous versions.
 
 > [!WARNING]
-> These modifications are highly experimental. Your game may crash more frequently, and your save files could be corrupted.
-
-Do you have any suggestion on the translations? You could submit them on [Crowdin](https://crowdin.com/project/Cities2-TrafficLightsEnhancement), your contributions are appreciated!
+> These modifications are experimental. Back up important saves before testing, especially while TLE Extended is still source-built and not packaged for public release.
 
 ## Installation
 
-You can download the mod from [Paradox Mods](https://mods.paradoxplaza.com/mods/78960/Windows) or install it manually as a [local mod](https://cs2.paradoxwikis.com/Modding_Toolchain#Local_Mods_Location).
+TLE Extended is not currently distributed through Paradox Mods. Build it from source and install it as a [local mod](https://cs2.paradoxwikis.com/Modding_Toolchain#Local_Mods_Location).
 
-The instructions for building the mod yourself are available [here](https://github.com/slyh/Cities2-TrafficLightsEnhancement/tree/master/BUILD.md).
+Build instructions are available in [BUILD.md](BUILD.md).
+
+## Translations
+
+This fork inherits Traffic Lights Enhancement's localization structure and Crowdin workflow. Some inherited strings intentionally use English fallback text until translations are available. New or changed user-facing strings should follow the existing localization files and avoid ad-hoc translation churn.
 
 ## Acknowledgements
 
-This mod would not have reached its current stage without help from the following people and projects:
+TLE Extended builds on Traffic Lights Enhancement and the work of its original contributors. This mod would not have reached its current stage without help from the following people and projects:
 
 [Cities2Modding](https://github.com/optimus-code/Cities2Modding): An example mod for starting modding in Cities: Skylines II **(BepInEx-based template, now obsolete)**
 
@@ -33,7 +52,7 @@ This mod would not have reached its current stage without help from the followin
 
 [Krzysztof](https://github.com/krzychu124) for devising a solution that allows multiple systems with the same functionality to coexist, and for advising on UI performance issues.
 
-[Primeinc](https://github.com/primeinc) and [Windows200000](https://github.com/Windows200000) for the [guide](https://github.com/slyh/Cities2-TrafficLightsEnhancement/tree/master/GUIDE.md).
+[Primeinc](https://github.com/primeinc) and [Windows200000](https://github.com/Windows200000) for the original guide.
 
 Additionally, gratitude is extended to the individuals listed below for their translation contributions:
 

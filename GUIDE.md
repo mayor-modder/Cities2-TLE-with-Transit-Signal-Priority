@@ -2,10 +2,10 @@
 > Currently, the mod only supports three-way and four-way junctions. Junctions of other types will offer fewer options in the mod.
 
 > [!TIP]
-> The mod only modifies the sequencing of signals, not their duration. The base game's *smart* traffic lights extend green lights if traffic is still flowing, signal timing is not altered by this mod at present.
+> Most controls change the sequencing or grouping of signals. Dynamic mode and Tram Signal Priority can also affect phase selection or timing within their configured limits.
 
 ## Introduction
-This mod introduces advanced traffic light controls for Cities: Skylines II, allowing for more efficient traffic management. It supports both Left-Hand Traffic (LHT) and Right-Hand Traffic (RHT).
+TLE Extended introduces advanced traffic light controls for Cities: Skylines II, allowing for more explicit traffic management at supported junctions. It supports both Left-Hand Traffic (LHT) and Right-Hand Traffic (RHT), and it is intended to remain compatible with intersections already configured in Traffic Lights Enhancement.
 
 ## Modes
 
@@ -24,6 +24,15 @@ This mod introduces advanced traffic light controls for Cities: Skylines II, all
 | Give Way to Oncoming Vehicles<br>(Only for vanilla signals) | Require vehicles to give way to oncoming traffic when turning.<br>Note: Although drivers are required to give way, their aggressive behavior may reduce the effectiveness of this option at busy junctions. |
 | Exclusive Pedestrian Phase | A dedicated phase for pedestrian crossings, stopping all vehicular traffic. |
 | Pedestrian Phase Duration | Sets the duration of the green light for pedestrians.<br>Only available when the "Exclusive Pedestrian Phase" option is enabled.<br>Note: Pedestrian traffic lights are not "smart" and will not extend the green signal. |
+| Enable Tram Signal Priority | Allows approaching trams to request signal priority at this intersection. TSP may extend the current compatible phase or preempt toward a tram-serving phase, while respecting an already-active exclusive pedestrian phase. |
+
+## Tram Signal Priority
+
+Tram Signal Priority is configured per intersection. When enabled, TLE Extended watches indexed tram lanes near the selected junction and may create a priority request when a tram is approaching.
+
+TSP is intended to reduce avoidable tram delay, not to force every signal to flip immediately. The request policy considers signal state, current and next signal groups, approach information, and pedestrian-phase protection. If the mod option for TSP diagnostics is enabled, the selected-intersection panel can show recent TSP decisions and write selected diagnostic traces for troubleshooting.
+
+Current TSP support is tram-focused. Bus priority is planned as future research rather than part of the current feature set.
 
 > [!WARNING]
 > There may be pedestrian pathfinding issues at junctions, potentially indicating a bug in the game's node or pathfinding system, not addressed by this mod.
@@ -38,9 +47,11 @@ This mod introduces advanced traffic light controls for Cities: Skylines II, all
 
 ![Screenshot 2023-12-10 103024](https://github.com/primeinc/Cities2-Various-Mods/assets/80482978/c0beae47-9175-4a31-aad4-ea169f81e1e7)
 
-3. Select the signal mode you prefer and save. The selected junction should now operate in your chosen mode
+3. Select the signal mode and options you prefer. Enable Tram Signal Priority only on intersections where tram priority should be active.
 
 ![Screenshot 2023-12-10 103213](https://github.com/primeinc/Cities2-Various-Mods/assets/80482978/ee258c53-0ab4-43a2-a9b8-2ed07a792c1a)
+
+4. Save the selected junction. It should now operate with the chosen mode and per-intersection options.
 
 [^1]: Advanced Split Phasing and Protected Left/Right-Turns are unavailable at complex junctions, such as those with tram tracks.
 [^2]: This advanced split phasing handles traffic light groups dynamically, considering traffic direction and neighboring lane groups.
