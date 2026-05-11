@@ -162,6 +162,20 @@ test("UI does not carry unused TypeScript localization fallback dictionaries", a
   assert.deepEqual(localizationFallbackFiles, []);
 });
 
+test("backend localization uses Locale.json instead of legacy resource dictionaries", async () => {
+  const mod = await repoSource("Mod.cs");
+  const resourceFiles = await readdir(new URL("../../Resources", import.meta.url), { recursive: true });
+  const utilsFiles = await readdir(new URL("../../Utils", import.meta.url), { recursive: true });
+  const legacyResourceFiles = resourceFiles.filter(
+    (file) => file === "Localisations" || file.startsWith("Localisations/") || file.startsWith("Localisations\\"));
+  const legacyUtils = utilsFiles.filter(
+    (file) => file === "LocalisationUtils.cs" || file.endsWith("/LocalisationUtils.cs") || file.endsWith("\\LocalisationUtils.cs"));
+
+  assert.match(mod, /new LocaleHelper\(modName \+ "\.Locale\.json"\)\.GetAvailableLanguages\(\)/);
+  assert.deepEqual(legacyResourceFiles, []);
+  assert.deepEqual(legacyUtils, []);
+});
+
 test("custom phase vehicle weights expose bicycle weight control", async () => {
   const subPanel = await source("src/mods/components/custom-phase-tool/main-panel/sub-panel.tsx");
   const locale = JSON.parse(await repoSource("Locale.json"));

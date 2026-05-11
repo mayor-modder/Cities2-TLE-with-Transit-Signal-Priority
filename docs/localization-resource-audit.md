@@ -31,36 +31,34 @@ therefore be added to `Locale.json` first.
 | --- | --- | --- | --- |
 | `TrafficLightsEnhancement/Locale.json` | `LocaleHelper` from `Mod.OnLoad()` | Active | Owns option labels, option descriptions, warnings, tooltips, and UI labels. |
 | `TrafficLightsEnhancement/Locale/*.json` | `LocaleHelper` resource scan | Supported but currently absent | This is the expected place for embedded sibling dictionaries if the translation pipeline emits them. |
-| `TrafficLightsEnhancement/Resources/Localisations/*.json` | `LocalisationUtils` | Embedded, but no production call site found | These inherited dictionaries are still packaged by `EmbeddedResource Include="Resources\**\*"`. Treat as legacy until a focused removal proves the package and Crowdin workflow do not need them. |
-| `TrafficLightsEnhancement/Utils/LocalisationUtils.cs` | Direct construction only | No production caller found | Code search found the class and methods only in their own file. It can populate a `LocalizationDictionary`, but `Mod.OnLoad()` does not use it. |
+| `TrafficLightsEnhancement/Resources/Localisations/*.json` | removed | Removed unused backend dictionaries | The active loader is `LocaleHelper`; source tests now guard against reintroducing this legacy resource path. |
+| `TrafficLightsEnhancement/Utils/LocalisationUtils.cs` | removed | Removed unused backend loader | Code search found no production caller constructing the class or calling its helpers. |
 | `TrafficLightsEnhancement/UI/src/mods/localisations/*.ts` | removed | Removed unused fallback dictionaries | Current UI components use `useLocalization()`, not the old TypeScript `getString()` helper. Do not reintroduce a parallel UI-only string source without tests and docs. |
 | `crowdin.yml` | Crowdin | Needs confirmation before broad translation work | The source pattern is `Locale*.json`; verify generated output lands where the project embeds it before relying on automated translation import/export. |
 
 ## Cleanup Opportunities
 
-The following are plausible cleanup tasks, but none are safe as drive-by
-deletions:
+The remaining plausible cleanup tasks should still be handled as focused
+changes:
 
-- Retire `LocalisationUtils` and `Resources/Localisations/*.json` after a
-  focused build/package check confirms no runtime path, reflection hook, or
-  translation workflow still depends on them.
 - Keep the removed TypeScript `getString()` dictionaries out of the UI unless a
   future feature intentionally needs a separate fallback source and adds tests
   proving that source is used.
 - Consolidate supported-locale lists. Locale identifiers are currently repeated
-  in `LocaleHelper`, `LocalisationUtils`, and the TypeScript localization index.
+  in `LocaleHelper` and localization documentation.
 - Add a source test that flags accidental reintroduction of UI text paths that
   bypass `Locale.json`.
 
 ## Risks
 
-Deleting legacy resources too early could break inherited Crowdin output or a
-runtime code path that is not obvious from static search. The safer sequence is:
+Deleting legacy resources without proof could break inherited Crowdin output or
+a runtime code path that is not obvious from static search. The completed
+backend-resource removal followed this sequence:
 
 1. Add or update tests that prove the active loader path.
 2. Build the mod and inspect embedded resources.
 3. Smoke test the options screen and main panel in-game.
 4. Remove exactly one legacy path in a focused commit.
 
-Until that sequence exists, `Locale.json` remains the live source of truth and
-the inherited resources remain documented cleanup candidates.
+`Locale.json` remains the live source of truth. Future localization cleanup
+should preserve that contract unless the loader is intentionally refactored.

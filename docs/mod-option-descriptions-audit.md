@@ -7,9 +7,9 @@ This document records the audit of in-game mod option descriptions.
 The live options UI localization path is `Locale.json`, loaded from `Mod.OnLoad`
 through `LocaleHelper(modName + ".Locale.json")`.
 
-The older `Resources/Localisations/*.json` plus `LocalisationUtils` path still
-exists in the repository, but code search shows no production caller and it is
-not the path used by `Mod.OnLoad`.
+The older `Resources/Localisations/*.json` plus `LocalisationUtils` path was
+removed after code search confirmed no production caller and tests proved
+`Mod.OnLoad` uses `LocaleHelper`.
 
 The source-of-truth workflow is now documented in
 [`localization-workflow.md`](localization-workflow.md). Translation work should
@@ -70,7 +70,5 @@ non-English strings.
 
 Useful follow-ups:
 
-- remove the unused `Resources/Localisations` / `LocalisationUtils` path in a
-  focused cleanup after supported-game-version checks
 - remove legacy `.tooltip` keys only after verifying no supported game version
   reads them

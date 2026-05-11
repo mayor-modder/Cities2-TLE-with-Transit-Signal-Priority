@@ -70,25 +70,18 @@ New visible settings must have `Options.OPTION_DESCRIPTION[...]`. Adding a
 matching `.tooltip` key is acceptable for consistency, but it should not be
 treated as the authoritative description.
 
-## Legacy Resource Localisations
+## Removed Resource Localisations
 
-`TrafficLightsEnhancement/Resources/Localisations/*.json` and
-`TrafficLightsEnhancement/Utils/LocalisationUtils.cs` are still present and
-embedded through `Resources/**/*`, but they are not the active path registered by
-`Mod.OnLoad()`.
+The inherited `TrafficLightsEnhancement/Resources/Localisations/*.json`
+dictionaries and `TrafficLightsEnhancement/Utils/LocalisationUtils.cs` loader
+were removed because production code did not construct the loader or call its
+helpers. They were packaged only through the broad `Resources/**/*` embedded
+resource rule.
 
-Current code search shows no production caller constructing `LocalisationUtils`
-or calling `AddToDictionary()`. The class still points at embedded resources
-named like:
-
-```text
-C2VM.TrafficLightsEnhancement.Resources.Localisations.<locale>.json
-```
-
-Treat this path as a cleanup candidate, not a translation source of truth.
-Removing it should be a focused PR that deletes the unused class/resources,
-updates build resources, and verifies mod options plus in-game UI labels in a
-supported game build.
+Do not reintroduce a backend localization loader parallel to `LocaleHelper`
+unless the runtime localization strategy is intentionally refactored. Source
+tests now guard that the backend localization path stays centered on
+`Locale.json`.
 
 ## Removed TypeScript Localisation Files
 
