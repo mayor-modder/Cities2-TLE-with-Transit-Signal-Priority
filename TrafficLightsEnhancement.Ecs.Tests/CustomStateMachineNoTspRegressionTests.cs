@@ -13,6 +13,12 @@ namespace TrafficLightsEnhancement.Ecs.Tests;
 public sealed class CustomStateMachineNoTspRegressionTests
 {
     [Fact]
+    public void Synthetic_phase_buffer_layout_guard_matches_current_dots()
+    {
+        PhaseBufferScope.AssertLayoutCompatible();
+    }
+
+    [Fact]
     public void Get_next_signal_group_empty_buffer_matches()
     {
         CompareNextGroup(
@@ -241,6 +247,8 @@ public sealed class CustomStateMachineNoTspRegressionTests
 
         public PhaseBufferScope(CustomPhaseData[] phases)
         {
+            AssertLayoutCompatible();
+
             // Unity World allocation calls engine ECalls that are unavailable under dotnet test.
             // DynamicBuffer<T> itself only needs a BufferHeader pointer for these no-resize cases.
             int elementSize = Marshal.SizeOf(typeof(CustomPhaseData));
@@ -279,14 +287,46 @@ public sealed class CustomStateMachineNoTspRegressionTests
         {
             object boxed = default(DynamicBuffer<CustomPhaseData>);
             Type bufferType = typeof(DynamicBuffer<CustomPhaseData>);
-            FieldInfo bufferField = bufferType.GetField("m_Buffer", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?? throw new MissingFieldException(bufferType.FullName, "m_Buffer");
-            FieldInfo capacityField = bufferType.GetField("m_InternalCapacity", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?? throw new MissingFieldException(bufferType.FullName, "m_InternalCapacity");
+            FieldInfo bufferField = RequireField(bufferType, "m_Buffer");
+            FieldInfo capacityField = RequireField(bufferType, "m_InternalCapacity");
 
             bufferField.SetValue(boxed, Pointer.Box(header.ToPointer(), bufferField.FieldType));
             capacityField.SetValue(boxed, internalCapacity);
             return (DynamicBuffer<CustomPhaseData>)boxed;
+        }
+
+        public static void AssertLayoutCompatible()
+        {
+            Type bufferType = typeof(DynamicBuffer<CustomPhaseData>);
+            FieldInfo bufferField = RequireField(bufferType, "m_Buffer");
+            FieldInfo capacityField = RequireField(bufferType, "m_InternalCapacity");
+
+            Assert.True(
+                bufferField.FieldType.IsPointer,
+                "DynamicBuffer<T>.m_Buffer must remain a pointer field for the synthetic ECS test buffer.");
+            Assert.Equal(typeof(int), capacityField.FieldType);
+
+            Type headerType = bufferField.FieldType.GetElementType()
+                ?? throw new InvalidOperationException("DynamicBuffer<T>.m_Buffer pointer element type is unavailable.");
+            Assert.Equal("Unity.Entities.BufferHeader", headerType.FullName);
+
+            Assert.Equal(8, IntPtr.Size);
+            Assert.Equal(BufferHeaderSize, IntPtr.Size + sizeof(int) + sizeof(int));
+            AssertBufferHeaderOffset(headerType, "Pointer", BufferHeaderPointerOffset);
+            AssertBufferHeaderOffset(headerType, "Length", BufferHeaderLengthOffset);
+            AssertBufferHeaderOffset(headerType, "Capacity", BufferHeaderCapacityOffset);
+        }
+
+        private static FieldInfo RequireField(Type type, string name)
+        {
+            return type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new MissingFieldException(type.FullName, name);
+        }
+
+        private static void AssertBufferHeaderOffset(Type headerType, string fieldName, int expectedOffset)
+        {
+            int actualOffset = Marshal.OffsetOf(headerType, fieldName).ToInt32();
+            Assert.Equal(expectedOffset, actualOffset);
         }
     }
 }
