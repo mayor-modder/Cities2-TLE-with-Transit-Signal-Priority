@@ -1362,7 +1362,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 Allocator.TempJob)
             : new NativeParallelHashMap<Entity, float>(1, Allocator.TempJob);
         int tramApproachIndexLaneCount = tramApproachIndex.Count();
-        var busApproachIndex = showTransitSignalPriorityDiagnostics && shouldBuildApproachIndex
+        var busApproachIndex = showTransitSignalPriorityDiagnostics
             ? BusApproachIndex.Build(
                 m_BusTransitQuery,
                 updatedExtraTypeHandle,

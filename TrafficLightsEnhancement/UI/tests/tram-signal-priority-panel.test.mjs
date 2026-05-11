@@ -254,11 +254,15 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   const components = await repoSource("Components/TransitSignalPriorityBusApproachDebugInfo.cs");
   const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
   const locale = JSON.parse(await repoSource("Locale.json"));
+  const busBuildCondition = patchedSystem.match(/var busApproachIndex = ([\s\S]*?)\? BusApproachIndex\.Build/);
 
   assert.match(patchedSystem, /m_BusTransitQuery/);
   assert.match(patchedSystem, /ComponentType\.ReadOnly<PassengerTransport>\(\)/);
   assert.match(patchedSystem, /BusApproachIndex\.Build/);
   assert.match(patchedSystem, /m_ShowTramSignalPriorityDiagnostics/);
+  assert.ok(busBuildCondition, "bus approach index should have an explicit build condition");
+  assert.match(busBuildCondition[1], /showTransitSignalPriorityDiagnostics/);
+  assert.doesNotMatch(busBuildCondition[1], /shouldBuildApproachIndex/);
   assert.match(patchedSystem, /m_BusApproachIndex\s*=/);
   assert.match(patchedSystem, /m_BusApproachIndexLaneCount\s*=/);
   assert.match(extraTypeHandle, /CarCurrentLane/);
@@ -270,6 +274,7 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(busIndex, /PublicOnly/);
   assert.match(busIndex, /m_ChangeLane/);
   assert.match(runtime, /BuildBusApproachDebugInfo/);
+  assert.match(runtime, /if\s*\(!isTrackLane\s*\|\|\s*laneSignal\.m_Petitioner\s*==\s*Entity\.Null\)\s*\{\s*return false;\s*\}/);
   assert.doesNotMatch(runtime, /isPublicCarLane:\s*true/);
   assert.match(components, /TransitSignalPriorityBusProbeResult/);
   assert.match(uiBindings, /TransitSignalPriorityBusApproachDebugInfo/);

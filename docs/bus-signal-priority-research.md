@@ -121,7 +121,10 @@ requests:
 The first runtime prototype is diagnostic-only. When the off-by-default TSP
 diagnostics option is enabled, `BusApproachIndex` scans public-transport road
 vehicles with `PublicTransportVehicleData.m_TransportType == Bus` and records
-current/change-lane samples. The selected junction diagnostics can now report:
+current/change-lane samples. This scan is intentionally independent of tram TSP
+approach-index eligibility, so a selected bus-only candidate intersection can
+still produce bus diagnostics even when no tram priority request is possible.
+The selected junction diagnostics can now report:
 
 - indexed bus lane count
 - whether a hit came from the signaled lane, resolved approach lane, or
