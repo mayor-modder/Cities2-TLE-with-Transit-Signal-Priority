@@ -19,10 +19,28 @@ test("main panel data exposes tram signal priority state", async () => {
   assert.match(general, /rows:\s*Array<\{\s*label:\s*string,\s*value:\s*string\s*\}>/);
 });
 
+test("main panel data exposes separate bus signal priority state", async () => {
+  const general = await source("src/mods/general.ts");
+
+  assert.match(general, /busSignalPriority\?\s*:\s*\{/);
+  assert.match(general, /isVisible:\s*boolean/);
+  assert.match(general, /isEnabled:\s*boolean/);
+  assert.match(general, /isEditable:\s*boolean/);
+  assert.match(general, /statusLabel\?:\s*string/);
+});
+
 test("bindings exposes the tram signal priority toggle trigger", async () => {
   const bindings = await source("src/bindings.ts");
 
   assert.match(bindings, /toggleTramSignalPriority\s*=\s*triggers\.create<\[boolean\]>\("ToggleTramSignalPriority"\)/);
+});
+
+test("bindings exposes the bus signal priority toggle trigger", async () => {
+  const bindings = await source("src/bindings.ts");
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+
+  assert.match(bindings, /toggleBusSignalPriority\s*=\s*triggers\.create<\[boolean\]>\("ToggleBusSignalPriority"\)/);
+  assert.match(uiBindings, /CreateTrigger<bool>\("ToggleBusSignalPriority",\s*ToggleBusSignalPriority\)/);
 });
 
 test("migration issue UI derives boolean state from affected entities", async () => {
@@ -37,7 +55,7 @@ test("migration issue UI derives boolean state from affected entities", async ()
   assert.doesNotMatch(uiBindings, /HasLoadingErrors/);
 });
 
-test("main panel renders only tram signal priority controls", async () => {
+test("main panel renders separate tram and bus signal priority controls", async () => {
   const content = await source("src/mods/components/main-panel/content.tsx");
   const panelStart = content.indexOf("TramSignalPriority");
 
@@ -46,10 +64,24 @@ test("main panel renders only tram signal priority controls", async () => {
   const panelSource = panelEnd === -1 ? content.slice(panelStart) : content.slice(panelStart, panelEnd);
 
   assert.match(panelSource, /EnableTramSignalPriority/);
+  assert.match(panelSource, /BusSignalPriority/);
+  assert.match(panelSource, /EnableBusSignalPriority/);
+  assert.match(panelSource, /toggleBusSignalPriority/);
   assert.match(panelSource, /TramSignalPriorityDiagnostics/);
-  assert.doesNotMatch(panelSource, /bus/i);
   assert.doesNotMatch(panelSource, /source/i);
   assert.doesNotMatch(panelSource, /public[-\s]?car|publicCar/i);
+});
+
+test("backend exposes separate tram and bus signal priority controls", async () => {
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+
+  assert.match(uiBindings, /tramSignalPriority\s*=\s*new/);
+  assert.match(uiBindings, /busSignalPriority\s*=\s*new/);
+  assert.match(uiBindings, /protected void ToggleTramSignalPriority\(bool enabled\)/);
+  assert.match(uiBindings, /protected void ToggleBusSignalPriority\(bool enabled\)/);
+  assert.match(uiBindings, /settings\.m_AllowTrackRequests\s*=\s*enabled/);
+  assert.match(uiBindings, /settings\.m_AllowPublicCarRequests\s*=\s*enabled/);
+  assert.match(uiBindings, /settings\.m_Enabled\s*=\s*settings\.m_AllowTrackRequests\s*\|\|\s*settings\.m_AllowPublicCarRequests/);
 });
 
 test("tram signal priority diagnostics are gated by a mod option", async () => {
@@ -190,7 +222,7 @@ test("custom phase vehicle weights expose bicycle weight control", async () => {
     "string");
 });
 
-test("backend toggle removes tram signal priority settings when disabled", async () => {
+test("backend toggle removes transit signal priority settings when all sources are disabled", async () => {
   const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
   const toggleStart = uiBindings.indexOf("protected void ToggleTramSignalPriority(bool enabled)");
 
@@ -198,9 +230,11 @@ test("backend toggle removes tram signal priority settings when disabled", async
   const toggleEnd = uiBindings.indexOf("protected void CallMainPanelUpdatePosition", toggleStart);
   const toggleSource = toggleEnd === -1 ? uiBindings.slice(toggleStart) : uiBindings.slice(toggleStart, toggleEnd);
 
-  assert.match(toggleSource, /if\s*\(!enabled\)/);
+  assert.match(toggleSource, /ToggleTransitSignalPrioritySource\(enabled,\s*allowTrackRequests:\s*true\)/);
+  assert.match(toggleSource, /ToggleTransitSignalPrioritySource\(enabled,\s*allowTrackRequests:\s*false\)/);
+  assert.match(toggleSource, /settings\.m_Enabled\s*=\s*settings\.m_AllowTrackRequests\s*\|\|\s*settings\.m_AllowPublicCarRequests/);
+  assert.match(toggleSource, /if\s*\(!settings\.m_Enabled\)/);
   assert.match(toggleSource, /EntityManager\.RemoveComponent<TransitSignalPrioritySettings>\(m_SelectedEntity\)/);
-  assert.match(toggleSource, /settings\.m_Enabled\s*=\s*true/);
 });
 
 test("tool removal clears tram signal priority runtime components", async () => {
@@ -286,7 +320,12 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(runtime, /if\s*\(!isTrackLane\s*\|\|\s*laneSignal\.m_Petitioner\s*==\s*Entity\.Null\)\s*\{\s*return false;\s*\}/);
   assert.doesNotMatch(runtime, /isPublicCarLane:\s*true/);
   assert.match(uiBindings, /if\s*\(\s*hasBusApproachDebug\s*&&\s*busApproachDebug\.m_BusHitCount\s*>\s*0\s*\)/);
-  assert.ok(uiBindings.indexOf("if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)") < uiBindings.indexOf("if (!settings.m_Enabled)"));
+  const summaryStart = uiBindings.indexOf("private string GetTspDiagnosticsSummaryValue");
+  const summaryEnd = uiBindings.indexOf("private ArrayList GetTspDiagnosticsEvents", summaryStart);
+  const summarySource = uiBindings.slice(summaryStart, summaryEnd);
+  assert.notEqual(summaryStart, -1);
+  assert.notEqual(summaryEnd, -1);
+  assert.ok(summarySource.indexOf("if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)") < summarySource.indexOf("if (!settings.m_Enabled)"));
   assert.match(components, /TransitSignalPriorityBusProbeResult/);
   assert.match(uiBindings, /TransitSignalPriorityBusApproachDebugInfo/);
   assert.match(uiBindings, /TSPDiagnosticsBusIndexLanes/);

@@ -27,6 +27,12 @@ export interface MainPanelMainData {
       events?: Array<{ sequence: number, label: string, value: string }>,
       rows: Array<{ label: string, value: string }>
     }
+  },
+  busSignalPriority?: {
+    isVisible: boolean,
+    isEnabled: boolean,
+    isEditable: boolean,
+    statusLabel?: string,
   }
 }
 

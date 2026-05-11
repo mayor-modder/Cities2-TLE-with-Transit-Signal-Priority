@@ -19,6 +19,7 @@ import {
     toggleOption,
     setPedestrianDuration,
     toggleTramSignalPriority,
+    toggleBusSignalPriority,
     savePanel,
     exitPanel,
     setPanelState,
@@ -124,6 +125,25 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                                 <Row hoverEffect={false}>
                                     <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.statusLabel}]`) ?? mainData.tramSignalPriority.statusLabel}</div>
                                 </Row>
+                            )}
+                            {mainData.busSignalPriority?.isVisible && (
+                                <>
+                                    <Title itemType="title" title="BusSignalPriority" />
+                                    <Row
+                                        hoverEffect={mainData.busSignalPriority.isEditable}
+                                        onClick={mainData.busSignalPriority.isEditable
+                                            ? () => toggleBusSignalPriority(!mainData.busSignalPriority!.isEnabled)
+                                            : undefined}
+                                    >
+                                        <Checkbox isChecked={mainData.busSignalPriority.isEnabled} />
+                                        <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]`) ?? "EnableBusSignalPriority"}</div>
+                                    </Row>
+                                    {mainData.busSignalPriority.statusLabel && (
+                                        <Row hoverEffect={false}>
+                                            <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.busSignalPriority.statusLabel}]`) ?? mainData.busSignalPriority.statusLabel}</div>
+                                        </Row>
+                                    )}
+                                </>
                             )}
                             {mainData.tramSignalPriority.diagnostics && (
                                 <>

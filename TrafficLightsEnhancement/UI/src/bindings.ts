@@ -16,6 +16,7 @@ export const setPattern = triggers.create<[number]>("SetPattern");
 export const toggleOption = triggers.create<[number]>("ToggleOption");
 export const setPedestrianDuration = triggers.create<[number]>("SetPedestrianDuration");
 export const toggleTramSignalPriority = triggers.create<[boolean]>("ToggleTramSignalPriority");
+export const toggleBusSignalPriority = triggers.create<[boolean]>("ToggleBusSignalPriority");
 export const savePanel = triggers.create<[]>("SavePanel");
 export const exitPanel = triggers.create<[]>("ExitPanel");
 export const resetLaneDirectionTool = triggers.create<[]>("ResetLaneDirectionTool");

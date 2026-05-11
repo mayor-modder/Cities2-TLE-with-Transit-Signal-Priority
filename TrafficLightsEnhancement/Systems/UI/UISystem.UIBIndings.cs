@@ -102,6 +102,7 @@ public partial class UISystem
         CreateTrigger<uint>("ToggleOption", ToggleOption);
         CreateTrigger<float>("SetPedestrianDuration", SetPedestrianDuration);
         CreateTrigger<bool>("ToggleTramSignalPriority", ToggleTramSignalPriority);
+        CreateTrigger<bool>("ToggleBusSignalPriority", ToggleBusSignalPriority);
         CreateTrigger<string>("CallMainPanelUpdatePosition", CallMainPanelUpdatePosition);
         CreateTrigger("SavePanel", SavePanel);
         CreateTrigger("ExitPanel", ExitPanel);
@@ -397,10 +398,17 @@ public partial class UISystem
                 tramSignalPriority = new
                 {
                     isVisible = true,
-                    isEnabled = tspSettings.m_Enabled,
+                    isEnabled = tspSettings.m_Enabled && tspSettings.m_AllowTrackRequests,
                     isEditable = !isTrafficGroupFollower,
                     statusLabel = tspStatusLabel,
                     diagnostics = tspDiagnostics
+                },
+                busSignalPriority = new
+                {
+                    isVisible = true,
+                    isEnabled = tspSettings.m_Enabled && tspSettings.m_AllowPublicCarRequests,
+                    isEditable = !isTrafficGroupFollower,
+                    statusLabel = tspStatusLabel
                 }
             };
         }
@@ -834,6 +842,16 @@ public partial class UISystem
 
     protected void ToggleTramSignalPriority(bool enabled)
     {
+        ToggleTransitSignalPrioritySource(enabled, allowTrackRequests: true);
+    }
+
+    protected void ToggleBusSignalPriority(bool enabled)
+    {
+        ToggleTransitSignalPrioritySource(enabled, allowTrackRequests: false);
+    }
+
+    private void ToggleTransitSignalPrioritySource(bool enabled, bool allowTrackRequests)
+    {
         if (m_SelectedEntity == Entity.Null || !EntityManager.Exists(m_SelectedEntity))
         {
             return;
@@ -845,7 +863,23 @@ public partial class UISystem
             return;
         }
 
-        if (!enabled)
+        TransitSignalPrioritySettings settings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
+            ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
+            : TransitSignalPrioritySettings.CreateDefault();
+
+        if (allowTrackRequests)
+        {
+            settings.m_AllowTrackRequests = enabled;
+        }
+        else
+        {
+            settings.m_AllowPublicCarRequests = enabled;
+        }
+
+        settings.m_Enabled = settings.m_AllowTrackRequests || settings.m_AllowPublicCarRequests;
+        settings.Normalize();
+
+        if (!settings.m_Enabled)
         {
             if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
             {
@@ -856,15 +890,6 @@ public partial class UISystem
             m_MainPanelBinding.Update();
             return;
         }
-
-        TransitSignalPrioritySettings settings = EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity)
-            ? EntityManager.GetComponentData<TransitSignalPrioritySettings>(m_SelectedEntity)
-            : TransitSignalPrioritySettings.CreateDefault();
-
-        settings.m_Enabled = true;
-        settings.m_AllowTrackRequests = true;
-        settings.m_AllowPublicCarRequests = false;
-        settings.Normalize();
 
         if (EntityManager.HasComponent<TransitSignalPrioritySettings>(m_SelectedEntity))
         {
