@@ -4,6 +4,9 @@ This document records the current localization ownership model for TLE
 Extended. It is maintainer-facing: use it before adding option labels,
 descriptions, tooltips, or translated UI text.
 
+For the resource-path inventory and cleanup risk assessment, see
+[`localization-resource-audit.md`](localization-resource-audit.md).
+
 ## Live Source Of Truth
 
 `TrafficLightsEnhancement/Locale.json` is the live source of truth for game
