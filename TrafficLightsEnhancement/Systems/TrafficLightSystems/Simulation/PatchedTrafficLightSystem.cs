@@ -217,9 +217,7 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     m_CommandBuffer.RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>(unfilteredChunkIndex, currentEntity);
                 }
 
-                if (m_TransitSignalPriorityDiagnosticsEnabled
-                    && m_ExtraTypeHandle.m_TransitSignalPrioritySettingsLookup.TryGetComponent(currentEntity, out var busDebugSettings)
-                    && busDebugSettings.m_Enabled)
+                if (m_TransitSignalPriorityDiagnosticsEnabled)
                 {
                     activeBusApproachDebugInfo = TspRuntime.BuildBusApproachDebugInfo(this, subLanes);
                     hasActiveBusApproachDebugInfo = true;

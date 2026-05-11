@@ -1027,11 +1027,6 @@ public partial class UISystem
         bool hasDecisionTrace,
         TransitSignalPriorityDecisionTrace decisionTrace)
     {
-        if (!settings.m_Enabled)
-        {
-            return "Disabled";
-        }
-
         if (!hasRuntimeDebug)
         {
             if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)
@@ -1039,6 +1034,11 @@ public partial class UISystem
                 return hasTrafficLights
                     ? $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)} | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
                     : $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)}";
+            }
+
+            if (!settings.m_Enabled)
+            {
+                return "Disabled";
             }
 
             return hasTrafficLights

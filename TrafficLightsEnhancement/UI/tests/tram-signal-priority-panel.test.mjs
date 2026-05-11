@@ -265,6 +265,15 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.doesNotMatch(busBuildCondition[1], /shouldBuildApproachIndex/);
   assert.match(patchedSystem, /m_BusApproachIndex\s*=/);
   assert.match(patchedSystem, /m_BusApproachIndexLaneCount\s*=/);
+  const busDebugStart = patchedSystem.indexOf("if (m_TransitSignalPriorityDiagnosticsEnabled");
+  const busDebugEnd = patchedSystem.indexOf("if (hasActiveBusApproachDebugInfo)", busDebugStart);
+  const busDebugGate = patchedSystem.slice(busDebugStart, busDebugEnd);
+
+  assert.notEqual(busDebugStart, -1);
+  assert.notEqual(busDebugEnd, -1);
+  assert.match(busDebugGate, /BuildBusApproachDebugInfo/);
+  assert.doesNotMatch(busDebugGate, /TransitSignalPrioritySettingsLookup/);
+  assert.doesNotMatch(busDebugGate, /m_Enabled/);
   assert.match(extraTypeHandle, /CarCurrentLane/);
   assert.match(extraTypeHandle, /CarNavigation/);
   assert.match(extraTypeHandle, /CarNavigationLane/);
@@ -276,6 +285,8 @@ test("backend exposes diagnostic-only bus approach index details", async () => {
   assert.match(runtime, /BuildBusApproachDebugInfo/);
   assert.match(runtime, /if\s*\(!isTrackLane\s*\|\|\s*laneSignal\.m_Petitioner\s*==\s*Entity\.Null\)\s*\{\s*return false;\s*\}/);
   assert.doesNotMatch(runtime, /isPublicCarLane:\s*true/);
+  assert.match(uiBindings, /if\s*\(\s*hasBusApproachDebug\s*&&\s*busApproachDebug\.m_BusHitCount\s*>\s*0\s*\)/);
+  assert.ok(uiBindings.indexOf("if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)") < uiBindings.indexOf("if (!settings.m_Enabled)"));
   assert.match(components, /TransitSignalPriorityBusProbeResult/);
   assert.match(uiBindings, /TransitSignalPriorityBusApproachDebugInfo/);
   assert.match(uiBindings, /TSPDiagnosticsBusIndexLanes/);
