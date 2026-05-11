@@ -9,7 +9,7 @@ Current capabilities include:
 * Enable optional Tram Signal Priority on selected intersections.
 * Use opt-in diagnostics when investigating Tram Signal Priority behavior.
 
-See the [guide](GUIDE.md) and [roadmap](ROADMAP.md) for the current direction of the project.
+See the [guide](GUIDE.md), [roadmap](ROADMAP.md), and [TSP architecture notes](docs/tsp-architecture.md) for the current direction of the project.
 
 ## Status
 
