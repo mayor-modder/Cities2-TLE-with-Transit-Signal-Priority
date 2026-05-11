@@ -12,12 +12,26 @@ public enum TransitSignalPriorityBusProbeResult : byte
     MatchOnConnectedApproachLane = 4,
 }
 
+public enum TransitSignalPriorityBusDecision : byte
+{
+    None = 0,
+    NoEligibleSample = 1,
+    PriorityDisabled = 2,
+    RequestEmitted = 3,
+    SuppressedBoarding = 4,
+    SuppressedUnknownStopRelation = 5,
+    SuppressedAggressivePreemption = 6,
+    SuppressedAmbiguousLaneChange = 7,
+}
+
 public struct TransitSignalPriorityBusApproachDebugInfo : IComponentData
 {
     public int m_BusApproachIndexLaneCount;
     public byte m_ScannedSignalLaneCount;
     public byte m_BusHitCount;
     public TransitSignalPriorityBusProbeResult m_BusProbe;
+    public TransitSignalPriorityBusDecision m_BusDecision;
+    public byte m_BusTargetSignalGroup;
     public Entity m_BusLaneEntity;
     public Entity m_BusVehicleEntity;
     public float m_BusCurvePosition;

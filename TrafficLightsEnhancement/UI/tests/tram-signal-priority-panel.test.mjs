@@ -351,6 +351,23 @@ test("runtime can build public-car requests from bus approach samples", async ()
   assert.match(runtime, /BusStopRelation\.Unknown/);
 });
 
+test("bus diagnostics include request and suppression decisions", async () => {
+  const components = await repoSource("Components/TransitSignalPriorityBusApproachDebugInfo.cs");
+  const runtime = await repoSource("Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs");
+  const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
+  const locale = JSON.parse(await repoSource("Locale.json"));
+
+  assert.match(components, /TransitSignalPriorityBusDecision/);
+  assert.match(components, /RequestEmitted/);
+  assert.match(components, /SuppressedBoarding/);
+  assert.match(components, /SuppressedUnknownStopRelation/);
+  assert.match(components, /SuppressedAmbiguousLaneChange/);
+  assert.match(runtime, /m_BusDecision\s*=\s*TransitSignalPriorityBusDecision\.RequestEmitted/);
+  assert.match(uiBindings, /TSPDiagnosticsBusDecision/);
+  assert.match(uiBindings, /GetBusDecisionName/);
+  assert.ok(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecision]"]);
+});
+
 test("bus priority builds bus approach index without requiring diagnostics", async () => {
   const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
 

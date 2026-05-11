@@ -217,9 +217,21 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     m_CommandBuffer.RemoveComponent<TransitSignalPriorityRuntimeDebugInfo>(unfilteredChunkIndex, currentEntity);
                 }
 
+                C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings diagnosticsTspSettings = activeTspSettings;
+                if (!hasTspRequest
+                    && m_ExtraTypeHandle.m_TransitSignalPrioritySettingsLookup.TryGetComponent(currentEntity, out var selectedTspSettings))
+                {
+                    diagnosticsTspSettings = selectedTspSettings;
+                    diagnosticsTspSettings.Normalize();
+                }
+
                 if (m_TransitSignalPriorityDiagnosticsEnabled)
                 {
-                    activeBusApproachDebugInfo = TspRuntime.BuildBusApproachDebugInfo(this, subLanes);
+                    activeBusApproachDebugInfo = TspRuntime.BuildBusApproachDebugInfo(
+                        this,
+                        subLanes,
+                        trafficLights,
+                        diagnosticsTspSettings.ToLogicSettings());
                     hasActiveBusApproachDebugInfo = true;
                 }
 

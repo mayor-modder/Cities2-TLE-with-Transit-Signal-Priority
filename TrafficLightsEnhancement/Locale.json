@@ -148,6 +148,8 @@
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusIndexLanes]": "Indexed bus lanes",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusScannedSignalLanes]": "Bus scanned signal lanes",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusProbe]": "Bus probe",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecision]": "Bus decision",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusTargetGroup]": "Bus target group",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusHitCount]": "Bus hits",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusLane]": "Bus lane",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusVehicle]": "Bus vehicle",

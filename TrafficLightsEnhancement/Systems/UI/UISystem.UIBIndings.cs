@@ -987,6 +987,8 @@ public partial class UISystem
             rows.Add(new { label = "TSPDiagnosticsBusIndexLanes", value = busApproachDebug.m_BusApproachIndexLaneCount.ToString(CultureInfo.InvariantCulture) });
             rows.Add(new { label = "TSPDiagnosticsBusScannedSignalLanes", value = busApproachDebug.m_ScannedSignalLaneCount.ToString(CultureInfo.InvariantCulture) });
             rows.Add(new { label = "TSPDiagnosticsBusProbe", value = GetBusProbeName(busApproachDebug.m_BusProbe) });
+            rows.Add(new { label = "TSPDiagnosticsBusDecision", value = GetBusDecisionName(busApproachDebug.m_BusDecision) });
+            rows.Add(new { label = "TSPDiagnosticsBusTargetGroup", value = FormatByteValue(busApproachDebug.m_BusTargetSignalGroup) });
             rows.Add(new { label = "TSPDiagnosticsBusHitCount", value = busApproachDebug.m_BusHitCount.ToString(CultureInfo.InvariantCulture) });
             rows.Add(new { label = "TSPDiagnosticsBusLane", value = FormatEntity(busApproachDebug.m_BusLaneEntity) });
             rows.Add(new { label = "TSPDiagnosticsBusVehicle", value = FormatEntity(busApproachDebug.m_BusVehicleEntity) });
@@ -1240,7 +1242,7 @@ public partial class UISystem
             ? $"{runtimeDebug.m_RequestKind}:{runtimeDebug.m_SourceType}:{runtimeDebug.m_TargetSignalGroup}:{runtimeDebug.m_TrackApproachLaneProbe}:{runtimeDebug.m_TrackApproachLaneCurvePosition:0.00}"
             : "no-request";
         string busSignature = hasBusApproachDebug
-            ? $"{busApproachDebug.m_BusProbe}:{busApproachDebug.m_BusHitCount}:{busApproachDebug.m_BusLaneEntity.Index}:{busApproachDebug.m_BusCurvePosition:0.00}:{busApproachDebug.m_BusIsChangingLane}:{busApproachDebug.m_BusSpeed:0.00}"
+            ? $"{busApproachDebug.m_BusProbe}:{busApproachDebug.m_BusDecision}:{busApproachDebug.m_BusTargetSignalGroup}:{busApproachDebug.m_BusHitCount}:{busApproachDebug.m_BusLaneEntity.Index}:{busApproachDebug.m_BusCurvePosition:0.00}:{busApproachDebug.m_BusIsChangingLane}:{busApproachDebug.m_BusSpeed:0.00}"
             : "no-bus";
         string decisionSignature = hasDecisionTrace
             ? $"{decisionTrace.m_Reason}:{decisionTrace.m_BaseSignalGroup}:{decisionTrace.m_SelectedSignalGroup}:{decisionTrace.m_RequestTargetSignalGroup}:{decisionTrace.m_ExclusivePedestrianEnabled}:{decisionTrace.m_ActiveExclusivePedestrianPhase}:{decisionTrace.m_PendingPedestrianFairness}:{decisionTrace.m_PendingPedestrianSignalGroup}"
@@ -1318,6 +1320,8 @@ public partial class UISystem
                         indexedBusLanes = busApproachDebug.m_BusApproachIndexLaneCount,
                         scannedSignalLanes = busApproachDebug.m_ScannedSignalLaneCount,
                         probe = GetBusProbeName(busApproachDebug.m_BusProbe),
+                        decision = GetBusDecisionName(busApproachDebug.m_BusDecision),
+                        targetGroup = busApproachDebug.m_BusTargetSignalGroup,
                         hitCount = busApproachDebug.m_BusHitCount,
                         lane = FormatEntity(busApproachDebug.m_BusLaneEntity),
                         vehicle = FormatEntity(busApproachDebug.m_BusVehicleEntity),
@@ -1518,6 +1522,18 @@ public partial class UISystem
         TransitSignalPriorityBusProbeResult.MatchOnSignaledLane => "Signaled lane match",
         TransitSignalPriorityBusProbeResult.MatchOnApproachLane => "Approach lane match",
         TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane => "Connected approach match",
+        _ => "None"
+    };
+
+    private static string GetBusDecisionName(TransitSignalPriorityBusDecision value) => value switch
+    {
+        TransitSignalPriorityBusDecision.NoEligibleSample => "No eligible bus sample",
+        TransitSignalPriorityBusDecision.PriorityDisabled => "Bus priority disabled",
+        TransitSignalPriorityBusDecision.RequestEmitted => "Request emitted",
+        TransitSignalPriorityBusDecision.SuppressedBoarding => "Suppressed: boarding",
+        TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation => "Suppressed: stop relation unknown",
+        TransitSignalPriorityBusDecision.SuppressedAggressivePreemption => "Suppressed: aggressive preemption",
+        TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange => "Suppressed: lane change ambiguous",
         _ => "None"
     };
 

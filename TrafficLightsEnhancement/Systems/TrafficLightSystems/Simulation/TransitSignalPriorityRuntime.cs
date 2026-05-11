@@ -88,22 +88,35 @@ public static class TransitSignalPriorityRuntime
 
     public static TransitSignalPriorityBusApproachDebugInfo BuildBusApproachDebugInfo(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
-        DynamicBuffer<NetSubLane> subLanes)
+        DynamicBuffer<NetSubLane> subLanes) =>
+        BuildBusApproachDebugInfo(
+            job,
+            subLanes,
+            default,
+            default);
+
+    public static TransitSignalPriorityBusApproachDebugInfo BuildBusApproachDebugInfo(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
+        DynamicBuffer<NetSubLane> subLanes,
+        TrafficLights trafficLights,
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings)
     {
         TransitSignalPriorityBusApproachDebugInfo debugInfo = new()
         {
             m_BusApproachIndexLaneCount = job.m_BusApproachIndexLaneCount,
             m_BusProbe = TransitSignalPriorityBusProbeResult.NoBusSamples,
+            m_BusDecision = TransitSignalPriorityBusDecision.NoEligibleSample,
         };
 
         BusApproachSample bestSample = default;
         TransitSignalPriorityBusProbeResult bestProbe = TransitSignalPriorityBusProbeResult.NoBusSamples;
+        byte bestTargetSignalGroup = 0;
         bool hasBestSample = false;
 
         foreach (var subLane in subLanes)
         {
             Entity signaledLaneEntity = subLane.m_SubLane;
-            if (!job.m_LaneSignalData.HasComponent(signaledLaneEntity))
+            if (!job.m_LaneSignalData.TryGetComponent(signaledLaneEntity, out LaneSignal laneSignal))
             {
                 continue;
             }
@@ -117,12 +130,18 @@ public static class TransitSignalPriorityRuntime
                     out BusApproachSample candidate,
                     out TransitSignalPriorityBusProbeResult probe))
             {
+                bool shouldReplace = !hasBestSample || candidate.CurvePosition > bestSample.CurvePosition;
                 RecordBestBusSample(
                     ref hasBestSample,
                     ref bestSample,
                     ref bestProbe,
                     candidate,
                     probe);
+
+                if (shouldReplace)
+                {
+                    bestTargetSignalGroup = GetTargetSignalGroup(laneSignal.m_GroupMask, trafficLights.m_CurrentSignalGroup);
+                }
             }
         }
 
@@ -132,6 +151,7 @@ public static class TransitSignalPriorityRuntime
         }
 
         debugInfo.m_BusProbe = bestProbe;
+        debugInfo.m_BusTargetSignalGroup = bestTargetSignalGroup;
         debugInfo.m_BusHitCount = bestSample.HitCount;
         debugInfo.m_BusLaneEntity = bestSample.LaneEntity;
         debugInfo.m_BusVehicleEntity = bestSample.VehicleEntity;
@@ -144,7 +164,46 @@ public static class TransitSignalPriorityRuntime
         debugInfo.m_BusNavigationLaneCount = bestSample.NavigationLaneCount;
         debugInfo.m_BusPublicTransportState = bestSample.PublicTransportState;
         debugInfo.m_BusVehicleLaneFlags = bestSample.VehicleLaneFlags;
+        ApplyBusDecision(ref debugInfo, bestSample, logicSettings);
         return debugInfo;
+    }
+
+    private static void ApplyBusDecision(
+        ref TransitSignalPriorityBusApproachDebugInfo debugInfo,
+        BusApproachSample sample,
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings)
+    {
+        if (!logicSettings.m_Enabled || !logicSettings.m_AllowPublicCarRequests)
+        {
+            debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.PriorityDisabled;
+            return;
+        }
+
+        if (debugInfo.m_BusTargetSignalGroup == 0 || sample.CurvePosition < BusApproachLaneCurveThreshold)
+        {
+            debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.NoEligibleSample;
+            return;
+        }
+
+        BusPrioritySuppressionDecision stopSuppression =
+            BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+                GetSuppressionFlags(sample.PublicTransportState),
+                BusStopRelation.Unknown);
+        if (stopSuppression.IsSuppressed)
+        {
+            debugInfo.m_BusDecision = stopSuppression.Reason == BusPrioritySuppressionReason.Boarding
+                ? TransitSignalPriorityBusDecision.SuppressedBoarding
+                : TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation;
+            return;
+        }
+
+        if (sample.HasChangeLane != 0 || sample.IsChangeLaneSample != 0)
+        {
+            debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange;
+            return;
+        }
+
+        debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.RequestEmitted;
     }
 
     public static bool TryResolveActiveLocalRequest(
