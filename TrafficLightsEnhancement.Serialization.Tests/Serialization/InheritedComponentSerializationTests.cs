@@ -65,6 +65,50 @@ public class InheritedComponentSerializationTests
     }
 
     [Fact]
+    public void Transit_signal_priority_settings_round_trips_current_payload()
+    {
+        var source = TransitSignalPrioritySettings.CreateDefault();
+        source.m_Enabled = true;
+        source.m_AllowTrackRequests = true;
+        source.m_AllowPublicCarRequests = true;
+        source.m_RequestHorizonTicks = 17;
+        source.m_MaxGreenExtensionTicks = 88;
+
+        var result = RoundTrip<TransitSignalPrioritySettings>(source);
+
+        Assert.True(result.m_Enabled);
+        Assert.True(result.m_AllowTrackRequests);
+        Assert.True(result.m_AllowPublicCarRequests);
+        Assert.Equal((ushort)17, result.m_RequestHorizonTicks);
+        Assert.Equal((ushort)88, result.m_MaxGreenExtensionTicks);
+    }
+
+    [Fact]
+    public void Transit_signal_priority_settings_deserializes_v1_payload_and_discards_group_propagation()
+    {
+        var result = Deserialize<TransitSignalPrioritySettings>(writer =>
+        {
+            writer.Write(1);
+            writer.Write(true);
+            writer.Write(false);
+            writer.Write(true);
+            writer.Write(true);
+            writer.Write(global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings.LegacyDefaultRequestHorizonTicks);
+            writer.Write((ushort)0);
+        });
+
+        Assert.True(result.m_Enabled);
+        Assert.False(result.m_AllowTrackRequests);
+        Assert.True(result.m_AllowPublicCarRequests);
+        Assert.Equal(
+            global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings.DefaultRequestHorizonTicks,
+            result.m_RequestHorizonTicks);
+        Assert.Equal(
+            global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings.DefaultMaxGreenExtensionTicks,
+            result.m_MaxGreenExtensionTicks);
+    }
+
+    [Fact]
     public void Traffic_group_round_trips_current_payload_and_resets_runtime_fields()
     {
         var source = new TrafficGroup(isCoordinated: true, greenWaveEnabled: true, greenWaveSpeed: 70f, greenWaveOffset: 1.5f, maxCoordinationDistance: 800f, cycleLength: 64f)
