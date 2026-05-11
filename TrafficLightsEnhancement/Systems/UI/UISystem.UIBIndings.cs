@@ -1096,7 +1096,7 @@ public partial class UISystem
             history.LastSignature = signature;
         }
 
-        if (signatureChanged && shouldRecordEvent)
+        if (shouldRecordEvent)
         {
             WriteTspDiagnosticsTraceEvent(
                 entity,
