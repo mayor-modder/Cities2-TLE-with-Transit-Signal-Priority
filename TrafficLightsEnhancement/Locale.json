@@ -109,7 +109,7 @@
     "UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]": "Enable for buses",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriorityFollowerUnavailable]": "Tram Signal Priority is controlled by the group leader",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriorityFollowerUnavailable]": "Bus Signal Priority is controlled by the group leader",
-    "UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriorityDiagnostics]": "Diagnostics",
+    "UI.LABEL[C2VM.TrafficLightsEnhancement.TransitSignalPriorityDiagnostics]": "Diagnostics",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsSummary]": "TSP",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsEvents]": "Recent TSP events",
     "UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsEvent]": "Event",

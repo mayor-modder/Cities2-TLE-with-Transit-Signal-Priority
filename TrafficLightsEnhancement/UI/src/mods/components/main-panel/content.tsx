@@ -156,7 +156,7 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                             {mainData.tramSignalPriority.diagnostics && (
                                 <>
                                     <Divider />
-                                    <Title itemType="title" title="TramSignalPriorityDiagnostics" />
+                                    <Title itemType="title" title="TransitSignalPriorityDiagnostics" />
                                     {mainData.tramSignalPriority.diagnostics.summary && (
                                         <Row hoverEffect={false}>
                                             <div className={styles.contentLabel}>

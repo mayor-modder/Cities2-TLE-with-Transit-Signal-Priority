@@ -67,7 +67,8 @@ test("main panel renders tram and bus controls under one transit signal priority
   assert.match(panelSource, /EnableTramSignalPriority/);
   assert.match(panelSource, /EnableBusSignalPriority/);
   assert.match(panelSource, /toggleBusSignalPriority/);
-  assert.match(panelSource, /TramSignalPriorityDiagnostics/);
+  assert.match(panelSource, /TransitSignalPriorityDiagnostics/);
+  assert.doesNotMatch(panelSource, /TramSignalPriorityDiagnostics/);
   assert.doesNotMatch(panelSource, /title="BusSignalPriority"/);
   assert.doesNotMatch(panelSource, /source/i);
   assert.doesNotMatch(panelSource, /public[-\s]?car|publicCar/i);
@@ -116,6 +117,8 @@ test("transit signal priority has concise English base labels", async () => {
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TransitSignalPriority]"], "Transit Signal Priority");
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]"], "Enable for trams");
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.EnableBusSignalPriority]"], "Enable for buses");
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TransitSignalPriorityDiagnostics]"], "Diagnostics");
+  assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TramSignalPriorityDiagnostics]"], undefined);
   assert.equal(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.BusSignalPriorityFollowerUnavailable]"], "Bus Signal Priority is controlled by the group leader");
 });
 
