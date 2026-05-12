@@ -438,6 +438,9 @@ test("bus and custom phase docs do not carry stale review notes", async () => {
   assert.equal(edgeCaseHeadings.length, 1);
   assert.doesNotMatch(tspArchitecture, /reserved for future bus|effectively track-only|only emits `TspSource\.Track`/);
   assert.match(tspArchitecture, /soft bus/i);
+  assert.match(busResearch, /runtime always passes `BusStopRelation\.Unknown`/);
+  assert.match(busResearch, /#35/);
+  assert.match(busResearch, /#36/);
   assert.doesNotMatch(customPhaseExtraction, /production selector reports `false`/);
   assert.match(customPhaseExtraction, /linked-phase\s+behavior remains in `CustomStateMachine`/);
 });

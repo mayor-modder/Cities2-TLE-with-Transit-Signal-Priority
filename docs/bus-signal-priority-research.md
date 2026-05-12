@@ -97,6 +97,11 @@ Available ECS data from `Game.dll` reflection:
 Pure stop suppression is now captured by
 `BusPrioritySuppressionPolicy.EvaluateStopSuppression(...)`:
 
+Today the runtime always passes `BusStopRelation.Unknown`; near-side and
+far-side stop classification is tracked in #35, and lane-change semantics are
+tracked in #36. The known-stop cases below describe the intended policy once
+that classifier exists, not behavior the current runtime can already observe.
+
 - `Boarding` always suppresses bus priority.
 - `Arriving` or `RequireStop` suppresses priority for a known near-side stop
   before the signal.
