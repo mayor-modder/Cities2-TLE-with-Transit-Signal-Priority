@@ -30,6 +30,10 @@ public readonly struct BusPrioritySuppressionDecision
 
 public static class BusPrioritySuppressionPolicy
 {
+    public const float MovingBusSpeedThreshold = 0.5f;
+
+    public static bool IsMovingBus(float speed) => speed > MovingBusSpeedThreshold;
+
     public static BusPrioritySuppressionDecision EvaluateStopSuppression(
         TransitApproachSuppressionFlags flags,
         BusStopRelation stopRelation,

@@ -6,6 +6,15 @@ namespace TrafficLightsEnhancement.Tests.Tsp;
 public class BusPrioritySuppressionPolicyTests
 {
     [Theory]
+    [InlineData(0.49f, false)]
+    [InlineData(0.5f, false)]
+    [InlineData(0.51f, true)]
+    public void Is_moving_bus_uses_policy_threshold(float speed, bool expected)
+    {
+        Assert.Equal(expected, BusPrioritySuppressionPolicy.IsMovingBus(speed));
+    }
+
+    [Theory]
     [InlineData(BusStopRelation.None)]
     [InlineData(BusStopRelation.NearSideBeforeSignal)]
     [InlineData(BusStopRelation.FarSideAfterSignal)]
