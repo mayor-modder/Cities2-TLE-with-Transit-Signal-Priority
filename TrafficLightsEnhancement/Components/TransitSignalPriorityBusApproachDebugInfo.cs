@@ -20,7 +20,6 @@ public enum TransitSignalPriorityBusDecision : byte
     RequestEmitted = 3,
     SuppressedBoarding = 4,
     SuppressedUnknownStopRelation = 5,
-    SuppressedAggressivePreemption = 6,
     SuppressedAmbiguousLaneChange = 7,
     SuppressedNearSideStop = 8,
 }

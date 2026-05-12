@@ -1546,7 +1546,6 @@ public partial class UISystem
         TransitSignalPriorityBusDecision.SuppressedBoarding => "Suppressed: boarding",
         TransitSignalPriorityBusDecision.SuppressedNearSideStop => "Suppressed: near-side stop",
         TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation => "Suppressed: stop relation unknown",
-        TransitSignalPriorityBusDecision.SuppressedAggressivePreemption => "Suppressed: aggressive preemption",
         TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange => "Suppressed: lane change ambiguous",
         _ => "None"
     };

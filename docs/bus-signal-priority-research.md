@@ -157,6 +157,11 @@ tram-style aggressive minimum-green shortening. Diagnostics still need
 playtesting against real saves before bus stop and lane-change semantics are
 considered mature.
 
+No separate bus aggressive-preemption suppression diagnostic is exposed. A bus
+request can be outranked by tram priority, but buses do not attempt the
+tram-only aggressive preemption path, so such a diagnostic would not represent a
+distinct bus decision today.
+
 ## Edge Cases
 
 Near-side stops are the biggest policy risk. A bus approaching a stop before the

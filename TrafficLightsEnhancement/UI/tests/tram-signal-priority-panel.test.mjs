@@ -403,10 +403,12 @@ test("bus diagnostics include request and suppression decisions", async () => {
   assert.match(components, /SuppressedNearSideStop/);
   assert.match(components, /SuppressedUnknownStopRelation/);
   assert.match(components, /SuppressedAmbiguousLaneChange/);
+  assert.doesNotMatch(components, /SuppressedAggressivePreemption/);
   assert.match(runtime, /m_BusDecision\s*=\s*TransitSignalPriorityBusDecision\.RequestEmitted/);
   assert.match(uiBindings, /TSPDiagnosticsBusDecision/);
   assert.match(uiBindings, /GetBusDecisionName/);
   assert.match(uiBindings, /SuppressedNearSideStop => "Suppressed: near-side stop"/);
+  assert.doesNotMatch(uiBindings, /SuppressedAggressivePreemption/);
   assert.ok(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecision]"]);
   assert.ok(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecisionSuppressedNearSideStop]"]);
 });
@@ -444,6 +446,7 @@ test("bus and custom phase docs do not carry stale review notes", async () => {
   assert.match(busResearch, /runtime always passes `BusStopRelation\.Unknown`/);
   assert.match(busResearch, /#35/);
   assert.match(busResearch, /#36/);
+  assert.match(busResearch, /No separate bus aggressive-preemption suppression diagnostic is exposed/);
   assert.doesNotMatch(customPhaseExtraction, /production selector reports `false`/);
   assert.match(customPhaseExtraction, /linked-phase\s+behavior remains in `CustomStateMachine`/);
 });
