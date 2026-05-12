@@ -879,21 +879,7 @@ public static class TransitSignalPriorityRuntime
 
     private static bool IsPreferredRequest(TspRequest candidateRequest, TspRequest existingRequest)
     {
-        int candidatePriority = GetSourcePriority(candidateRequest.Source);
-        int existingPriority = GetSourcePriority(existingRequest.Source);
-
-        return candidatePriority > existingPriority
-            || (candidatePriority == existingPriority && candidateRequest.Strength > existingRequest.Strength);
-    }
-
-    private static int GetSourcePriority(TspSource source)
-    {
-        return source switch
-        {
-            TspSource.Track => 2,
-            TspSource.PublicCar => 1,
-            _ => 0,
-        };
+        return TspSourcePriority.IsPreferredRequest(candidateRequest, existingRequest);
     }
 
     private static bool IsTramTrackLane(PatchedTrafficLightSystem.UpdateTrafficLightsJob job, Entity approachLaneEntity)

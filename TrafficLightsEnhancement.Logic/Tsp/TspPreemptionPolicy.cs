@@ -41,7 +41,7 @@ public static class TspPreemptionPolicy
 
             if (existingRequest.HasValue
                 && IsValidLatchedRequest(existingRequest.Value, requestHorizonTicks)
-                && GetSourcePriority(existingRequest.Value.Source) > GetSourcePriority(fresh.Source))
+                && TspSourcePriority.GetPriority(existingRequest.Value.Source) > TspSourcePriority.GetPriority(fresh.Source))
             {
                 request = DecrementLatchedRequest(existingRequest.Value);
                 return true;
@@ -92,16 +92,6 @@ public static class TspPreemptionPolicy
             request.Strength,
             request.ExpiryTimer - 1,
             request.ExtendCurrentPhase);
-    }
-
-    private static int GetSourcePriority(TspSource source)
-    {
-        return source switch
-        {
-            TspSource.Track => 2,
-            TspSource.PublicCar => 1,
-            _ => 0,
-        };
     }
 
     public static bool ShouldHoldCurrentGroup(

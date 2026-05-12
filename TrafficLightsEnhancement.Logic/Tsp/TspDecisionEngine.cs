@@ -22,9 +22,7 @@ public static class TspDecisionEngine
             }
 
             if (!best.HasValue
-                || GetSourcePriority(request.Source) > GetSourcePriority(best.Value.Source)
-                || (GetSourcePriority(request.Source) == GetSourcePriority(best.Value.Source)
-                    && request.Strength > best.Value.Strength))
+                || TspSourcePriority.IsPreferredRequest(request, best.Value))
             {
                 best = request;
             }
@@ -89,13 +87,4 @@ public static class TspDecisionEngine
         };
     }
 
-    private static int GetSourcePriority(TspSource source)
-    {
-        return source switch
-        {
-            TspSource.Track => 2,
-            TspSource.PublicCar => 1,
-            _ => 0,
-        };
-    }
 }

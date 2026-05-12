@@ -53,4 +53,22 @@ public class TransitSignalPriorityRuntimeSelectionTests
         Assert.Equal(TspSource.PublicCar, selected.Value.Source);
         Assert.Equal(TransitSignalPriorityApproachLaneRole.ApproachLane, selectedRole);
     }
+
+    [Fact]
+    public void Preferred_request_keeps_existing_track_request_on_bus_strength_tie()
+    {
+        var trackRequest = new TspRequest(TspSource.Track, strength: 1f, extensionEligible: false);
+        var busRequest = new TspRequest(TspSource.PublicCar, strength: 1f, extensionEligible: false);
+
+        TspRequest? selected = EcsTspRuntime.SelectPreferredRequestAndRole(
+            trackRequest,
+            TransitSignalPriorityApproachLaneRole.ApproachLane,
+            busRequest,
+            TransitSignalPriorityApproachLaneRole.UpstreamLane,
+            out TransitSignalPriorityApproachLaneRole selectedRole);
+
+        Assert.True(selected.HasValue);
+        Assert.Equal(TspSource.Track, selected.Value.Source);
+        Assert.Equal(TransitSignalPriorityApproachLaneRole.ApproachLane, selectedRole);
+    }
 }
