@@ -66,6 +66,11 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
             defaultValue: 1,
             enableTextField: false,
         };
+        const showTransitSignalPriority = !!(
+            mainData.tramSignalPriority?.isVisible
+            || mainData.busSignalPriority?.isVisible
+            || mainData.tramSignalPriority?.diagnostics
+        );
 
         return (
             <div className={styles.contentContainer}>
@@ -108,23 +113,27 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                     {mainData.isGroupMember && (
                         <Message itemType="message" message="EditPhasesFromGroupMenu" />
                     )}
-                    {mainData.tramSignalPriority?.isVisible && (
+                    {showTransitSignalPriority && (
                         <>
                             <Divider />
                             <Title itemType="title" title="TransitSignalPriority" />
-                            <Row
-                                hoverEffect={mainData.tramSignalPriority.isEditable}
-                                onClick={mainData.tramSignalPriority.isEditable
-                                    ? () => toggleTramSignalPriority(!mainData.tramSignalPriority!.isEnabled)
-                                    : undefined}
-                            >
-                                <Checkbox isChecked={mainData.tramSignalPriority.isEnabled} />
-                                <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]`) ?? "EnableTramSignalPriority"}</div>
-                            </Row>
-                            {mainData.tramSignalPriority.statusLabel && (
-                                <Row hoverEffect={false}>
-                                    <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.statusLabel}]`) ?? mainData.tramSignalPriority.statusLabel}</div>
-                                </Row>
+                            {mainData.tramSignalPriority?.isVisible && (
+                                <>
+                                    <Row
+                                        hoverEffect={mainData.tramSignalPriority.isEditable}
+                                        onClick={mainData.tramSignalPriority.isEditable
+                                            ? () => toggleTramSignalPriority(!mainData.tramSignalPriority!.isEnabled)
+                                            : undefined}
+                                    >
+                                        <Checkbox isChecked={mainData.tramSignalPriority.isEnabled} />
+                                        <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.EnableTramSignalPriority]`) ?? "EnableTramSignalPriority"}</div>
+                                    </Row>
+                                    {mainData.tramSignalPriority.statusLabel && (
+                                        <Row hoverEffect={false}>
+                                            <div className={styles.contentLabel}>{translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.statusLabel}]`) ?? mainData.tramSignalPriority.statusLabel}</div>
+                                        </Row>
+                                    )}
+                                </>
                             )}
                             {mainData.busSignalPriority?.isVisible && (
                                 <>

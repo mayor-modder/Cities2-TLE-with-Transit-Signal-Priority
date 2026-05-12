@@ -73,6 +73,23 @@ test("main panel renders tram and bus controls under one transit signal priority
   assert.doesNotMatch(panelSource, /public[-\s]?car|publicCar/i);
 });
 
+test("bus signal priority row is visible independently from tram signal priority", async () => {
+  const content = await source("src/mods/components/main-panel/content.tsx");
+  const tramVisible = "mainData.tramSignalPriority?.isVisible";
+  const busVisible = "mainData.busSignalPriority?.isVisible";
+  const tramVisibleIndex = content.indexOf(tramVisible);
+  const busVisibleIndex = content.indexOf(busVisible);
+
+  assert.notEqual(tramVisibleIndex, -1);
+  assert.notEqual(busVisibleIndex, -1);
+  assert.ok(busVisibleIndex > tramVisibleIndex);
+
+  const betweenVisibilityChecks = content.slice(tramVisibleIndex, busVisibleIndex);
+  const nestedFragments = betweenVisibilityChecks.split("<>").length - 1
+    - (betweenVisibilityChecks.split("</>").length - 1);
+  assert.equal(nestedFragments, 0);
+});
+
 test("backend exposes separate tram and bus signal priority controls", async () => {
   const uiBindings = await repoSource("Systems/UI/UISystem.UIBIndings.cs");
   const toggleStart = uiBindings.indexOf("private void ToggleTransitSignalPrioritySource");
