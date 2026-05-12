@@ -22,6 +22,7 @@ public enum TransitSignalPriorityBusDecision : byte
     SuppressedUnknownStopRelation = 5,
     SuppressedAggressivePreemption = 6,
     SuppressedAmbiguousLaneChange = 7,
+    SuppressedNearSideStop = 8,
 }
 
 public struct TransitSignalPriorityBusApproachDebugInfo : IComponentData

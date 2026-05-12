@@ -7,6 +7,18 @@ namespace TrafficLightsEnhancement.Ecs.Tests;
 
 public class TransitSignalPriorityRuntimeSelectionTests
 {
+    [Theory]
+    [InlineData(BusPrioritySuppressionReason.None, TransitSignalPriorityBusDecision.None)]
+    [InlineData(BusPrioritySuppressionReason.Boarding, TransitSignalPriorityBusDecision.SuppressedBoarding)]
+    [InlineData(BusPrioritySuppressionReason.NearSideStop, TransitSignalPriorityBusDecision.SuppressedNearSideStop)]
+    [InlineData(BusPrioritySuppressionReason.UnknownStopRelation, TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation)]
+    public void Bus_suppression_reason_maps_to_specific_diagnostic_decision(
+        BusPrioritySuppressionReason reason,
+        TransitSignalPriorityBusDecision expected)
+    {
+        Assert.Equal(expected, EcsTspRuntime.MapBusSuppressionReasonToDecision(reason));
+    }
+
     [Fact]
     public void Preferred_request_role_stays_with_winning_track_request()
     {

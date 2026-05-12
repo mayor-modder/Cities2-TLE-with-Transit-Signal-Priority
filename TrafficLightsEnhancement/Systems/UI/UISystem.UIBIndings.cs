@@ -1544,6 +1544,7 @@ public partial class UISystem
         TransitSignalPriorityBusDecision.PriorityDisabled => "Bus priority disabled",
         TransitSignalPriorityBusDecision.RequestEmitted => "Request emitted",
         TransitSignalPriorityBusDecision.SuppressedBoarding => "Suppressed: boarding",
+        TransitSignalPriorityBusDecision.SuppressedNearSideStop => "Suppressed: near-side stop",
         TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation => "Suppressed: stop relation unknown",
         TransitSignalPriorityBusDecision.SuppressedAggressivePreemption => "Suppressed: aggressive preemption",
         TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange => "Suppressed: lane change ambiguous",

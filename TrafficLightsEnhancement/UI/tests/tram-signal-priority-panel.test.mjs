@@ -400,12 +400,15 @@ test("bus diagnostics include request and suppression decisions", async () => {
   assert.match(components, /TransitSignalPriorityBusDecision/);
   assert.match(components, /RequestEmitted/);
   assert.match(components, /SuppressedBoarding/);
+  assert.match(components, /SuppressedNearSideStop/);
   assert.match(components, /SuppressedUnknownStopRelation/);
   assert.match(components, /SuppressedAmbiguousLaneChange/);
   assert.match(runtime, /m_BusDecision\s*=\s*TransitSignalPriorityBusDecision\.RequestEmitted/);
   assert.match(uiBindings, /TSPDiagnosticsBusDecision/);
   assert.match(uiBindings, /GetBusDecisionName/);
+  assert.match(uiBindings, /SuppressedNearSideStop => "Suppressed: near-side stop"/);
   assert.ok(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecision]"]);
+  assert.ok(locale["UI.LABEL[C2VM.TrafficLightsEnhancement.TSPDiagnosticsBusDecisionSuppressedNearSideStop]"]);
 });
 
 test("bus priority builds bus approach index without requiring diagnostics", async () => {

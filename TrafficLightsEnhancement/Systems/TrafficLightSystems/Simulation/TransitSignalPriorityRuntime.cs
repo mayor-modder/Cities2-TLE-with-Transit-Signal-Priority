@@ -193,9 +193,7 @@ public static class TransitSignalPriorityRuntime
                 BusPrioritySuppressionPolicy.IsMovingBus(sample.Speed));
         if (stopSuppression.IsSuppressed)
         {
-            debugInfo.m_BusDecision = stopSuppression.Reason == BusPrioritySuppressionReason.Boarding
-                ? TransitSignalPriorityBusDecision.SuppressedBoarding
-                : TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation;
+            debugInfo.m_BusDecision = MapBusSuppressionReasonToDecision(stopSuppression.Reason);
             return;
         }
 
@@ -207,6 +205,16 @@ public static class TransitSignalPriorityRuntime
 
         debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.RequestEmitted;
     }
+
+    public static TransitSignalPriorityBusDecision MapBusSuppressionReasonToDecision(
+        BusPrioritySuppressionReason reason) =>
+        reason switch
+        {
+            BusPrioritySuppressionReason.Boarding => TransitSignalPriorityBusDecision.SuppressedBoarding,
+            BusPrioritySuppressionReason.NearSideStop => TransitSignalPriorityBusDecision.SuppressedNearSideStop,
+            BusPrioritySuppressionReason.UnknownStopRelation => TransitSignalPriorityBusDecision.SuppressedUnknownStopRelation,
+            _ => TransitSignalPriorityBusDecision.None,
+        };
 
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
