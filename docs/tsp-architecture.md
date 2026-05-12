@@ -69,6 +69,12 @@ The normal runtime path starts in [`PatchedTrafficLightSystem.OnUpdate()`](../Tr
 4. The runtime reads and normalizes ECS settings, rejects unavailable or grouped-follower intersections, builds a fresh request if possible, or latches a still-valid existing request.
 5. If a request is active, the job writes `TransitSignalPriorityRequest` and `TransitSignalPriorityRuntimeDebugInfo`. If no request is active, stale request/debug components are removed.
 6. Normal or custom signal selection receives `hasTspRequest` plus the active `TransitSignalPriorityRequest`.
+
+Diagnostic cost contract: diagnostics are allowed to reuse bus samples gathered
+by the bus-priority runtime path, but diagnostics must not force that runtime
+path when bus priority is off. With diagnostics on and bus priority off, the
+panel may scan buses for display only; with diagnostics off, no panel-only bus
+debug work should run.
 7. If TSP changes or extends the selected group, `TransitSignalPriorityDecisionTrace` is written for diagnostics. If no TSP decision was made, stale decision traces are removed.
 
 ## Request Production

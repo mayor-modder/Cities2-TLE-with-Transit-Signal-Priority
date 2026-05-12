@@ -101,13 +101,7 @@ public static class TransitSignalPriorityRuntime
         TrafficLights trafficLights,
         global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings)
     {
-        TransitSignalPriorityBusApproachDebugInfo debugInfo = new()
-        {
-            m_BusApproachIndexLaneCount = job.m_BusApproachIndexLaneCount,
-            m_BusProbe = TransitSignalPriorityBusProbeResult.NoBusSamples,
-            m_BusDecision = TransitSignalPriorityBusDecision.NoEligibleSample,
-        };
-
+        TransitSignalPriorityBusApproachDebugInfo debugInfo = CreateBusApproachDebugInfo(job);
         BusApproachSample bestSample = default;
         TransitSignalPriorityBusProbeResult bestProbe = TransitSignalPriorityBusProbeResult.NoBusSamples;
         byte bestTargetSignalGroup = 0;
@@ -145,6 +139,34 @@ public static class TransitSignalPriorityRuntime
             }
         }
 
+        return CompleteBusApproachDebugInfo(
+            debugInfo,
+            hasBestSample,
+            bestSample,
+            bestProbe,
+            bestTargetSignalGroup,
+            logicSettings);
+    }
+
+    private static TransitSignalPriorityBusApproachDebugInfo CreateBusApproachDebugInfo(
+        PatchedTrafficLightSystem.UpdateTrafficLightsJob job)
+    {
+        return new TransitSignalPriorityBusApproachDebugInfo
+        {
+            m_BusApproachIndexLaneCount = job.m_BusApproachIndexLaneCount,
+            m_BusProbe = TransitSignalPriorityBusProbeResult.NoBusSamples,
+            m_BusDecision = TransitSignalPriorityBusDecision.NoEligibleSample,
+        };
+    }
+
+    private static TransitSignalPriorityBusApproachDebugInfo CompleteBusApproachDebugInfo(
+        TransitSignalPriorityBusApproachDebugInfo debugInfo,
+        bool hasBestSample,
+        BusApproachSample bestSample,
+        TransitSignalPriorityBusProbeResult bestProbe,
+        byte bestTargetSignalGroup,
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings)
+    {
         if (!hasBestSample)
         {
             return debugInfo;
@@ -221,13 +243,18 @@ public static class TransitSignalPriorityRuntime
         Entity junctionEntity,
         DynamicBuffer<NetSubLane> subLanes,
         TrafficLights trafficLights,
+        bool collectReusableBusApproachDebugInfo,
         out TransitSignalPriorityRequest request,
         out Components.TransitSignalPrioritySettings settings,
-        out TransitSignalPriorityRuntimeDebugInfo debugInfo)
+        out TransitSignalPriorityRuntimeDebugInfo debugInfo,
+        out TransitSignalPriorityBusApproachDebugInfo reusableBusApproachDebugInfo,
+        out bool hasReusableBusApproachDebugInfo)
     {
         request = default;
         settings = default;
         debugInfo = default;
+        reusableBusApproachDebugInfo = default;
+        hasReusableBusApproachDebugInfo = false;
 
         if (!job.m_ExtraTypeHandle.m_TransitSignalPrioritySettingsLookup.TryGetComponent(junctionEntity, out settings) || !settings.m_Enabled)
         {
@@ -253,7 +280,17 @@ public static class TransitSignalPriorityRuntime
 
         TransitSignalPriorityRequest freshRequest = default;
         FreshRequestDebugInfo freshDebugInfo = default;
-        bool hasFreshRequest = TryBuildFreshRequest(job, subLanes, trafficLights, settings, effectiveRequestHorizonTicks, out freshRequest, out freshDebugInfo);
+        bool hasFreshRequest = TryBuildFreshRequest(
+            job,
+            subLanes,
+            trafficLights,
+            settings,
+            effectiveRequestHorizonTicks,
+            collectReusableBusApproachDebugInfo,
+            out freshRequest,
+            out freshDebugInfo,
+            out reusableBusApproachDebugInfo,
+            out hasReusableBusApproachDebugInfo);
 
         TransitSignalPriorityRequest priorRequest = default;
         bool hasExistingRequest = job.m_ExtraTypeHandle.m_TransitSignalPriorityRequest.TryGetComponent(junctionEntity, out priorRequest)
@@ -390,17 +427,29 @@ public static class TransitSignalPriorityRuntime
         TrafficLights trafficLights,
         Components.TransitSignalPrioritySettings settings,
         ushort effectiveRequestHorizonTicks,
+        bool collectReusableBusApproachDebugInfo,
         out TransitSignalPriorityRequest request,
-        out FreshRequestDebugInfo debugInfo)
+        out FreshRequestDebugInfo debugInfo,
+        out TransitSignalPriorityBusApproachDebugInfo reusableBusApproachDebugInfo,
+        out bool hasReusableBusApproachDebugInfo)
     {
         request = default;
         debugInfo = default;
+        reusableBusApproachDebugInfo = default;
+        hasReusableBusApproachDebugInfo = false;
 
         var logicSettings = settings.ToLogicSettings();
 
         TransitApproachScanState scanState = default;
         TransitApproachCandidate? earlyCandidate = null;
         TransitApproachCandidate? petitionerCandidate = null;
+        bool shouldCollectReusableBusDebugInfo = collectReusableBusApproachDebugInfo
+            && logicSettings.m_AllowPublicCarRequests;
+        TransitSignalPriorityBusApproachDebugInfo busDebugInfo = CreateBusApproachDebugInfo(job);
+        BusApproachSample bestBusSample = default;
+        TransitSignalPriorityBusProbeResult bestBusProbe = TransitSignalPriorityBusProbeResult.NoBusSamples;
+        byte bestBusTargetSignalGroup = 0;
+        bool hasBestBusSample = false;
 
         foreach (var subLane in subLanes)
         {
@@ -412,6 +461,10 @@ public static class TransitSignalPriorityRuntime
 
             Entity approachLaneEntity = ResolveApproachLane(job, subLaneEntity);
             bool isTramTrackLane = IsTramTrackLane(job, approachLaneEntity);
+            if (shouldCollectReusableBusDebugInfo)
+            {
+                busDebugInfo.m_ScannedSignalLaneCount = IncrementByte(busDebugInfo.m_ScannedSignalLaneCount);
+            }
 
             TspRequest? earlyRequest = null;
             TransitSignalPriorityApproachLaneRole detectedLaneRole = TransitSignalPriorityApproachLaneRole.None;
@@ -446,8 +499,8 @@ public static class TransitSignalPriorityRuntime
                     approachLaneEntity,
                     logicSettings,
                     out var detectedBusRequest,
-                    out _,
-                    out _,
+                    out var detectedBusSample,
+                    out var detectedBusProbe,
                     out _))
             {
                 earlyRequest = SelectPreferredRequestAndRole(
@@ -456,6 +509,25 @@ public static class TransitSignalPriorityRuntime
                     detectedBusRequest,
                     TransitSignalPriorityApproachLaneRole.ApproachLane,
                     out detectedLaneRole);
+            }
+
+            if (shouldCollectReusableBusDebugInfo
+                && detectedBusProbe != TransitSignalPriorityBusProbeResult.None
+                && detectedBusProbe != TransitSignalPriorityBusProbeResult.NoBusSamples)
+            {
+                bool shouldReplaceBusDebugSample = !hasBestBusSample
+                    || detectedBusSample.CurvePosition > bestBusSample.CurvePosition;
+                RecordBestBusSample(
+                    ref hasBestBusSample,
+                    ref bestBusSample,
+                    ref bestBusProbe,
+                    detectedBusSample,
+                    detectedBusProbe);
+
+                if (shouldReplaceBusDebugSample)
+                {
+                    bestBusTargetSignalGroup = GetTargetSignalGroup(laneSignal.m_GroupMask, trafficLights.m_CurrentSignalGroup);
+                }
             }
 
             TspRequest? petitionerRequest = null;
@@ -523,6 +595,18 @@ public static class TransitSignalPriorityRuntime
                     petitionerCandidate = candidate;
                 }
             }
+        }
+
+        if (shouldCollectReusableBusDebugInfo)
+        {
+            reusableBusApproachDebugInfo = CompleteBusApproachDebugInfo(
+                busDebugInfo,
+                hasBestBusSample,
+                bestBusSample,
+                bestBusProbe,
+                bestBusTargetSignalGroup,
+                logicSettings);
+            hasReusableBusApproachDebugInfo = true;
         }
 
         TspRequest? selectedRequest = EarlyApproachDetection.PreferEarlyRequest(

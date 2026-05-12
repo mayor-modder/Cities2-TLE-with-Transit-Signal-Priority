@@ -421,6 +421,20 @@ test("bus priority builds bus approach index without requiring diagnostics", asy
   assert.match(patchedSystem, /shouldBuildBusApproachIndex\s*\?\s*BusApproachIndex\.Build/);
 });
 
+test("bus diagnostics reuse runtime bus scan when priority already scanned the junction", async () => {
+  const runtime = await repoSource("Systems/TrafficLightSystems/Simulation/TransitSignalPriorityRuntime.cs");
+  const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
+  const diagnosticsStart = patchedSystem.indexOf("if (m_TransitSignalPriorityDiagnosticsEnabled)");
+  const diagnosticsEnd = patchedSystem.indexOf("if (hasActiveBusApproachDebugInfo)", diagnosticsStart);
+  const diagnosticsSource = patchedSystem.slice(diagnosticsStart, diagnosticsEnd);
+
+  assert.match(runtime, /out TransitSignalPriorityBusApproachDebugInfo reusableBusApproachDebugInfo/);
+  assert.match(runtime, /out bool hasReusableBusApproachDebugInfo/);
+  assert.match(patchedSystem, /m_TransitSignalPriorityDiagnosticsEnabled,\s*out var tspRequest/);
+  assert.match(diagnosticsSource, /hasReusableBusApproachDebugInfo\s*\?\s*reusableBusApproachDebugInfo/);
+  assert.match(diagnosticsSource, /:\s*TspRuntime\.BuildBusApproachDebugInfo/);
+});
+
 test("bus priority can select target group at normal transition without aggressive preemption", async () => {
   const patchedSystem = await repoSource("Systems/TrafficLightSystems/Simulation/PatchedTrafficLightSystem.cs");
   const getNextStart = patchedSystem.indexOf("private int GetNextSignalGroup(");
@@ -443,6 +457,7 @@ test("bus and custom phase docs do not carry stale review notes", async () => {
   assert.equal(edgeCaseHeadings.length, 1);
   assert.doesNotMatch(tspArchitecture, /reserved for future bus|effectively track-only|only emits `TspSource\.Track`/);
   assert.match(tspArchitecture, /soft bus/i);
+  assert.match(tspArchitecture, /Diagnostic cost contract/);
   assert.match(busResearch, /runtime always passes `BusStopRelation\.Unknown`/);
   assert.match(busResearch, /#35/);
   assert.match(busResearch, /#36/);

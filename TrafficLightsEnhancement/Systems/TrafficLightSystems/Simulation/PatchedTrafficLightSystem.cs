@@ -162,6 +162,8 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                 bool hasActiveTspDebugInfo = false;
                 TransitSignalPriorityBusApproachDebugInfo activeBusApproachDebugInfo = default;
                 bool hasActiveBusApproachDebugInfo = false;
+                TransitSignalPriorityBusApproachDebugInfo reusableBusApproachDebugInfo = default;
+                bool hasReusableBusApproachDebugInfo = false;
                 C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings activeTspSettings =
                     C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings.CreateDefault();
                 TspPedestrianFairnessState pedestrianFairnessState =
@@ -178,9 +180,12 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     currentEntity,
                     subLanes,
                     trafficLights,
+                    m_TransitSignalPriorityDiagnosticsEnabled,
                     out var tspRequest,
                     out var tspSettings,
-                    out var runtimeDebugInfo))
+                    out var runtimeDebugInfo,
+                    out reusableBusApproachDebugInfo,
+                    out hasReusableBusApproachDebugInfo))
                 {
                     hasTspRequest = true;
                     activeTspRequest = tspRequest;
@@ -231,11 +236,13 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
 
                 if (m_TransitSignalPriorityDiagnosticsEnabled)
                 {
-                    activeBusApproachDebugInfo = TspRuntime.BuildBusApproachDebugInfo(
-                        this,
-                        subLanes,
-                        trafficLights,
-                        diagnosticsTspSettings.ToLogicSettings());
+                    activeBusApproachDebugInfo = hasReusableBusApproachDebugInfo
+                        ? reusableBusApproachDebugInfo
+                        : TspRuntime.BuildBusApproachDebugInfo(
+                            this,
+                            subLanes,
+                            trafficLights,
+                            diagnosticsTspSettings.ToLogicSettings());
                     hasActiveBusApproachDebugInfo = true;
                 }
 
