@@ -238,6 +238,60 @@ public static class TransitSignalPriorityRuntime
             _ => TransitSignalPriorityBusDecision.None,
         };
 
+    public static bool TryBuildBusApproachRequestFromSample(
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings,
+        BusApproachSample sample,
+        out TspRequest request,
+        out TransitSignalPriorityBusDecision decision,
+        out BusPrioritySuppressionReason suppressionReason)
+    {
+        request = default;
+        decision = TransitSignalPriorityBusDecision.NoEligibleSample;
+        suppressionReason = BusPrioritySuppressionReason.None;
+
+        if (!logicSettings.m_Enabled || !logicSettings.m_AllowPublicCarRequests)
+        {
+            decision = TransitSignalPriorityBusDecision.PriorityDisabled;
+            return false;
+        }
+
+        if (sample.CurvePosition < BusApproachLaneCurveThreshold)
+        {
+            return false;
+        }
+
+        BusPrioritySuppressionDecision stopSuppression =
+            BusPrioritySuppressionPolicy.EvaluateStopSuppression(
+                GetSuppressionFlags(sample.PublicTransportState),
+                BusStopRelation.Unknown,
+                sample.IsBusOnlyLane != 0,
+                BusPrioritySuppressionPolicy.IsMovingBus(sample.Speed));
+        if (stopSuppression.IsSuppressed)
+        {
+            suppressionReason = stopSuppression.Reason;
+            decision = MapBusSuppressionReasonToDecision(stopSuppression.Reason);
+            return false;
+        }
+
+        if (HasAmbiguousBusLaneChange(sample))
+        {
+            decision = TransitSignalPriorityBusDecision.SuppressedAmbiguousLaneChange;
+            return false;
+        }
+
+        if (!global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPriorityRuntime.TryBuildRequestForLane(
+                logicSettings,
+                isTrackLane: false,
+                isPublicCarLane: true,
+                out request))
+        {
+            return false;
+        }
+
+        decision = TransitSignalPriorityBusDecision.RequestEmitted;
+        return request.Source == TspSource.PublicCar;
+    }
+
     public static bool TryResolveActiveLocalRequest(
         PatchedTrafficLightSystem.UpdateTrafficLightsJob job,
         Entity junctionEntity,
@@ -858,38 +912,17 @@ public static class TransitSignalPriorityRuntime
             return false;
         }
 
-        if (sample.CurvePosition < BusApproachLaneCurveThreshold)
-        {
-            return false;
-        }
-
-        BusPrioritySuppressionDecision stopSuppression =
-            BusPrioritySuppressionPolicy.EvaluateStopSuppression(
-                GetSuppressionFlags(sample.PublicTransportState),
-                BusStopRelation.Unknown,
-                sample.IsBusOnlyLane != 0,
-                BusPrioritySuppressionPolicy.IsMovingBus(sample.Speed));
-        if (stopSuppression.IsSuppressed)
-        {
-            suppressionReason = stopSuppression.Reason;
-            return false;
-        }
-
-        if (HasAmbiguousBusLaneChange(sample))
-        {
-            return false;
-        }
-
-        if (!global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPriorityRuntime.TryBuildRequestForLane(
+        if (!TryBuildBusApproachRequestFromSample(
                 logicSettings,
-                isTrackLane: false,
-                isPublicCarLane: true,
-                out request))
+                sample,
+                out request,
+                out _,
+                out suppressionReason))
         {
             return false;
         }
 
-        return request.Source == TspSource.PublicCar;
+        return true;
     }
 
     private static bool HasAmbiguousBusLaneChange(BusApproachSample sample)
