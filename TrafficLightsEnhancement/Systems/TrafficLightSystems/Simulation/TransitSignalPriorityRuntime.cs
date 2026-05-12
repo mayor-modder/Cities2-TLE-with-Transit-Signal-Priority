@@ -443,8 +443,12 @@ public static class TransitSignalPriorityRuntime
                     out _,
                     out _))
             {
-                earlyRequest = SelectPreferredRequest(earlyRequest, detectedBusRequest);
-                detectedLaneRole = TransitSignalPriorityApproachLaneRole.ApproachLane;
+                earlyRequest = SelectPreferredRequestAndRole(
+                    earlyRequest,
+                    detectedLaneRole,
+                    detectedBusRequest,
+                    TransitSignalPriorityApproachLaneRole.ApproachLane,
+                    out detectedLaneRole);
             }
 
             TspRequest? petitionerRequest = null;
@@ -834,6 +838,23 @@ public static class TransitSignalPriorityRuntime
             return candidateRequest;
         }
 
+        return existingRequest;
+    }
+
+    public static TspRequest? SelectPreferredRequestAndRole(
+        TspRequest? existingRequest,
+        TransitSignalPriorityApproachLaneRole existingRole,
+        TspRequest candidateRequest,
+        TransitSignalPriorityApproachLaneRole candidateRole,
+        out TransitSignalPriorityApproachLaneRole selectedRole)
+    {
+        if (!existingRequest.HasValue || IsPreferredRequest(candidateRequest, existingRequest.Value))
+        {
+            selectedRole = candidateRole;
+            return candidateRequest;
+        }
+
+        selectedRole = existingRole;
         return existingRequest;
     }
 
