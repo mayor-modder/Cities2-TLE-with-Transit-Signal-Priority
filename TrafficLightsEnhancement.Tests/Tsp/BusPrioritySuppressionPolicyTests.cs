@@ -48,13 +48,11 @@ public class BusPrioritySuppressionPolicyTests
         Assert.Equal(BusPrioritySuppressionReason.None, decision.Reason);
     }
 
-    [Theory]
-    [InlineData(TransitApproachSuppressionFlags.Arriving)]
-    [InlineData(TransitApproachSuppressionFlags.RequireStop)]
-    public void Unknown_stop_relation_suppresses_stop_bound_bus_conservatively(TransitApproachSuppressionFlags flags)
+    [Fact]
+    public void Unknown_stop_relation_suppresses_arriving_bus_conservatively()
     {
         BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
-            flags,
+            TransitApproachSuppressionFlags.Arriving,
             BusStopRelation.Unknown,
             isDedicatedBusApproach: false,
             isVehicleMoving: true);
@@ -64,12 +62,12 @@ public class BusPrioritySuppressionPolicyTests
     }
 
     [Fact]
-    public void Unknown_stop_relation_allows_moving_bus_only_require_stop()
+    public void Unknown_stop_relation_allows_moving_require_stop_bus()
     {
         BusPrioritySuppressionDecision decision = BusPrioritySuppressionPolicy.EvaluateStopSuppression(
             TransitApproachSuppressionFlags.RequireStop,
             BusStopRelation.Unknown,
-            isDedicatedBusApproach: true,
+            isDedicatedBusApproach: false,
             isVehicleMoving: true);
 
         Assert.False(decision.IsSuppressed);
