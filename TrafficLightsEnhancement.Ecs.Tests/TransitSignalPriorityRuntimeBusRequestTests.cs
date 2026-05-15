@@ -59,6 +59,39 @@ public class TransitSignalPriorityRuntimeBusRequestTests
     }
 
     [Fact]
+    public void Low_curve_connected_approach_bus_sample_is_not_close_enough()
+    {
+        bool hasRequest = EcsTspRuntime.TryBuildBusApproachRequestFromSample(
+            BusSettings(enabled: true),
+            Sample(curvePosition: 0.1f, state: PublicTransportFlags.RequireStop),
+            TransitSignalPriorityBusProbeResult.MatchOnConnectedApproachLane,
+            out _,
+            out TransitSignalPriorityBusDecision decision,
+            out BusPrioritySuppressionReason suppressionReason);
+
+        Assert.False(hasRequest);
+        Assert.Equal(TransitSignalPriorityBusDecision.NoEligibleSample, decision);
+        Assert.Equal(BusPrioritySuppressionReason.None, suppressionReason);
+    }
+
+    [Fact]
+    public void Low_curve_signaled_lane_require_stop_bus_sample_builds_request()
+    {
+        bool hasRequest = EcsTspRuntime.TryBuildBusApproachRequestFromSample(
+            BusSettings(enabled: true),
+            Sample(curvePosition: 0.1f, state: PublicTransportFlags.RequireStop),
+            TransitSignalPriorityBusProbeResult.MatchOnSignaledLane,
+            out TspRequest request,
+            out TransitSignalPriorityBusDecision decision,
+            out BusPrioritySuppressionReason suppressionReason);
+
+        Assert.True(hasRequest);
+        Assert.Equal(TspSource.PublicCar, request.Source);
+        Assert.Equal(TransitSignalPriorityBusDecision.RequestEmitted, decision);
+        Assert.Equal(BusPrioritySuppressionReason.None, suppressionReason);
+    }
+
+    [Fact]
     public void Bus_request_loses_ranking_to_track_candidate()
     {
         bool hasRequest = EcsTspRuntime.TryBuildBusApproachRequestFromSample(

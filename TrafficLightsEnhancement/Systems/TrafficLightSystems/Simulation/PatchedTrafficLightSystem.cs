@@ -588,13 +588,15 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     #endif
                     if (++trafficLights.m_Timer >= greenDuration)
                     {
-                        if (hasTspRequest && TspRuntime.ShouldHoldCurrentGroup(trafficLights, tspRequest, tspSettings.m_MaxGreenExtensionTicks))
+                        if (TryApplyTspCurrentGroupHold(
+                                ref trafficLights,
+                                hasTspRequest,
+                                tspRequest,
+                                tspSettings,
+                                customTrafficLights,
+                                pedestrianFairnessState,
+                                out tspSelection))
                         {
-                            tspSelection = new TspOverrideSelection(
-                                trafficLights.m_CurrentSignalGroup > 0 ? trafficLights.m_CurrentSignalGroup - 1 : -1,
-                                trafficLights.m_CurrentSignalGroup > 0 ? trafficLights.m_CurrentSignalGroup - 1 : -1,
-                                canExtendCurrent: true,
-                                TspSelectionReason.ExtendedCurrentPhase);
                             return false;
                         }
 
@@ -620,7 +622,14 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     break;
                 case Game.Net.TrafficLightState.Extending:
                     ++trafficLights.m_Timer;
-                    if (TryApplyTspCurrentGroupHold(ref trafficLights, hasTspRequest, tspRequest, tspSettings, out tspSelection))
+                    if (TryApplyTspCurrentGroupHold(
+                            ref trafficLights,
+                            hasTspRequest,
+                            tspRequest,
+                            tspSettings,
+                            customTrafficLights,
+                            pedestrianFairnessState,
+                            out tspSelection))
                     {
                         return true;
                     }
@@ -647,7 +656,14 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
                     break;
                 case Game.Net.TrafficLightState.Extended:
                     ++trafficLights.m_Timer;
-                    if (TryApplyTspCurrentGroupHold(ref trafficLights, hasTspRequest, tspRequest, tspSettings, out tspSelection))
+                    if (TryApplyTspCurrentGroupHold(
+                            ref trafficLights,
+                            hasTspRequest,
+                            tspRequest,
+                            tspSettings,
+                            customTrafficLights,
+                            pedestrianFairnessState,
+                            out tspSelection))
                     {
                         return true;
                     }
@@ -762,10 +778,21 @@ public partial class PatchedTrafficLightSystem : GameSystemBase
             bool hasTspRequest,
             TransitSignalPriorityRequest tspRequest,
             C2VM.TrafficLightsEnhancement.Components.TransitSignalPrioritySettings tspSettings,
+            CustomTrafficLights customTrafficLights,
+            TspPedestrianFairnessState pedestrianFairnessState,
             out TspOverrideSelection tspSelection)
         {
             tspSelection = default;
             if (!hasTspRequest || !TspRuntime.ShouldHoldCurrentGroup(trafficLights, tspRequest, tspSettings.m_MaxGreenExtensionTicks))
+            {
+                return false;
+            }
+
+            if (TspPedestrianFairnessPolicy.ShouldSuppressCurrentGroupHold(
+                    pedestrianFairnessState,
+                    IsExclusivePedestrianEnabled(customTrafficLights),
+                    customTrafficLights.m_PedestrianPhaseGroupMask,
+                    trafficLights.m_CurrentSignalGroup))
             {
                 return false;
             }

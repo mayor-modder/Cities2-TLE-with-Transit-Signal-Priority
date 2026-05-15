@@ -712,6 +712,18 @@ public class TspDecisionEngineTests
     }
 
     [Fact]
+    public void Pending_pedestrian_phase_blocks_current_group_hold()
+    {
+        var state = new TspPedestrianFairnessState(pendingPedestrianSignalGroup: 3);
+
+        Assert.True(TspPedestrianFairnessPolicy.ShouldSuppressCurrentGroupHold(
+            state,
+            exclusivePedestrianEnabled: true,
+            pedestrianPhaseGroupMask: 1 << 2,
+            currentSignalGroup: 2));
+    }
+
+    [Fact]
     public void Pending_pedestrian_phase_allows_in_flight_skipped_tram_phase_to_start()
     {
         var state = new TspPedestrianFairnessState(pendingPedestrianSignalGroup: 3);

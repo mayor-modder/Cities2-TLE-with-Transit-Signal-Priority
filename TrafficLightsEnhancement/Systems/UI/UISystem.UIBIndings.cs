@@ -1068,8 +1068,8 @@ public partial class UISystem
             if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)
             {
                 return hasTrafficLights
-                    ? $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)} | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
-                    : $"No tram request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)}";
+                    ? $"No active request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)} | G{FormatByteValue(trafficLights.m_CurrentSignalGroup)} -> G{FormatByteValue(trafficLights.m_NextSignalGroup)} | {trafficLights.m_State}"
+                    : $"No active request | bus {GetBusProbeName(busApproachDebug.m_BusProbe)}";
             }
 
             if (!settings.m_Enabled)

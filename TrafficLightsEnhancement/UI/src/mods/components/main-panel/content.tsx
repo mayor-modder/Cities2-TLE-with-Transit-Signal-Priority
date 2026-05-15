@@ -71,6 +71,7 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
             || mainData.busSignalPriority?.isVisible
             || mainData.tramSignalPriority?.diagnostics
         );
+        const transitSignalPriorityDiagnostics = mainData.tramSignalPriority?.diagnostics;
 
         return (
             <div className={styles.contentContainer}>
@@ -153,21 +154,21 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                                     )}
                                 </>
                             )}
-                            {mainData.tramSignalPriority.diagnostics && (
+                            {transitSignalPriorityDiagnostics && (
                                 <>
                                     <Divider />
                                     <Title itemType="title" title="TransitSignalPriorityDiagnostics" />
-                                    {mainData.tramSignalPriority.diagnostics.summary && (
+                                    {transitSignalPriorityDiagnostics.summary && (
                                         <Row hoverEffect={false}>
                                             <div className={styles.contentLabel}>
-                                                {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${mainData.tramSignalPriority.diagnostics.summary.label}]`) ?? mainData.tramSignalPriority.diagnostics.summary.label}: {mainData.tramSignalPriority.diagnostics.summary.value}
+                                                {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${transitSignalPriorityDiagnostics.summary.label}]`) ?? transitSignalPriorityDiagnostics.summary.label}: {transitSignalPriorityDiagnostics.summary.value}
                                             </div>
                                         </Row>
                                     )}
-                                    {mainData.tramSignalPriority.diagnostics.events && mainData.tramSignalPriority.diagnostics.events.length > 0 && (
+                                    {transitSignalPriorityDiagnostics.events && transitSignalPriorityDiagnostics.events.length > 0 && (
                                         <>
                                             <Title itemType="title" title="TSPDiagnosticsEvents" />
-                                            {mainData.tramSignalPriority.diagnostics.events.map((event) => (
+                                            {transitSignalPriorityDiagnostics.events.map((event) => (
                                                 <Row key={`${event.sequence}-${event.value}`} hoverEffect={false}>
                                                     <div className={styles.contentLabel}>
                                                         {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${event.label}]`) ?? event.label}: {event.value}
@@ -176,7 +177,7 @@ export default function Content(props: { mainData?: MainPanelMainData | null, em
                                             ))}
                                         </>
                                     )}
-                                    {mainData.tramSignalPriority.diagnostics.rows.map((row) => (
+                                    {transitSignalPriorityDiagnostics.rows.map((row) => (
                                         <Row key={row.label} hoverEffect={false}>
                                             <div className={styles.contentLabel}>
                                                 {translate(`UI.LABEL[C2VM.TrafficLightsEnhancement.${row.label}]`) ?? row.label}: {row.value}

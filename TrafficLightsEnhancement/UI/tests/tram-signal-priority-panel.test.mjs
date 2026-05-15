@@ -135,9 +135,9 @@ test("tram signal priority diagnostics are gated by a mod option", async () => {
   assert.match(uiBindings, /diagnostics\s*=\s*tspDiagnostics/);
   assert.match(uiSystem, /ShouldRefreshMainPanelForDiagnostics\(\)/);
   assert.match(uiSystem, /m_MainPanelState\s*==\s*MainPanelState\.Main/);
-  assert.match(content, /mainData\.tramSignalPriority\.diagnostics/);
-  assert.match(content, /mainData\.tramSignalPriority\.diagnostics\.summary/);
-  assert.match(content, /mainData\.tramSignalPriority\.diagnostics\.events/);
+  assert.match(content, /const\s+transitSignalPriorityDiagnostics\s*=\s*mainData\.tramSignalPriority\?\.diagnostics/);
+  assert.match(content, /transitSignalPriorityDiagnostics\.summary/);
+  assert.match(content, /transitSignalPriorityDiagnostics\.events/);
   assert.match(locale, /Show Transit Signal Priority Diagnostics/);
   assert.match(locale, /TSPDiagnosticsRequest/);
   assert.match(locale, /TSPDiagnosticsCurrentGroup/);
@@ -367,6 +367,8 @@ test("backend exposes bus approach index details", async () => {
   assert.ok(summarySource.indexOf("if (hasBusApproachDebug && busApproachDebug.m_BusHitCount > 0)") < summarySource.indexOf("if (!settings.m_Enabled)"));
   assert.match(components, /TransitSignalPriorityBusProbeResult/);
   assert.match(uiBindings, /TransitSignalPriorityBusApproachDebugInfo/);
+  assert.doesNotMatch(summarySource, /No tram request/);
+  assert.match(summarySource, /No active request/);
   assert.match(uiBindings, /TSPDiagnosticsBusIndexLanes/);
   assert.match(uiBindings, /TSPDiagnosticsBusLaneType/);
   assert.match(uiBindings, /TSPDiagnosticsBusLaneChange/);

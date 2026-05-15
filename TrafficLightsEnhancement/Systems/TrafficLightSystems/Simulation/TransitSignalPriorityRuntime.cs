@@ -186,13 +186,14 @@ public static class TransitSignalPriorityRuntime
         debugInfo.m_BusNavigationLaneCount = bestSample.NavigationLaneCount;
         debugInfo.m_BusPublicTransportState = bestSample.PublicTransportState;
         debugInfo.m_BusVehicleLaneFlags = bestSample.VehicleLaneFlags;
-        ApplyBusDecision(ref debugInfo, bestSample, logicSettings);
+        ApplyBusDecision(ref debugInfo, bestSample, bestProbe, logicSettings);
         return debugInfo;
     }
 
     private static void ApplyBusDecision(
         ref TransitSignalPriorityBusApproachDebugInfo debugInfo,
         BusApproachSample sample,
+        TransitSignalPriorityBusProbeResult busProbe,
         global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings)
     {
         if (!logicSettings.m_Enabled || !logicSettings.m_AllowPublicCarRequests)
@@ -201,7 +202,7 @@ public static class TransitSignalPriorityRuntime
             return;
         }
 
-        if (debugInfo.m_BusTargetSignalGroup == 0 || sample.CurvePosition < BusApproachLaneCurveThreshold)
+        if (debugInfo.m_BusTargetSignalGroup == 0 || !IsBusApproachCurveEligible(sample, busProbe))
         {
             debugInfo.m_BusDecision = TransitSignalPriorityBusDecision.NoEligibleSample;
             return;
@@ -245,6 +246,23 @@ public static class TransitSignalPriorityRuntime
         out TransitSignalPriorityBusDecision decision,
         out BusPrioritySuppressionReason suppressionReason)
     {
+        return TryBuildBusApproachRequestFromSample(
+            logicSettings,
+            sample,
+            TransitSignalPriorityBusProbeResult.MatchOnApproachLane,
+            out request,
+            out decision,
+            out suppressionReason);
+    }
+
+    public static bool TryBuildBusApproachRequestFromSample(
+        global::TrafficLightsEnhancement.Logic.Tsp.TransitSignalPrioritySettings logicSettings,
+        BusApproachSample sample,
+        TransitSignalPriorityBusProbeResult busProbe,
+        out TspRequest request,
+        out TransitSignalPriorityBusDecision decision,
+        out BusPrioritySuppressionReason suppressionReason)
+    {
         request = default;
         decision = TransitSignalPriorityBusDecision.NoEligibleSample;
         suppressionReason = BusPrioritySuppressionReason.None;
@@ -255,7 +273,7 @@ public static class TransitSignalPriorityRuntime
             return false;
         }
 
-        if (sample.CurvePosition < BusApproachLaneCurveThreshold)
+        if (!IsBusApproachCurveEligible(sample, busProbe))
         {
             return false;
         }
@@ -290,6 +308,14 @@ public static class TransitSignalPriorityRuntime
 
         decision = TransitSignalPriorityBusDecision.RequestEmitted;
         return request.Source == TspSource.PublicCar;
+    }
+
+    private static bool IsBusApproachCurveEligible(
+        BusApproachSample sample,
+        TransitSignalPriorityBusProbeResult busProbe)
+    {
+        return busProbe == TransitSignalPriorityBusProbeResult.MatchOnSignaledLane
+            || sample.CurvePosition >= BusApproachLaneCurveThreshold;
     }
 
     public static bool TryResolveActiveLocalRequest(
@@ -915,6 +941,7 @@ public static class TransitSignalPriorityRuntime
         if (!TryBuildBusApproachRequestFromSample(
                 logicSettings,
                 sample,
+                busProbe,
                 out request,
                 out _,
                 out suppressionReason))

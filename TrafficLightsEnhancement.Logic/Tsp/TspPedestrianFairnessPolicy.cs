@@ -50,6 +50,20 @@ public static class TspPedestrianFairnessPolicy
             && requestedSignalGroup != state.PendingPedestrianSignalGroup;
     }
 
+    public static bool ShouldSuppressCurrentGroupHold(
+        TspPedestrianFairnessState state,
+        bool exclusivePedestrianEnabled,
+        int pedestrianPhaseGroupMask,
+        byte currentSignalGroup)
+    {
+        return ShouldDeferToPendingPedestrianPhase(
+            state,
+            exclusivePedestrianEnabled,
+            pedestrianPhaseGroupMask,
+            currentSignalGroup,
+            requestedSignalGroup: currentSignalGroup);
+    }
+
     public static TspPedestrianFairnessState UpdateAfterSelection(
         TspPedestrianFairnessState state,
         bool exclusivePedestrianEnabled,

@@ -152,17 +152,18 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 }
                 
                 customPhaseDataBuffer[currentSignalIndex] = phase;
-                if (stepDone && !hasManualSignalGroupChange && hasTspRequest && TransitSignalPriorityRuntime.ShouldHoldCurrentGroup(
+                if (stepDone
+                    && !hasManualSignalGroupChange
+                    && TryApplyTspCurrentGroupHold(
                         trafficLights,
+                        hasTspRequest,
                         tspRequest,
                         customTrafficLights.m_Timer,
-                        tspSettings.m_MaxGreenExtensionTicks))
+                        tspSettings.m_MaxGreenExtensionTicks,
+                        customTrafficLights,
+                        pedestrianFairnessState,
+                        out tspSelection))
                 {
-                    tspSelection = new TspOverrideSelection(
-                        currentSignalIndex,
-                        currentSignalIndex,
-                        canExtendCurrent: true,
-                        TspSelectionReason.ExtendedCurrentPhase);
                     return false;
                 }
 
@@ -381,6 +382,46 @@ namespace C2VM.TrafficLightsEnhancement.Systems. TrafficLightSystems. Simulation
                 phase.m_CurrentWait = wait * phase.m_WaitFlowBalance;
                 customPhaseDataBuffer[i] = phase;
             }
+        }
+
+        private static bool TryApplyTspCurrentGroupHold(
+            TrafficLights trafficLights,
+            bool hasTspRequest,
+            TransitSignalPriorityRequest tspRequest,
+            uint elapsedTicks,
+            ushort maxGreenExtensionTicks,
+            CustomTrafficLights customTrafficLights,
+            TspPedestrianFairnessState pedestrianFairnessState,
+            out TspOverrideSelection tspSelection)
+        {
+            tspSelection = default;
+            if (!hasTspRequest || !TransitSignalPriorityRuntime.ShouldHoldCurrentGroup(
+                    trafficLights,
+                    tspRequest,
+                    elapsedTicks,
+                    maxGreenExtensionTicks))
+            {
+                return false;
+            }
+
+            if (TspPedestrianFairnessPolicy.ShouldSuppressCurrentGroupHold(
+                    pedestrianFairnessState,
+                    IsExclusivePedestrianEnabled(customTrafficLights),
+                    customTrafficLights.m_PedestrianPhaseGroupMask,
+                    trafficLights.m_CurrentSignalGroup))
+            {
+                return false;
+            }
+
+            int currentSignalIndex = trafficLights.m_CurrentSignalGroup > 0
+                ? trafficLights.m_CurrentSignalGroup - 1
+                : -1;
+            tspSelection = new TspOverrideSelection(
+                currentSignalIndex,
+                currentSignalIndex,
+                canExtendCurrent: true,
+                TspSelectionReason.ExtendedCurrentPhase);
+            return true;
         }
 
         public static byte GetNextSignalGroup(byte currentGroup, DynamicBuffer<CustomPhaseData> customPhaseDataBuffer, CustomTrafficLights customTrafficLights, out bool linked)
